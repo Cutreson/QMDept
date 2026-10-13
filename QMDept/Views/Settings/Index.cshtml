@@ -1,0 +1,43 @@
+@model QMDept.Controllers.SettingsController.SettingsVm
+@* Cài đặt thông báo đẩy (bổ sung, không có trong artifact). JS: site.js (data-os-notify). *@
+@Ui.Head(0, "Cài đặt")
+
+<form method="post" action="/Settings/Save?as=me" asp-antiforgery="true" class="card sec ro-ok">
+    <h2>Thông báo đẩy</h2>
+    <label class="trow" style="padding-left:0">
+        <input type="checkbox" name="enabled" value="true" @(Model.Enabled ? "checked" : "") data-notify-master>
+        <div><div class="t">Bật thông báo đẩy</div></div>
+        <span></span>
+    </label>
+    <input type="hidden" name="enabled" value="false">
+
+    <h2 style="margin-top:14px">Loại thông báo muốn nhận</h2>
+    @if (Model.Types.Count == 0)
+    {
+        <p class="note">Vai trò của bạn không có loại thông báo nghiệp vụ nào.</p>
+    }
+    else
+    {
+        <div class="optbox" data-notify-types>
+            @foreach (var (it, on) in Model.Types)
+            {
+                <label class="trow">
+                    <input type="checkbox" name="types" value="@it.Type" @(on ? "checked" : "")>
+                    <div><div class="t">@it.Label</div></div>
+                    <span></span>
+                </label>
+            }
+        </div>
+        <div class="btn-row" style="margin-top:8px"><button type="button" class="btn btn-sm" data-check-all="1">Chọn tất cả</button><button type="button" class="btn btn-sm" data-check-all="0">Bỏ chọn tất cả</button></div>
+    }
+    <button class="btn btn-primary btn-block" style="margin-top:14px">Lưu cài đặt</button>
+</form>
+
+<section class="card sec">
+    <h2>Thông báo của hệ điều hành</h2>
+    <div class="row" style="flex-wrap:wrap">
+        <span class="pill p-idle" data-os-status>Đang kiểm tra…</span>
+        <button type="button" class="btn btn-sm btn-primary" data-os-notify>Cho phép thông báo</button>
+        <button type="button" class="btn btn-sm" data-test-notify>Gửi thử</button>
+    </div>
+</section>

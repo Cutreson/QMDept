@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using QMDept.Data;
 using QMDept.Services;
 
@@ -14,10 +15,16 @@ public sealed class UiRoleAttribute(Role role) : Attribute
     public Role Role { get; } = role;
 }
 
+/// <summary>Trang dùng được ở mọi giao diện, kể cả Quản trị (vd. Cài đặt thông báo).</summary>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class AnyUiRoleAttribute : Attribute;
+
 /// <summary>
 /// Controller nền cho mọi màn hình sau đăng nhập.
-/// - Trước mỗi action: phân giải <see cref="ViewScope"/> (tài khoản, giao diện, người đang xem, ngày).
-/// - Giao diện lấy từ [UiRole] trên controller, hoặc override <see cref="ResolveUiRole"/> (LamThemController đọc ?r=).
+/// - Trước mỗi action: phân giải <see cref="ViewScope"/> (tài khoản, người đang xem, giao diện, ngày).
+/// - Giao diện của trang lấy từ [UiRole] trên controller (null = dùng chung NV/Leader/TP, vd. Làm thêm; [AnyUiRole] = mọi giao diện).
+///   Trang không khớp giao diện của người đang xem → chuyển về trang mặc định của giao diện đó.
+/// - CHỈ XEM khi đang xem màn hình cấp dưới: mọi POST bị từ chối tại đây (không cần từng action tự kiểm tra).
 /// - Quy ước POST: Post–Redirect–Get; thông báo qua <see cref="Toast"/>; lỗi nghiệp vụ ném <see cref="BizException"/>
 ///   và bọc bằng <see cref="Do"/> để tự hiện toast lỗi rồi quay lại trang trước.
 /// </summary>
@@ -28,17 +35,23 @@ public abstract class AppController : Controller
     protected Dept D => HttpContext.RequestServices.GetRequiredService<Dept>();
     protected ViewScope Scope => HttpContext.RequestServices.GetRequiredService<ViewScope>();
     protected WorkflowService Flow => HttpContext.RequestServices.GetRequiredService<WorkflowService>();
-    protected PhotoStore Photos => HttpContext.RequestServices.GetRequiredService<PhotoStore>();
+    protected Notifier Notify => HttpContext.RequestServices.GetRequiredService<Notifier>();
     /// <summary>Ngày đang chọn (?d=).</summary>
     protected DateOnly Date => Scope.Date;
 
-    protected virtual Role ResolveUiRole(ActionExecutingContext ctx) =>
-        (GetType().GetCustomAttributes(typeof(UiRoleAttribute), true).FirstOrDefault() as UiRoleAttribute)?.Role ?? Role.Nv;
+    protected static readonly Role[] SharedRoles = [Role.Staff, Role.Leader, Role.Manager];
+    static readonly Role[] AllRoles = [Role.Staff, Role.Leader, Role.Manager, Role.Admin];
+
+    /// <summary>Các giao diện trang (action) này phục vụ: [UiRole(x)] → {x}; [AnyUiRole] → mọi vai trò; không khai báo → dùng chung NV/Leader/TP.</summary>
+    protected virtual Role[] UiRoles(ActionExecutingContext ctx) =>
+        GetType().IsDefined(typeof(AnyUiRoleAttribute), true) ? AllRoles
+        : GetType().GetCustomAttributes(typeof(UiRoleAttribute), true).FirstOrDefault() is UiRoleAttribute a ? [a.Role]
+        : SharedRoles;
 
     public override async Task OnActionExecutionAsync(ActionExecutingContext ctx, ActionExecutionDelegate next)
     {
         var resolver = HttpContext.RequestServices.GetRequiredService<ScopeResolver>();
-        var res = await resolver.ResolveAsync(HttpContext, ResolveUiRole(ctx));
+        var res = await resolver.ResolveAsync(HttpContext, UiRoles(ctx));
         if (res == ScopeResult.Unauthenticated)
         {
             await HttpContext.SignOutAsync();
@@ -47,10 +60,24 @@ public abstract class AppController : Controller
         }
         if (res == ScopeResult.Forbidden)
         {
-            ctx.Result = Redirect(ScopeResolver.HomeOf(Scope.Account.Role));
+            ctx.Result = Redirect(ScopeResolver.HomeOf(Scope.Role));
             return;
         }
-        await next();
+        if (HttpMethods.IsPost(Request.Method) && Scope.IsViewingOther)
+        {
+            Toast($"Đang xem màn hình của {Scope.Me?.Name}: chỉ xem, không thao tác được");
+            ctx.Result = Redirect(BackUrl());
+            return;
+        }
+        var done = await next();
+        // Hai lần gửi cùng lúc (2 tab / 2 thiết bị / mạng gửi lại) chạm unique index hoặc bản ghi vừa bị sửa:
+        // báo nhẹ và quay lại thay vì trang lỗi 500.
+        if (HttpMethods.IsPost(Request.Method) && done.Exception is DbUpdateException && !done.ExceptionHandled)
+        {
+            done.ExceptionHandled = true;
+            Toast("Dữ liệu vừa được cập nhật ở nơi khác — vui lòng xem lại và thử lại");
+            done.Result = Redirect(BackUrl());
+        }
     }
 
     /// <summary>Hiện thông báo ngắn (toast) ở trang kế tiếp.</summary>
@@ -87,9 +114,9 @@ public abstract class AppController : Controller
     }
 
     /// <summary>Ném lỗi nếu đang ở chế độ chỉ xem trang NV của người khác.</summary>
-    protected void RequireSelfNv()
+    protected void RequireSelfStaff()
     {
-        if (Scope.Role != Role.Nv || !Scope.IsSelf || Scope.Account.Role != Role.Nv)
+        if (Scope.Role != Role.Staff || !Scope.IsSelf || Scope.Account.Role != Role.Staff)
             throw new BizException("Chế độ xem: không sửa được trang của nhân viên");
     }
 
@@ -100,9 +127,9 @@ public abstract class AppController : Controller
     }
 
     /// <summary>Ném lỗi nếu tài khoản không phải Trưởng phòng.</summary>
-    protected void RequireTp()
+    protected void RequireManager()
     {
-        if (!Scope.IsTp) throw new BizException("Chỉ Trưởng phòng được thực hiện");
+        if (!Scope.IsManager) throw new BizException("Chỉ Trưởng phòng được thực hiện");
     }
 
     /// <summary>Ném lỗi nếu NV không thuộc phạm vi đang xem (giao diện Leader: nhóm của Leader đang xem).</summary>

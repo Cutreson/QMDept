@@ -1,0 +1,190 @@
+@model StaffMorningVm
+@* nvMorning (Báo cáo đầu ngày). Controller: StaffController.Reports.cs (Morning / SubmitPlan / AddUnplannedTask).
+   Hộp thoại chọn giờ nghỉ, bỏ chọn việc trùng giờ nghỉ, bản nháp form: wwwroot/js/staff.js (openLeave, applyLeave, onStatusChange, saveDraft). *@
+@{
+    ViewData["Title"] = "Báo cáo đầu ngày";
+    var req = Context.Request;
+    var d = Scope.Date;
+    var dkey = Fmt.Key(d);
+    var ro = Scope.IsReadOnly;
+    var me = Model.Me;
+    var plan = Model.Plan;
+}
+@section Scripts {
+    <script src="~/js/staff.js" asp-append-version="true"></script>
+}
+@Ui.Head(3, "Báo cáo đầu ngày")
+<partial name="_DayBar" />
+@if (me is null)
+{
+    return;
+}
+@if (D.OnLeave(d, me.Id) is { } onLeave)
+{
+    <div class="notice" style="--nbg:var(--idle-soft);--nfg:var(--idle)"><span class="ic">i</span><div><b>Bạn được ghi nghỉ ngày này</b><div class="note">@(onLeave.Reason ?? "")</div></div></div>
+}
+@if (!ro)
+{
+    <script id="staffCfg" type="application/json">@Html.Raw(StaffReports.MorningCfg(d, me.Id, clear: !Model.ShowForm))</script>
+}
+
+@if (!Model.ShowForm && plan is not null)
+{
+    // ---------- Đã gửi: trạng thái kế hoạch ----------
+    var st = Dept.PlanSt(plan);
+    var sel = D.Chosen(d, me.Id);
+    var needsManager = Dept.NeedsManager(plan);
+    if (st == PlanState.Rejected)
+    {
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>Kế hoạch bị từ chối</b></div></div>
+    }
+    else
+    {
+        <div class="notice"><span class="ic">✓</span><div><b>Đã gửi kế hoạch lúc @VnTime.Hm(plan.SentAt)</b></div></div>
+    }
+    <section class="card sec">
+        <h2>Công việc đã chọn (@sel.Count)</h2>
+        @if (sel.Count > 0)
+        {
+            foreach (var t in sel)
+            {
+                @D.TaskRow(t)
+            }
+        }
+        else
+        {
+            <p class="note">Không chọn việc nào.</p>
+        }
+        @if (!string.IsNullOrEmpty(plan.Note))
+        {
+            <div class="cmt" style="margin-top:10px"><b>Ghi chú / yêu cầu hỗ trợ:</b> @plan.Note</div>
+        }
+        @Html.Raw(Blocks.SupCmt(plan, string.IsNullOrEmpty(plan.Note) ? "margin-top:10px" : ""))
+    </section>
+    <section class="card sec">
+        <h2>Trạng thái &amp; báo cơm</h2>
+        <div class="kv2">
+            <div><div class="note">Trạng thái</div><span class="pill @(LeaveRules.IsLeave(plan.Status) ? "p-warn" : "p-info")">@Labels.Of(plan.Status)</span></div>
+            <div><div class="note">Báo cơm</div><span class="pill p-info">@Labels.Of(plan.Meal)</span></div>
+        </div>
+        @if (LeaveRules.IsLeave(plan.Status) && plan.LeaveType is not null)
+        {
+            <div class="leave-line">Thời gian nghỉ: @Html.Raw(Blocks.LeaveText(plan))</div>
+        }
+        @if (LeaveRules.IsTrip(plan.Status) && plan.TripProvince is not null)
+        {
+            <div class="leave-line">Địa điểm công tác: <b>@plan.TripProvince</b> · Khách hàng: <b>@plan.TripCustomer</b></div>
+        }
+    </section>
+    <section class="card sec">
+        <h2>Trạng thái duyệt</h2>
+        <div class="trow">@StaffReports.DecisionCk(plan.LeaderDecision)<div class="t">Leader</div><span>@StaffReports.DecisionCell(plan.LeaderDecision, plan.LeaderAt, "<span class=\"pill p-warn\">Chờ duyệt</span>")</span></div>
+        @if (needsManager)
+        {
+            <div class="trow">@StaffReports.DecisionCk(plan.ManagerDecision)<div class="t">Trưởng phòng <span class="note">(hỗ trợ nhân sự)</span></div><span>@StaffReports.DecisionCell(plan.ManagerDecision, plan.ManagerAt, plan.LeaderDecision == Decision.Ok ? "<span class=\"pill p-warn\">Chờ duyệt</span>" : "<span class=\"pill p-idle\">Sau Leader</span>")</span></div>
+        }
+        @if (!string.IsNullOrEmpty(plan.LeaderNote))
+        {
+            <div class="cmt" style="margin-top:10px"><b>@(string.IsNullOrEmpty(plan.LeaderBy) ? "Leader" : plan.LeaderBy) · Leader:</b> @plan.LeaderNote</div>
+        }
+        @if (!string.IsNullOrEmpty(plan.ManagerNote))
+        {
+            <div class="cmt"><b>@(string.IsNullOrEmpty(plan.ManagerBy) ? "Trưởng phòng" : plan.ManagerBy) · TP:</b> @plan.ManagerNote</div>
+        }
+        @if (st != PlanState.Approved && !ro)
+        {
+            <a class="btn btn-ghost btn-block" href="@Ui.Here(req, ("edit", dkey))" style="margin-top:6px">Sửa kế hoạch và gửi lại</a>
+        }
+    </section>
+    <a class="btn btn-primary btn-block" href="@Ui.To(req, "/Staff/Evening")">Tiếp: Báo cáo cuối ngày ›</a>
+    return;
+}
+
+@{
+    // ---------- Form gửi kế hoạch (chưa gửi / đang sửa) ----------
+    var f = Model.Form;
+    var leaveNow = f.LeaveNow;
+    var isLeave = f.Status is WorkStatus w0 && LeaveRules.IsLeave(w0);
+    var isTrip = f.Status is WorkStatus w1 && LeaveRules.IsTrip(w1);
+    var dis = ro ? "disabled" : null;
+    var customers = D.Projects.Select(p => p.Factory).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).Distinct()
+        .OrderBy(x => x, Fmt.ViCompare).ToList();
+}
+<form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")">
+    @Ui.ReturnField(req)
+    <section class="card sec">
+        <h2>1. Trạng thái &amp; báo cơm</h2>
+        <div class="pick2">
+            <div><label class="f" for="pStatus" style="margin-top:0">Trạng thái làm việc</label>@Ui.Select("status", Ui.EnumOpts<WorkStatus>(), f.Status?.ToString(), "Chọn trạng thái…", id: "pStatus", extraAttrs: dis)</div>
+            <div><label class="f" for="pMeal" style="margin-top:0">Báo cơm</label>@Ui.Select("meal", Ui.EnumOpts<Meal>(), f.Meal?.ToString(), "Chọn…", id: "pMeal", extraAttrs: dis)</div>
+        </div>
+        <div id="leaveWrap" hidden="@(!isLeave)">@if (isLeave)
+            {
+                @StaffReports.LeaveBox(f.Status!.Value, leaveNow, ro)
+            }</div>
+        <input type="hidden" name="leaveType" value="@(f.Leave?.Type.ToString())">
+        <input type="hidden" name="leaveSession" value="@(f.Leave?.Session?.ToString())">
+        <input type="hidden" name="leaveFrom" value="@(f.Leave?.From)">
+        <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
+        <div class="pick2 eq" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">
+            <div><label class="f" for="pProvince" style="margin-top:0">Tỉnh / thành công tác</label>@Ui.Select("province", Fmt.Provinces.Select(x => (x, x)), f.Province, "Chọn tỉnh / thành…", id: "pProvince", extraAttrs: dis)</div>
+            <div><label class="f" for="pCustomer" style="margin-top:0">Khách hàng</label><input class="in" id="pCustomer" name="customer" list="customerList" maxlength="200" value="@f.Customer" disabled="@ro"><datalist id="customerList">@foreach (var c in customers)
+                    {
+                        <option value="@c"></option>
+                    }</datalist></div>
+        </div>
+    </section>
+    <section class="card sec">
+        <h2>2. Nội dung công việc</h2>
+        @if (Model.List.Count > 0)
+        {
+            foreach (var t in Model.List)
+            {
+                var src = Labels.Of(t.Source);
+                var hit = leaveNow is not null && LeaveRules.Overlaps(t, leaveNow.From, leaveNow.To);
+                <label class="trow"><input type="checkbox" name="picks" value="@t.Id" data-start="@t.Start" data-end="@t.End" checked="@Model.IsOn(t)" disabled="@ro"><div><div class="t">@t.Title</div><div class="s">@D.PjName(t.ProjectId)@(src.Length > 0 ? " · " + src : "")<span data-leave-hit hidden="@(!hit)"> · <span class="warn-t">Trùng giờ nghỉ</span></span></div></div><span class="tm">@t.Start – @t.End</span></label>
+            }
+        }
+        else
+        {
+            <p class="note">Chưa có việc trong lịch tuần.</p>
+        }
+        @if (!ro)
+        {
+            <button type="button" class="link" data-sheet="tplAddOut" style="margin-top:10px">＋ Thêm công việc ngoài kế hoạch</button>
+        }
+        <label class="f" for="pSupport" style="margin-top:14px">Nhân sự hỗ trợ</label>
+        <select class="in" id="pSupport" name="support" data-show-target="#supportWrap" data-show-values="Team,OtherTeam,OtherDept" disabled="@ro">
+            <option value="@SupportScope.None">Không cần hỗ trợ</option>
+            @foreach (var s in new[] { SupportScope.Team, SupportScope.OtherTeam, SupportScope.OtherDept })
+            {
+                <option value="@s" selected="@(f.Support == s)">@Labels.Of(s)@(s == SupportScope.Team ? " (Leader duyệt)" : " (cần thêm TP duyệt)")</option>
+            }
+        </select>
+        <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Nội dung cần hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="2000" disabled="@ro">@f.SupportText</textarea></div>
+        <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
+    </section>
+    @if (!ro)
+    {
+        <button class="btn btn-primary btn-block">Gửi kế hoạch đầu ngày</button>
+        if (Model.Editing)
+        {
+            <a class="btn btn-block" href="@Ui.Here(req, ("edit", null))" style="margin-top:8px">Hủy sửa</a>
+        }
+    }
+</form>
+
+@if (!ro)
+{
+    @* addTaskFields('o', mainProject(me, d)) + addOut: form riêng trong bảng trượt (không lồng trong planForm). *@
+    <template id="tplAddOut">
+        <form method="post" action="@Ui.To(req, "/Staff/AddUnplannedTask", ("d", dkey))">
+            @Html.AntiForgeryToken()
+            @Ui.ReturnField(req)
+            <h3>Thêm công việc ngoài kế hoạch</h3>
+            <partial name="_TaskFields" model="@(new TaskFieldsVm { Prefix = "o", ProjectId = D.MainProject(me.Id, d) })" />
+            <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Thêm vào danh sách</button></div>
+        </form>
+    </template>
+    <partial name="_ItemsJson" />
+}

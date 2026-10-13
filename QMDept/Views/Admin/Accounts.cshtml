@@ -1,0 +1,113 @@
+@* Quản trị tài khoản (bổ sung, không có trong artifact). Kiểu dáng theo ldPeople / openPerson của artifact. *@
+@{
+    var ord = new Dictionary<Role, int> { [Role.Admin] = 0, [Role.Manager] = 1, [Role.Leader] = 2, [Role.Staff] = 3 };
+    // Một danh sách duy nhất, mỗi tài khoản có trạng thái Đang hoạt động / Đã xóa; lọc bằng ?st=all|active|deleted.
+    var st = Context.Request.Query["st"].ToString() is "active" or "deleted" ? Context.Request.Query["st"].ToString() : "all";
+    var all = D.People
+        .OrderBy(p => p.IsDeleted)
+        .ThenBy(p => ord.GetValueOrDefault(p.Role, 9))
+        .ThenBy(p => p.Role == Role.Staff ? D.PName(p.LeaderId) : "", Fmt.ViCompare)
+        .ThenBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList();
+    var people = all.Where(p => !p.IsDeleted).ToList();
+    var shown = all.Where(p => st == "all" || (st == "deleted") == p.IsDeleted).ToList();
+    var leaders = D.Leaders();
+    var roles = new[] { Role.Staff, Role.Leader, Role.Manager, Role.Admin };
+    IEnumerable<(string, string)> RoleOpts() => roles.Select(r => (r.ToString(), Labels.Title(r)));
+    IEnumerable<(string, string)> LeaderOpts() => new[] { ("", "— Chưa xếp nhóm —") }.Concat(leaders.Select(l => (l.Id.ToString(), "Nhóm " + l.Name)));
+    IEnumerable<(string, string)> LevelOpts() => new[] { ("", "— Chưa xếp —") }.Concat(Ui.EnumOpts<Level>());
+}
+@Ui.Head(0, "Quản trị tài khoản")
+
+<section class="card sec">
+    <h2><span class="grow">Tài khoản (@shown.Count)</span></h2>
+    <form method="get" class="row" style="margin-bottom:8px">
+        <label class="row" style="flex:1"><span class="note" style="white-space:nowrap">Trạng thái:</span>@Ui.Select("st", new[] { ("all", $"Tất cả ({all.Count})"), ("active", $"Đang hoạt động ({people.Count})"), ("deleted", $"Đã xóa ({all.Count - people.Count})") }, st, id: "accSt", extraAttrs: "data-autosubmit")</label>
+    </form>
+    @foreach (var p in shown)
+    {
+        <div class="trow">
+            @Ui.Av(p.Name, p.Role == Role.Manager)
+            <div>
+                <div class="t">@p.Name <span class="mono note">@p.Code</span> @Ui.LevelPill(p) <span class="pill @(p.IsDeleted ? "p-idle" : "p-ok")">@(p.IsDeleted ? "Đã xóa" : "Đang hoạt động")</span></div>
+                <div class="s">@Labels.Title(p.Role)@(p.Role == Role.Staff ? " · " + (p.LeaderId is int l && D.P(l) is { IsDeleted: false } ld ? "Nhóm " + ld.Name : "Chưa xếp nhóm") : "")@(!p.IsDeleted && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "")</div>
+            </div>
+            <span class="tm">
+                @if (p.IsDeleted)
+                {
+                    <form method="post" action="/Admin/Restore" asp-antiforgery="true" class="inline">@Ui.ReturnField(Context.Request)<input type="hidden" name="id" value="@p.Id"><button class="btn btn-sm">Khôi phục</button></form>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm" data-sheet="pw_@p.Id">Mật khẩu</button>
+                    <button type="button" class="btn btn-sm" data-sheet="ed_@p.Id">Sửa</button>
+                }
+            </span>
+        </div>
+        if (p.IsDeleted) { continue; }
+        <template id="pw_@p.Id">
+            <form method="post" action="/Admin/SetPassword">
+                @Html.AntiForgeryToken()
+                @Ui.ReturnField(Context.Request)
+                <input type="hidden" name="id" value="@p.Id">
+                <h3>Đặt mật khẩu · @p.Name</h3>
+                <p class="note" style="margin:2px 0 8px"><span class="mono">@p.Code</span></p>
+                <label class="f" for="pw1_@p.Id">Mật khẩu mới (tối thiểu @AccountRules.MinPassword ký tự)</label>
+                <input class="in" type="password" id="pw1_@p.Id" name="password" autocomplete="new-password" minlength="@AccountRules.MinPassword" required>
+                <label class="f" for="pw2_@p.Id">Nhập lại mật khẩu</label>
+                <input class="in" type="password" id="pw2_@p.Id" name="confirm" autocomplete="new-password" minlength="@AccountRules.MinPassword" required>
+                <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Đặt mật khẩu</button></div>
+            </form>
+        </template>
+        <template id="ed_@p.Id">
+            <form method="post" action="/Admin/Edit">
+                @Html.AntiForgeryToken()
+                @Ui.ReturnField(Context.Request)
+                <input type="hidden" name="id" value="@p.Id">
+                <h3>Sửa tài khoản</h3>
+                <label class="f" for="eN_@p.Id" style="margin-top:0">Họ tên</label><input class="in" id="eN_@p.Id" name="name" value="@p.Name" maxlength="100" required>
+                <div class="grid2">
+                    <div><label class="f" for="eC_@p.Id">Mã nhân viên</label><input class="in mono" id="eC_@p.Id" name="code" value="@p.Code" autocapitalize="none" maxlength="@AccountRules.MaxCode" required></div>
+                    <div><label class="f" for="eR_@p.Id">Vai trò</label>@Ui.Select("role", RoleOpts(), p.Role.ToString(), id: "eR_" + p.Id)</div>
+                </div>
+                <div class="grid2">
+                    <div><label class="f" for="eL_@p.Id">Nhóm (với nhân viên)</label>@Ui.Select("leaderId", LeaderOpts(), p.LeaderId?.ToString() ?? "", id: "eL_" + p.Id)</div>
+                    <div><label class="f" for="eV_@p.Id">Cấp bậc (với nhân viên)</label>@Ui.Select("level", LevelOpts(), p.Level?.ToString() ?? "", id: "eV_" + p.Id)</div>
+                </div>
+                <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+            </form>
+        </template>
+    }
+</section>
+
+@* Các form phụ (xóa mật khẩu / xóa tài khoản) đặt ngoài sheet để dùng data-confirm. *@
+<section class="card sec">
+    <h2>Thao tác khác</h2>
+    <form method="post" action="/Admin/SetPassword" asp-antiforgery="true" class="row" style="flex-wrap:wrap"
+          data-confirm="Xóa mật khẩu của tài khoản đã chọn? Người đó sẽ tự đặt mật khẩu mới ở lần đăng nhập tới." data-confirm-label="Xóa mật khẩu">
+        @Ui.ReturnField(Context.Request)
+        <input type="hidden" name="clear" value="true">
+        @Ui.Select("id", people.Where(p => p.Id != Scope.Account.Id && p.Role is not (Role.Admin or Role.Manager)).Select(p => (p.Id.ToString(), $"{p.Name} ({p.Code})")), null, "Chọn tài khoản…", id: "clrId", extraAttrs: "required style=\"flex:1\"")
+        <button class="btn btn-sm">Xóa mật khẩu</button>
+    </form>
+    <form method="post" action="/Admin/Delete" asp-antiforgery="true" class="row" style="flex-wrap:wrap;margin-top:10px"
+          data-confirm="Xóa tài khoản đã chọn? Lịch sử công việc vẫn giữ." data-confirm-label="Xóa">
+        @Ui.ReturnField(Context.Request)
+        @Ui.Select("id", people.Where(p => p.Id != Scope.Account.Id).Select(p => (p.Id.ToString(), $"{p.Name} ({p.Code})")), null, "Chọn tài khoản…", id: "delId", extraAttrs: "required style=\"flex:1\"")
+        <button class="btn btn-sm btn-no">Xóa tài khoản</button>
+    </form>
+</section>
+
+<form method="post" action="/Admin/Create" asp-antiforgery="true" class="card sec">
+    @Ui.ReturnField(Context.Request)
+    <h2>Tạo tài khoản</h2>
+    <div class="grid2">
+        <div><label class="f" for="nN" style="margin-top:0">Họ tên</label><input class="in" id="nN" name="name" maxlength="100" required></div>
+        <div><label class="f" for="nC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="nC" name="code" autocapitalize="none" maxlength="@AccountRules.MaxCode" required></div>
+        <div><label class="f" for="nR">Vai trò</label>@Ui.Select("role", RoleOpts(), Role.Staff.ToString(), id: "nR")</div>
+        <div><label class="f" for="nL">Nhóm (với nhân viên)</label>@Ui.Select("leaderId", LeaderOpts(), "", id: "nL")</div>
+        <div><label class="f" for="nV">Cấp bậc (với nhân viên)</label>@Ui.Select("level", LevelOpts(), "", id: "nV")</div>
+        <div><label class="f" for="nP">Mật khẩu (để trống = tự đặt khi đăng nhập)</label><input class="in" type="password" id="nP" name="password" autocomplete="new-password" minlength="@AccountRules.MinPassword"></div>
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:12px">Tạo tài khoản</button>
+</form>
+

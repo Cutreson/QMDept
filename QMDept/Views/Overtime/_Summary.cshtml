@@ -1,0 +1,77 @@
+@model OvertimeVm
+@* otSummary(d): KPI, chi phí dự kiến, danh sách; TP: gửi đăng ký suất ăn cho Phòng HCNS (otSend). *@
+@{
+    var req = Context.Request;
+    var d = Scope.Date;
+    var all = Model.Summary;
+    int rice = all.Count(x => OtRules.IsFullMeal(x.Meal)), snack = all.Count(x => x.Meal == OtMeal.Snack), allowance = all.Count(x => x.Allowance > 0);
+    int pendingCount = all.Count(x => x.Status == OtStatus.Pending), lateCount = all.Count(x => x.Reg == OtReg.Late);
+}
+<div class="kpis k4">
+    <div class="kpi k-info"><b>@all.Count</b><span>Người làm thêm</span></div>
+    <div class="kpi k-ok"><b>@rice</b><span>Suất cơm</span></div>
+    <div class="kpi k-warn"><b>@snack</b><span>Ăn nhẹ</span></div>
+    <div class="kpi k-mgr"><b>@allowance</b><span>Phụ cấp 20k</span></div>
+</div>
+<section class="card sec">
+    <h2>Chi phí dự kiến</h2>
+    <dl class="kvl">
+        <dt>Suất cơm</dt><dd class="mono">@rice × 35.000đ = @Fmt.Money(rice * (long)OtRules.MealCost)</dd>
+        <dt>Ăn nhẹ</dt><dd class="mono">@snack × 15.000đ = @Fmt.Money(snack * (long)OtRules.SnackCost)</dd>
+        <dt>Phụ cấp (lương)</dt><dd class="mono">@allowance × 20.000đ = @Fmt.Money(allowance * (long)OtRules.Allowance4h)</dd>
+    </dl>
+    @if (pendingCount > 0 || lateCount > 0)
+    {
+        <p class="note" style="margin-bottom:0">@if (pendingCount > 0)
+            {
+                <b>@pendingCount</b><text> đăng ký còn chờ duyệt. </text>
+            }@if (lateCount > 0)
+            {
+                <b class="red">@lateCount</b><text> đăng ký trễ hạn 14:00, không đảm bảo bố trí suất ăn.</text>
+            }</p>
+    }
+</section>
+<section class="card sec">
+    <h2>Danh sách (@all.Count)</h2>
+    @if (all.Count > 0)
+    {
+        <div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th class="n">Giờ</th><th>Suất ăn</th><th>Duyệt</th><th>Hạn ĐK</th></tr></thead><tbody>
+            @foreach (var x in all)
+            {
+                <tr>
+                    <td><b>@D.PName(x.PersonId)</b><div class="note">@Labels.Of(x.Role)@(x.ProjectId is not null ? " · " + D.PjName(x.ProjectId) : "")</div></td>
+                    <td class="n" style="white-space:nowrap">@x.Start–@x.End</td>
+                    <td>@(x.Exempt ? "Không áp dụng" : x.Meal == OtMeal.Rice ? "Cơm" : x.Meal == OtMeal.Snack ? "Ăn nhẹ" : "—")@if (x.Allowance > 0)
+                        {
+                            <text> </text><span class="pill p-info">+20k</span>
+                        }</td>
+                    <td>@Ui.Pill(x.Status)</td>
+                    <td>@Ui.Pill(x.Reg)</td>
+                </tr>
+            }
+        </tbody></table></div>
+    }
+    else
+    {
+        <p class="note">Chưa có đăng ký làm thêm ngày này.</p>
+    }
+</section>
+@if (Scope.Role == Role.Manager)
+{
+    var s = Model.Send;
+    <section class="card sec">
+        <h2>Gửi đăng ký suất ăn cho Phòng HCNS</h2>
+        @if (s is not null)
+        {
+            <div class="notice"><span class="ic">✓</span><div>
+                <b>Đã gửi lúc @VnTime.Hm(s.SentAt) @Fmt.Dm(VnTime.DateOf(s.SentAt)) · @(s.SentAt <= VnTime.UtcAt(d, "14:00") ? "đúng hạn" : "trễ hạn 14:00")</b>
+                <div class="note">@s.RiceCount suất cơm · @s.SnackCount ăn nhẹ · @s.AllowanceCount phụ cấp</div>
+            </div></div>
+        }
+        <p class="note" style="margin-top:0">Hạn gửi: trước 14:00 @Fmt.DayLabel(d)</p>
+        <form method="post" action="@OvertimeUi.PostUrl(req, "SendMealOrder", Scope.Date)" asp-antiforgery="true">
+            @Ui.ReturnField(req)
+            <button class="btn btn-primary btn-block">@(s is not null ? "Gửi lại cho HCNS" : "Gửi cho HCNS")</button>
+        </form>
+    </section>
+}

@@ -1,0 +1,90 @@
+@model OvertimeVm
+@* otMine(d, me, role): đăng ký của tôi (thẻ chi tiết + Sửa / Hủy) hoặc form otForm (gửi / sửa đăng ký).
+   Chỉ hiện form và nút thao tác khi đang xem chính mình (Scope.IsSelf); xem người khác → chỉ xem. *@
+@{
+    var req = Context.Request;
+    var d = Scope.Date;
+    var role = Scope.Role;
+    var me = Scope.Me;
+    var x = Model.Mine;
+    var self = Scope.IsSelf;
+}
+@if (me is null)
+{
+    <div class="empty">Chưa có người dùng ở vai trò này.</div>
+}
+else if (x is not null && (!Model.Edit || !self))
+{
+    <section class="card sec">
+        <h2><span class="grow">@(self ? "Đăng ký của tôi" : "Đăng ký của " + me.Name) · @Fmt.Dm(d)</span>@Ui.Pill(x.Status)</h2>
+        <partial name="_OtDetail" model="x" />
+        <p class="note">@(role == Role.Manager ? "Trưởng phòng tự ghi nhận, không cần duyệt."
+            : !string.IsNullOrEmpty(x.DecidedBy) ? OvertimeUi.DecidedText(x)
+            : $"Chờ {(role == Role.Staff ? "Leader" : "Trưởng phòng")} duyệt.")</p>
+        @if (self)
+        {
+            <div class="btn-row">
+                <a class="btn btn-ghost" href="@Ui.Here(req, ("edit", Fmt.Key(d)))">Sửa đăng ký</a>
+                <form method="post" action="@OvertimeUi.PostUrl(req, "Cancel", Scope.Date)" asp-antiforgery="true"
+                      data-confirm="Hủy đăng ký làm thêm ngày @Fmt.Dm(d)?" data-confirm-label="Hủy đăng ký">
+                    @Ui.ReturnField(req)
+                    <button class="btn btn-no">Hủy đăng ký</button>
+                </form>
+            </div>
+        }
+    </section>
+}
+else if (!self)
+{
+    <div class="empty">Chưa có đăng ký làm thêm ngày này.</div>
+}
+else
+{
+    var dt = x?.DayType ?? (d.DayOfWeek == DayOfWeek.Sunday ? OtDayType.Holiday : OtDayType.Workday);
+    var start = x?.Start ?? (dt == OtDayType.Holiday ? "08:00" : "17:00");
+    var end = x?.End ?? (dt == OtDayType.Holiday ? "17:00" : "20:00");
+    var r = OtRules.Calc(dt, start, end);
+    var opts = OtRules.MealOptions(r);
+    OtMeal? sel = x is not null && opts.Contains(x.Meal) ? x.Meal : opts.Length > 0 ? opts[0] : null;
+    var extraText = x is null ? "" : x.Items.Count > 0 ? x.ExtraContent ?? "" : x.Content;
+    <form id="otForm" class="card sec" method="post" action="@OvertimeUi.PostUrl(req, "Save", Scope.Date)" asp-antiforgery="true">
+        @Ui.ReturnField(req)
+        <h2>@(x is not null ? "Sửa đăng ký" : "Đăng ký làm thêm tại công ty") · @Fmt.DayLabel(d)</h2>
+        <label class="f" for="otDay" style="margin-top:0">Loại ngày</label>
+        @Ui.Select("dayType", new[] { OtDayType.Workday, OtDayType.Holiday }.Select(k => (OvertimeUi.DayKey(k), Labels.Of(k))), OvertimeUi.DayKey(dt), id: "otDay")
+        <div class="pick2 eq">
+            <div><label class="f" for="otS">Giờ bắt đầu</label>@Ui.TimeSelect("start", start, id: "otS")</div>
+            <div><label class="f" for="otE">Giờ kết thúc</label>@Ui.TimeSelect("end", end, end: true, id: "otE")</div>
+        </div>
+        <div class="result-box@(r.Ok ? "" : " err")" id="otRule" aria-live="polite">@OvertimeUi.RuleBox(r)</div>
+        <label class="f" for="otM">Báo cơm tăng ca</label>
+        <select class="in" id="otM" name="meal" data-init="@(x is null ? "" : OvertimeUi.MealKey(x.Meal))" disabled="@(opts.Length < 2)">
+            @foreach (var o in opts)
+            {
+                <option value="@OvertimeUi.MealKey(o)" selected="@(o == sel)">@OvertimeUi.MealOptLabel(o)</option>
+            }
+        </select>
+        <p class="note" id="otMealNote" style="margin:4px 0 0">@OvertimeUi.MealNote(r)</p>
+        <label class="f">Công việc làm tiếp</label>
+        @if (Model.Open.Count > 0)
+        {
+            <div class="optbox">
+                @foreach (var t in Model.Open)
+                {
+                    <label class="trow"><input type="checkbox" name="task" value="@t.Id" checked="@Model.Picked.Contains(t.Id)"><div><div class="t">@t.Title</div><div class="s">@D.PjName(t.ProjectId) · @Labels.Of(t.Status)</div></div><span class="tm">@t.Start–@t.End</span></label>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="note" style="margin:0">Không có việc chưa xong trong ngày này.</p>
+        }
+        <label class="f" for="otC">Nội dung khác (nếu có)</label>
+        <textarea class="in" id="otC" name="extra" maxlength="2000">@extraText</textarea>
+        <button class="btn btn-primary btn-block" style="margin-top:12px">@(x is not null ? "Lưu thay đổi" : "Gửi đăng ký")</button>
+        @if (x is not null)
+        {
+            <a class="btn btn-block" href="@Ui.Here(req, ("edit", null))" style="margin-top:8px">Hủy sửa</a>
+        }
+    </form>
+}

@@ -39,7 +39,8 @@ public sealed class TaskFieldsInput
     /// <summary>Kiểm tra &amp; trả (tiêu đề, đầu mục). Lỗi → BizException với câu của artifact.</summary>
     public async Task<(string Title, PlanItem? Item)> ResolveAsync(AppDbContext db)
     {
-        if (!await db.Projects.AnyAsync(p => p.Id == ProjectId)) throw new BizException("Chọn dự án");
+        var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == ProjectId) ?? throw new BizException("Chọn dự án");
+        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không thêm việc được");
         var item = ItemId is int iid ? await db.PlanItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == ProjectId) : null;
         var title = string.IsNullOrWhiteSpace(Title) ? item?.Title ?? "" : Title.Trim();
         if (title.Length == 0) throw new BizException("Nhập nội dung hoặc chọn đầu mục");
@@ -69,7 +70,6 @@ public sealed class ExtraInput
     public string? Desc { get; set; }
     public string? Start { get; set; }
     public string? End { get; set; }
-    public List<IFormFile>? Photos { get; set; }
 }
 
 /// <summary>
@@ -78,13 +78,18 @@ public sealed class ExtraInput
 /// </summary>
 public sealed class ProjectDetailVm
 {
+    /// <summary>Giá trị <see cref="Who"/>: trang của Nhân viên (có nút quay lại) / của Trưởng phòng.</summary>
+    public const string StaffView = "staff", ManagerView = "manager";
+    /// <summary>Tab con (?tab=): Tổng quan / Kế hoạch (mặc định) / Nhân sự.</summary>
+    public const string OverviewTab = "overview", PlanTab = "plan", PeopleTab = "people";
+
     public required int Pid { get; init; }
-    /// <summary>"nv" (có nút quay lại) hoặc "tp".</summary>
+    /// <summary><see cref="StaffView"/> (có nút quay lại) hoặc <see cref="ManagerView"/>.</summary>
     public required string Who { get; init; }
-    /// <summary>"tq" | "kh" | "ns" (mặc định "kh").</summary>
+    /// <summary>"overview" | "plan" | "people" (mặc định "plan").</summary>
     public required string Tab { get; init; }
     public string? BackHref { get; init; }
-    /// <summary>Tạo URL cho tab con (tham số: "tq"/"kh"/"ns").</summary>
+    /// <summary>Tạo URL cho tab con (tham số: "overview"/"plan"/"people").</summary>
     public required Func<string, string> TabHref { get; init; }
     /// <summary>6 phát sinh gần nhất của dự án (mọi ngày).</summary>
     public List<Extra> RecentExtras { get; init; } = [];
@@ -95,11 +100,14 @@ public sealed class ProjectDetailVm
         var m = Fmt.Monday(date);
         await d.EnsureAsync(m, m.AddDays(6));
         await d.EnsureAsync(date, date);
-        var xs = await db.Extras.AsNoTracking().Include(x => x.Photos).Where(x => x.ProjectId == pid)
+        var xs = await db.Extras.AsNoTracking().Where(x => x.ProjectId == pid)
             .OrderByDescending(x => x.CreatedAt).Take(6).ToListAsync();
+        // exSt(x) cần việc đã tạo của phát sinh đã duyệt (cùng ngày phát sinh) — phát sinh có thể nằm ngoài tuần đang xem.
+        foreach (var day in xs.Where(x => x.Status == ExtraStatus.Approved && x.TaskId is not null).Select(x => x.Date).Distinct())
+            await d.EnsureAsync(day, day);
         return new ProjectDetailVm
         {
-            Pid = pid, Who = who, Tab = tab is "tq" or "ns" ? tab : "kh", BackHref = backHref, TabHref = tabHref, RecentExtras = xs,
+            Pid = pid, Who = who, Tab = tab is OverviewTab or PeopleTab ? tab : PlanTab, BackHref = backHref, TabHref = tabHref, RecentExtras = xs,
         };
     }
 }

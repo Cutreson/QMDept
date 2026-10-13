@@ -13,8 +13,8 @@
             @if (pid is int p0) { foreach (var i in D.ItemsOf(p0)) { <option value="@i.Id">@i.Title</option> } }
         </select></div>
 </div>
-<label class="f" for="@(px)T">Nội dung công việc <span class="note">(để trống nếu dùng tên đầu mục)</span></label>
-<input class="in" id="@(px)T" name="title" placeholder="VD: Check I/O khu vực trục X">
+<label class="f" for="@(px)T">Nội dung công việc</label>
+<input class="in" id="@(px)T" name="title">
 <div class="grid2">
     @if (Model.Dates is { } dates)
     {

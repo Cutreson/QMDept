@@ -1,0 +1,19 @@
+@model string
+@* Tiêu đề + tab con của Leader → Kế hoạch & duyệt (ldPlan). Model = khóa tab đang chọn: approvals|reports|week|projects|people|assign.
+   Controller phải EnsureAsync(Date, Date) trước (để đếm báo cáo/đề xuất chuyển chờ duyệt). *@
+@{
+    var req = Context.Request;
+    var d = Scope.Date;
+    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.InScope(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk);
+    var tabs = new (string Key, string Path, string Label)[]
+    {
+        ("approvals", "/Planning/Approvals", "Kế hoạch"),
+        ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
+        ("week", "/Planning/Week", "Lịch tuần"),
+        ("projects", "/Planning/Projects", "Dự án & đầu mục"),
+        ("people", "/Planning/People", "Nhân sự"),
+        ("assign", "/Planning/Assign", "Phân công"),
+    };
+}
+@Ui.Head(2, "Kế hoạch & phê duyệt")
+@Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))

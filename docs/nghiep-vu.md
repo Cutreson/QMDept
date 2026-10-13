@@ -9,12 +9,14 @@ Những điểm khác artifact được ghi rõ ở mục 9.
 
 | Vai trò | Mã | Thấy giao diện | Ghi chú |
 |---|---|---|---|
-| Nhân viên Setup | `Nv` | Nhân viên (của chính mình) | có cấp bậc Tech 1/2/3, thuộc nhóm của 1 Leader |
+| Nhân viên Setup | `Staff` | Nhân viên (của chính mình) | có cấp bậc Tech 1/2/3, thuộc nhóm của 1 Leader |
 | Leader Setup | `Leader` | Leader + "Lịch nhân viên" (NV trong nhóm, chỉ xem + giao việc) | |
-| Trưởng phòng | `Tp` | TP + Leader (chọn Leader để xem theo nhóm) + Lịch nhân viên (mọi NV) | quản lý tài khoản |
-| Quản trị (bổ sung) | `Admin` | chỉ trang **Tài khoản** (`/Admin/TaiKhoan`) | tạo/sửa/xóa/khôi phục tài khoản, **đặt mật khẩu trực tiếp** |
+| Trưởng phòng | `Manager` | TP + Leader (chọn Leader để xem theo nhóm) + Lịch nhân viên (mọi NV) | quản lý tài khoản |
+| Quản trị (bổ sung) | `Admin` | **toàn bộ giao diện TP** (đủ quyền TP) + tab **Tài khoản** (`/Admin/Accounts`) + **xem màn hình của mọi người** (chỉ xem) | cao hơn TP: mọi chức năng TP + tạo/sửa/xóa/khôi phục tài khoản, **đặt mật khẩu trực tiếp** |
 
-- Vai trò Quản trị KHÔNG có trong artifact — chủ dự án yêu cầu ngày 2026-10-13 ("admin có thể tạo và đặt mật khẩu các tài khoản").
+- Vai trò Quản trị KHÔNG có trong artifact — chủ dự án yêu cầu ngày 2026-10-13 ("admin có thể tạo và đặt mật khẩu các tài khoản";
+  "admin là tài khoản cao hơn trưởng phòng… bao trùm các chức năng trưởng phòng"). Trang Tài khoản: một danh sách, mỗi tài khoản
+  có trạng thái Đang hoạt động / Đã xóa; tài khoản đã xóa không hiện ở màn hình nghiệp vụ nào khác.
 - Quy tắc đặt mã/tên của chủ dự án: tên = mã, dạng `tp`, `tp.leaderN`, `tp.leaderN.nvM`. Mã lưu **chữ thường**
   (artifact dùng chữ HOA), đăng nhập không phân biệt hoa/thường (`AccountRules.NormalizeCode`). Tài khoản đã tạo trên DB
   thật: xem `docs/handoff.md` (mật khẩu ở `docs/tai-khoan.local.md`, chỉ có trên máy chủ dự án).
@@ -22,7 +24,13 @@ Những điểm khác artifact được ghi rõ ở mục 9.
 - Chưa có TP nào (và chưa có Quản trị) → màn hình "Thiết lập tài khoản Trưởng phòng" tạo TP đầu tiên.
 - TP tạo/sửa/xóa tài khoản, cấp mã, xếp nhóm (`leader`), cấp bậc (như artifact; "đặt lại mật khẩu" = người dùng tự đặt
   ở lần đăng nhập tới). Quản trị làm được mọi việc đó + đặt mật khẩu trực tiếp + khôi phục tài khoản đã xóa.
-- Leader/TP xem trang NV ở chế độ **chỉ xem** (`isRO`); riêng chế độ "Tất cả nhân viên" có form **Giao thêm việc**.
+- **Xem màn hình cấp dưới (yêu cầu 2026-10-13, thay cơ chế "chọn giao diện" của artifact)**: header có combobox
+  "Xem màn hình" — Quản trị chọn được TP / Leader / NV, TP chọn Leader / NV, Leader chọn NV trong nhóm. Chọn một người →
+  thấy đúng các màn hình (đủ các tab) của người đó, **chỉ xem**, mọi thao tác bị chặn (cả phía server). Nút **"Lịch nhóm"**
+  cạnh combobox (không nằm trong combobox) = lịch tháng cả nhóm của artifact (`nvMonth` all mode) với form **Giao thêm việc**
+  (Leader / TP / Quản trị).
+  Mỗi người chỉ thao tác trong giao diện của chính mình: TP không còn thao tác thay Leader trong giao diện Leader như artifact;
+  TP có thêm tab **Nhân sự** (tài khoản, nhóm, cấp bậc, báo nghỉ — trước đây nằm trong giao diện Leader).
 - `inScope(emp)`: ở giao diện Leader chỉ tính Leader đang xem + NV trong nhóm; các giao diện khác: tất cả.
 
 ## 2. Đối tượng dữ liệu (xem docs/database.md cho cột)
@@ -34,8 +42,8 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
 
 ### Công việc (task)
 - Trạng thái: Chưa làm / Đang làm / Hoàn thành / Chậm.
-- Nguồn: `KeHoach` (Leader xếp lịch tuần), `NgoaiKeHoach` (NV tự thêm đầu ngày), `PhatSinh` (phát sinh được duyệt),
-  `ChuyenTiep` (chuyển từ việc chưa xong), `GiaoViec` (Leader/TP giao; nhãn "Leader giao").
+- Nguồn (`TaskSource`): `Planned` (Leader xếp lịch tuần), `Unplanned` (NV tự thêm đầu ngày — "Ngoài kế hoạch"),
+  `Extra` (phát sinh được duyệt), `CarryOver` (chuyển từ việc chưa xong), `Assigned` (Leader/TP giao; nhãn "Leader giao").
 - `Selected`: NV chọn làm trong ngày ở báo cáo đầu ngày.
 - **Hiện trên lịch tháng (`okCal`)**: Ngoài kế hoạch → chỉ khi Leader đã duyệt kế hoạch đầu ngày có chứa việc đó;
   Chuyển tiếp → chỉ khi `CarryOk` (Leader duyệt chuyển); nguồn khác → luôn hiện.
@@ -66,7 +74,7 @@ Form gồm:
      "Cắt cơm" (đổi lại thì khôi phục lựa chọn cũ).
    - Công tác → bắt buộc Tỉnh/thành (34 tỉnh) + Khách hàng (gợi ý theo danh sách nhà máy).
 2. **Nội dung công việc**: tích các việc trong ngày (mặc định tích hết; việc chuyển tiếp chỉ hiện khi đã duyệt);
-   "＋ Thêm công việc ngoài kế hoạch" (dự án, đầu mục hoặc tự nhập, giờ) → tạo việc `NgoaiKeHoach` (đã chọn).
+   "＋ Thêm công việc ngoài kế hoạch" (dự án, đầu mục hoặc tự nhập, giờ) → tạo việc `Unplanned` (đã chọn).
    **Nhân sự hỗ trợ**: Không / Trong nhóm (Leader duyệt) / Nhóm khác / Phòng ban khác (cần thêm TP duyệt) + nội dung (bắt buộc nếu chọn).
    Ghi chú.
 - Kiểm tra khi gửi: chọn trạng thái; nghỉ phải có thời gian nghỉ đúng loại; công tác phải có tỉnh + khách hàng;
@@ -80,14 +88,14 @@ Form gồm:
 - Chưa gửi kế hoạch đầu ngày → cảnh báo. Danh sách các việc đã chọn (dòng thời gian), mỗi việc: **Cập nhật**, **Chi tiết**.
 - **Cập nhật** (`openUpdate`): trạng thái (Đang làm / Hoàn thành / Chậm / Chưa làm); nếu việc gắn đầu mục chưa xong:
   tích "Đầu mục … đã xong toàn bộ" (tự tích khi chọn Hoàn thành và giờ kết thúc ≥ 15:00); ghi chú — **bắt buộc** khi
-  chưa hoàn thành ("Lý do chưa hoàn thành"); ảnh hiện trường (≤ 4, thu nhỏ 1600px).
+  chưa hoàn thành ("Lý do chưa hoàn thành"). (Không có ảnh hiện trường — web chỉ dùng văn bản, yêu cầu 2026-10-13.)
   Chưa hoàn thành → bắt buộc **Kế hoạch tiếp theo**: ngày (14 ngày kế tiếp, CN ghi "ngày nghỉ"), giờ, nội dung →
-  tạo/cập nhật việc `ChuyenTiep` (`CarryOk=false`, chờ Leader duyệt); đổi lại thành Hoàn thành → xóa việc chuyển tiếp
+  tạo/cập nhật việc `CarryOver` (`CarryOk=false`, chờ Leader duyệt); đổi lại thành Hoàn thành → xóa việc chuyển tiếp
   nếu nó còn "Chưa làm".
   Đầu mục: tích "đã xong" + Hoàn thành → đầu mục Hoàn thành (ngày xong, người xong); ngược lại nếu việc
   Đang làm/Hoàn thành/Chậm mà đầu mục đang Chưa làm → đầu mục Đang làm.
 - **＋ Đề xuất công việc phát sinh** (`openExtra`): dự án, tên, mô tả/lý do, giờ bắt đầu (mặc định giờ hiện tại làm tròn
-  30'), kết thúc (có thể "Chưa rõ"), ảnh. Leader duyệt → tự vào danh sách việc hôm nay.
+  30'), kết thúc (có thể "Chưa rõ"). Leader duyệt → tự vào danh sách việc hôm nay.
 - Danh sách phát sinh trong ngày. Cảnh báo "Còn N việc chưa hoàn thành chưa có kế hoạch tiếp theo".
 - **Tình hình chung**: Có vướng mắc? (Không/Có), ghi chú → Gửi báo cáo cuối ngày (chặn nếu còn việc chưa xong chưa
   có kế hoạch tiếp). Gửi lại = cần Leader duyệt lại. Trạng thái: Chờ duyệt / Đã duyệt / Yêu cầu bổ sung (kèm nội dung).
@@ -120,7 +128,7 @@ Form gồm:
      Hoàn tác); DS chưa gửi báo cáo; mỗi báo cáo: hoàn thành x/y, chậm, vướng mắc, phát sinh, việc + kết quả + đề xuất
      chuyển; Duyệt (đồng thời duyệt mọi đề xuất chuyển của NV đó) / Yêu cầu bổ sung (bắt buộc nội dung) / Hoàn tác.
    - *Lịch tuần* (`ldWeek`): bảng NV × 7 ngày (số việc / Nghỉ), chọn NV → việc từng ngày (xóa ✕), form **Thêm việc**
-     (dự án, đầu mục, nội dung, ngày trong tuần, giờ) → việc `KeHoach` chưa chọn.
+     (dự án, đầu mục, nội dung, ngày trong tuần, giờ) → việc `Planned` chưa chọn.
    - *Dự án & đầu mục* (`ldItems`): chip dự án + "＋ Dự án mới"; form dự án (tên, nhà máy, địa điểm, bắt đầu, kết thúc,
      nhu cầu nhân sự/ngày, trạng thái tự động/ghi đè, "Đã bàn giao"); bảng đầu mục (đổi trạng thái trực tiếp, xóa) +
      thêm đầu mục (tên, bắt đầu, kết thúc).
@@ -134,7 +142,7 @@ Form gồm:
    cầu — sửa trực tiếp — / đã bố trí / chênh lệch, ghi chú, **Gửi báo cáo cho TP** lưu ảnh chụp số liệu) / Báo cáo tuần (`weekReport`).
 5. **Làm thêm** (mục 3.5).
 
-## 5. Trưởng phòng (5 tab)
+## 5. Trưởng phòng (5 tab của artifact + Nhân sự)
 1. **Tổng quan** (`tpOverview`): KPI (dự án, nhân sự, tiến độ TB, vấn đề, phát sinh), báo cáo Leader đã gửi chưa,
    bảng tiến độ, biểu đồ kế hoạch vs thực tế theo dự án, donut nhân sự (đang làm / chờ phân công / nghỉ), vấn đề.
 2. **Phê duyệt** (`tpApprove`): Hỗ trợ nhân sự (kế hoạch cần TP; lọc Chờ duyệt/Đã duyệt/Từ chối/Tất cả; Duyệt / Từ chối
@@ -142,6 +150,8 @@ Form gồm:
 3. **Dự án**: chip dự án + chi tiết dự án (như NV).
 4. **Báo cáo**: danh sách báo cáo ngày Leader gửi (KPI, bảng dự án, vấn đề, nhân sự ngày mai, ghi chú) / Báo cáo tuần.
 5. **Làm thêm**.
+6. **Nhân sự** (bổ sung): danh sách mọi tài khoản (trừ Quản trị), Sửa / Tạo tài khoản, báo nghỉ — chính là ldPeople/openPerson
+   của artifact (artifact đặt trong giao diện Leader → Kế hoạch & duyệt → Nhân sự).
 
 ## 6. Luật tính
 
@@ -164,6 +174,9 @@ Form gồm:
 ## 8. Giao diện
 - Mobile-first, giống artifact: thanh trên (logo SORA, tài khoản, nút Thoát, nút chọn giao diện, ô "Xem nhân viên/Leader"),
   thanh tab dưới có badge, màu nhấn xanh (TP: tím). CSS port nguyên trong `wwwroot/css/site.css`.
+- Yêu cầu thêm của chủ dự án (2026-10-13): **phù hợp cả máy tính và điện thoại**. Máy tính (≥1024px): header một hàng,
+  thanh tab thành menu dọc bên trái, nội dung rộng, các trang tổng quan/duyệt/báo cáo xếp thẻ 2 cột; máy tính bảng: cột rộng
+  hơn, vẫn thanh tab dưới. Chi tiết: `docs/kien-truc.md` mục "Giao diện responsive".
 
 ## 9. Khác biệt có chủ đích so với artifact
 - Trường "…By" (người duyệt/giao) ghi **tên tài khoản thật sự thao tác** (artifact ghi tên người đang được xem).
@@ -171,6 +184,48 @@ Form gồm:
 - `issuesOf`: vướng mắc của NV chỉ tính trong phạm vi đang xem.
 - Mật khẩu băm PBKDF2 (artifact: SHA-256 có muối cố định). Cookie đăng nhập 30 ngày.
 - Xóa tài khoản = xóa mềm (lịch sử giữ nguyên). Không có dữ liệu mẫu / nút "Xóa dữ liệu mẫu".
-- Không đồng bộ trực tiếp (realtime): dữ liệu cập nhật khi tải lại trang / sau mỗi thao tác.
+- Không đồng bộ dữ liệu trực tiếp (realtime) như artifact: dữ liệu cập nhật khi tải lại trang / sau mỗi thao tác; thay vào đó
+  có **thông báo đẩy SignalR** (mục 10) báo ngay khi có việc liên quan.
+- Không có ảnh hiện trường / đính kèm (web chỉ dùng văn bản — yêu cầu chủ dự án).
 - Leader/TP thao tác ở giao diện Leader của người khác (TP chọn Leader X) thì phạm vi = nhóm X; "Làm thêm → Của tôi"
   chỉ sửa được khi người đang xem là chính mình.
+- Server chặn những thao tác artifact chỉ "ẩn nút": quyết định lại kế hoạch/báo cáo đã có quyết định Leader; Hoàn tác khi TP
+  đã quyết định; TP duyệt kế hoạch chưa ở trạng thái "Chờ TP duyệt"; sửa / gửi lại / thêm việc ngoài kế hoạch cho kế hoạch
+  **đã duyệt** ("Kế hoạch đã được duyệt, không sửa được nữa"); giao việc / thêm việc / phát sinh cho dự án **đã bàn giao**.
+- "Kế hoạch tháng" chế độ một người khi nhóm trống hiện "Nhóm chưa có nhân viên." (artifact liệt kê nhầm việc của mọi người).
+- TP → Phê duyệt → Phát sinh liệt kê tối đa 200 phát sinh mới nhất; TP → Báo cáo liệt kê tối đa 60 báo cáo mới nhất.
+- TP Tổng quan hiện một thông báo cho mỗi Leader đã gửi báo cáo ngày + danh sách Leader "Chưa gửi".
+- Duyệt làm thêm của NV chỉ liệt kê NV trong nhóm của Leader đang xem (NV chưa xếp nhóm không có ai duyệt — cần xếp nhóm).
+- Nhân sự (TP): không tạo được tài khoản Trưởng phòng và không "đặt lại mật khẩu" / đổi mã của tài khoản TP (artifact cho phép) —
+  tài khoản TP do Quản trị tạo kèm mật khẩu, tránh người khác đăng nhập trước để chiếm quyền.
+- Mã tài khoản lưu chữ thường; có vai trò Quản trị (mục 1). **Quản trị bao trùm mọi chức năng TP** (yêu cầu 2026-10-13): dùng giao diện
+  TP với đủ quyền (duyệt hỗ trợ nhân sự, duyệt làm thêm của Leader, gửi suất ăn HCNS, nhân sự…; đăng ký làm thêm của Quản trị được ghi
+  nhận ngay như TP) + tab Tài khoản.
+- Làm thêm: server bắt buộc giờ theo bước 30 phút (artifact chỉ giới hạn qua danh sách chọn) và báo lỗi khi khoảng giờ nằm trọn
+  trong nghỉ trưa (artifact chấp nhận 0 giờ). Giờ phải đúng dạng HH:mm. Hai lần gửi cùng lúc trùng khóa → thông báo "Dữ liệu vừa được
+  cập nhật ở nơi khác" thay vì lỗi.
+
+## 10. Thông báo đẩy (bổ sung — yêu cầu 2026-10-13)
+
+- Cơ chế SignalR (hub `/hubs/notify`): khi một thao tác cần người khác xử lý hoặc có kết quả, người liên quan nhận ngay thẻ
+  thông báo trên trang (và thông báo của hệ điều hành nếu trình duyệt cho phép và tab đang ẩn). Bấm "Xem ›" để mở đúng màn hình.
+- Trang **Cài đặt** (nút ⚙ trên header, `/Settings`): bật / tắt thông báo đẩy; chọn từng loại muốn nhận (chỉ hiện loại liên quan
+  vai trò); cho phép thông báo của hệ điều hành; gửi thử. Mặc định: bật tất cả.
+
+| Loại | Khi nào | Người nhận |
+|---|---|---|
+| Kế hoạch đầu ngày mới | NV gửi / gửi lại kế hoạch | Leader nhóm |
+| Kết quả duyệt kế hoạch | Leader duyệt / từ chối / góp ý; TP duyệt / từ chối hỗ trợ | NV (+ Leader khi TP quyết định) |
+| Yêu cầu hỗ trợ nhân sự | Leader duyệt kế hoạch cần hỗ trợ nhóm khác / phòng ban khác | mọi TP |
+| Báo cáo cuối ngày mới | NV gửi báo cáo cuối ngày | Leader nhóm |
+| Kết quả duyệt báo cáo | Leader duyệt / yêu cầu bổ sung | NV |
+| Đề xuất phát sinh mới | NV đề xuất phát sinh | Leader nhóm |
+| Kết quả phát sinh | phát sinh được duyệt / từ chối; Leader thêm phát sinh cho NV | NV |
+| Kế hoạch chuyển tiếp | duyệt / duyệt tất cả / sửa / hoàn tác chuyển tiếp (kể cả khi duyệt báo cáo) | NV |
+| Giao việc | giao việc (lịch cả nhóm, Phân công), thêm việc lịch tuần, xóa việc | NV |
+| Báo nghỉ | Leader / TP ghi nghỉ, bỏ nghỉ | NV |
+| Đăng ký làm thêm cần duyệt | NV đăng ký (→ Leader nhóm), Leader đăng ký (→ mọi TP) | Leader / TP |
+| Kết quả làm thêm | duyệt / từ chối / hoàn tác | người đăng ký |
+| Báo cáo ngày của Leader | Leader gửi / gửi lại báo cáo ngày | mọi TP |
+
+Người tự thao tác không nhận thông báo của chính mình. Link trong thông báo kèm `as=me` để luôn mở màn hình của chính người nhận.

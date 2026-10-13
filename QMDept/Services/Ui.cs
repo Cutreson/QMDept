@@ -39,15 +39,15 @@ public static class Ui
     public static IHtmlContent Pill(Enum e) => new HtmlString(Labels.PillHtml(e));
     public static IHtmlContent Pill(string text, string cls) => new HtmlString($"<span class=\"pill {cls}\">{E(text)}</span>");
     /// <summary>lvPill(p): pill cấp bậc (Tech 1/2/3) hoặc rỗng.</summary>
-    public static IHtmlContent LvPill(Person? p) => p?.Level is Level l ? Pill(l) : HtmlString.Empty;
+    public static IHtmlContent LevelPill(Person? p) => p?.Level is Level l ? Pill(l) : HtmlString.Empty;
     /// <summary>bar(pct, color)</summary>
     public static IHtmlContent Bar(int pct, string? color = null) => new HtmlString(
         $"<div class=\"barrow\"><div class=\"bar\"><span style=\"width:{Math.Clamp(pct, 0, 100)}%;--bc:{color ?? "var(--ok)"}\"></span></div><span class=\"mono\">{pct}%</span></div>");
     /// <summary>pctPill(pct, st)</summary>
     public static IHtmlContent PctPill(int pct, ProjectStatus st) => new HtmlString($"<span class=\"pill {Labels.Pill(st)} mono\">{pct}%</span>");
-    /// <summary>Ảnh đại diện chữ cái đầu.</summary>
-    public static IHtmlContent Av(string? name, bool tp = false, string? style = null) =>
-        new HtmlString($"<span class=\"av{(tp ? " tp" : "")}\"{(style is null ? "" : $" style=\"{style}\"")} aria-hidden=\"true\">{E(Fmt.Initials(name))}</span>");
+    /// <summary>Ảnh đại diện chữ cái đầu (manager = màu Trưởng phòng).</summary>
+    public static IHtmlContent Av(string? name, bool manager = false, string? style = null) =>
+        new HtmlString($"<span class=\"av{(manager ? " mgr" : "")}\"{(style is null ? "" : $" style=\"{style}\"")} aria-hidden=\"true\">{E(Fmt.Initials(name))}</span>");
     /// <summary>Ô màu dự án (ptile). size = cạnh px; null = cỡ mặc định 54px.</summary>
     public static IHtmlContent Ptile(string color, string name, int? size = null)
     {

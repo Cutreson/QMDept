@@ -24,7 +24,9 @@ public static class AccountRules
         if (code.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
         if (code.Length > MaxCode) throw new BizException($"Mã nhân viên tối đa {MaxCode} ký tự");
         if (code.Any(char.IsWhiteSpace)) throw new BizException("Mã nhân viên không được có khoảng trắng");
-        if (await db.People.AnyAsync(p => p.Code == code && p.Id != (exceptId ?? 0))) throw new BizException("Mã nhân viên đã tồn tại");
+        var dup = await db.People.Where(p => p.Code == code && p.Id != (exceptId ?? 0)).Select(p => (bool?)p.IsDeleted).FirstOrDefaultAsync();
+        if (dup == true) throw new BizException("Mã nhân viên thuộc một tài khoản đã xóa — khôi phục tài khoản đó hoặc dùng mã khác");
+        if (dup == false) throw new BizException("Mã nhân viên đã tồn tại");
     }
 
     public static void ValidatePassword(string? password)

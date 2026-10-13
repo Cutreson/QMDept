@@ -16,16 +16,16 @@
     var place = Dept.Place(p);
 }
 <div class="head">
-    @if (Model.Who != "tp" && Model.BackHref is not null)
+    @if (Model.Who != ProjectDetailVm.ManagerView && Model.BackHref is not null)
     {
         <a class="back" href="@Model.BackHref" aria-label="Quay lại" style="text-decoration:none">‹</a>
     }
     <div style="flex:1;min-width:0"><h1>@p.Name</h1><div class="sub">@place</div></div>
     @Ui.Ptile(D.Tile(p.Id), p.Name, 40)
 </div>
-@Ui.Subtabs(new[] { ("tq", "Tổng quan"), ("kh", "Kế hoạch"), ("ns", "Nhân sự") }.Select(x => (Model.TabHref(x.Item1), x.Item2, Model.Tab == x.Item1)))
+@Ui.Subtabs(new[] { (ProjectDetailVm.OverviewTab, "Tổng quan"), (ProjectDetailVm.PlanTab, "Kế hoạch"), (ProjectDetailVm.PeopleTab, "Nhân sự") }.Select(x => (Model.TabHref(x.Item1), x.Item2, Model.Tab == x.Item1)))
 
-@if (Model.Tab != "ns")
+@if (Model.Tab != ProjectDetailVm.PeopleTab)
 {
     <section class="card sec">
         <h2>Thông tin dự án</h2>
@@ -37,22 +37,22 @@
             @Ui.Pill(st)
         </div>
         @Ui.Bar(pct, Labels.Color(st))
-        <div class="note">Kế hoạch đến hôm nay: <b class="mono">@D.PjPlanPct(p.Id, date)%</b> · Thực tế: <b class="mono">@pct%</b> (@it.Count(i => i.Status == TaskState.HoanThanh)/@it.Count đầu mục)</div>
+        <div class="note">Kế hoạch đến hôm nay: <b class="mono">@D.PjPlanPct(p.Id, date)%</b> · Thực tế: <b class="mono">@pct%</b> (@it.Count(i => i.Status == TaskState.Done)/@it.Count đầu mục)</div>
     </section>
 }
 
-@if (Model.Tab == "kh")
+@if (Model.Tab == ProjectDetailVm.PlanTab)
 {
-    <section class="card sec"><h2>Danh sách công việc <span class="note" style="text-transform:none;font-weight:600">(theo giai đoạn)</span></h2>@D.StepList(it)</section>
+    <section class="card sec"><h2>Danh sách công việc</h2>@D.StepList(it)</section>
     <section class="card sec"><h2>Tiến độ theo tuần</h2>@D.WeekChart(p.Id)</section>
 }
-else if (Model.Tab == "tq")
+else if (Model.Tab == ProjectDetailVm.OverviewTab)
 {
     var c = Dept.CountItems(it);
     <div class="kpis k4">
-        <div class="kpi k-ok"><b>@c.HoanThanh</b><span>Xong</span></div>
-        <div class="kpi k-warn"><b>@c.DangLam</b><span>Đang làm</span></div>
-        <div class="kpi k-idle"><b>@c.ChuaLam</b><span>Chưa làm</span></div>
+        <div class="kpi k-ok"><b>@c.Done</b><span>Xong</span></div>
+        <div class="kpi k-warn"><b>@c.InProgress</b><span>Đang làm</span></div>
+        <div class="kpi k-idle"><b>@c.NotStarted</b><span>Chưa làm</span></div>
         <div class="kpi k-info"><b>@D.OnSite(date, p.Id).Count/@D.Need(date, p.Id)</b><span>Nhân sự TT/KH</span></div>
     </div>
     <section class="card sec"><h2>Phát sinh gần đây</h2>
@@ -73,11 +73,11 @@ else
         }
         @foreach (var e in ppl)
         {
-            var tt = D.TasksOn(date, e).Where(t => t.ProjectId == p.Id).ToList();
-            var lv = D.OnLeave(date, e);
+            var todays = D.TasksOn(date, e).Where(t => t.ProjectId == p.Id).ToList();
+            var leave = D.OnLeave(date, e);
             <div class="trow">@Ui.Av(D.PName(e))<div><div class="t">@D.PName(e)</div>
-                <div class="s">@(lv is not null ? "Nghỉ: " + lv.Reason : tt.Count > 0 ? string.Join(" · ", tt.Select(t => t.Title)) : "Hôm nay không có việc ở dự án này")</div></div>
-                <span class="tm">@tt.Count việc</span></div>
+                <div class="s">@(leave is not null ? "Nghỉ: " + leave.Reason : todays.Count > 0 ? string.Join(" · ", todays.Select(t => t.Title)) : "Hôm nay không có việc ở dự án này")</div></div>
+                <span class="tm">@todays.Count việc</span></div>
         }
     </section>
 }

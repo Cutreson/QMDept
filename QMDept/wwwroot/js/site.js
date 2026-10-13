@@ -5,7 +5,6 @@
 //   form[data-prompt="Tiêu đề"]     mở hộp nhập văn bản; data-prompt-label, data-prompt-value, data-prompt-required,
 //                                   data-prompt-name (tên field ẩn nhận giá trị, mặc định "text").
 //   [data-sheet="templateId"]       bấm → mở <template id="templateId"> (chứa 1 <form>) trong bảng trượt.
-//   input[type=file][data-shrink]   ảnh được thu nhỏ ≤1600px JPEG trước khi gửi (giống shrink() của artifact).
 //   select[data-items-for="id"]     đổi dự án → nạp lại select #id bằng window.QM_ITEMS[projectId] = [[id,title],...].
 //   select[data-show-target="#sel"][data-show-values="A,B"]  hiện phần tử #sel khi giá trị thuộc danh sách.
 //   form[data-once]                 khóa nút submit sau khi gửi (mặc định cho mọi form post).
@@ -14,6 +13,22 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ---------- chiều cao header → biến CSS --hdr-h (menu dọc bên trái trên máy tính bám ngay dưới header) ----------
+  const hdr = $('header.top');
+  if (hdr) {
+    const setH = () => document.documentElement.style.setProperty('--hdr-h', hdr.offsetHeight + 'px');
+    setH();
+    if (window.ResizeObserver) new ResizeObserver(setH).observe(hdr); else window.addEventListener('resize', setH);
+  }
+
+  // ---------- chế độ chỉ xem (đang xem màn hình cấp dưới) ----------
+  if (document.body.classList.contains('readonly')) {
+    $$('#app form').forEach(f => {
+      if ((f.getAttribute('method') || '').toLowerCase() !== 'post' || f.classList.contains('ro-ok')) return;
+      $$('input:not([type=hidden]),select,textarea', f).forEach(x => x.disabled = true);
+    });
+  }
 
   // ---------- toast ----------
   const toastEl = $('#toast');
@@ -64,6 +79,7 @@
   document.addEventListener('submit', e => {
     const f = e.target;
     if (!(f instanceof HTMLFormElement)) return;
+    if (e.defaultPrevented) return; // script của trang đã chặn submit (vd. kiểm tra phía client) → không làm gì
     if (f.dataset.qmPassed === '1') { f.dataset.qmPassed = ''; lockSubmit(f, e); return; }
     if (f.dataset.confirm !== undefined) {
       e.preventDefault();
@@ -93,35 +109,62 @@
     if (submitter && submitter.name) { const h = document.createElement('input'); h.type = 'hidden'; h.name = submitter.name; h.value = submitter.value; f.appendChild(h); }
     if (f.requestSubmit) f.requestSubmit(); else f.submit();
   }
-  // Khóa nút submit sau khi gửi (tránh bấm 2 lần); với form có ảnh, thu nhỏ ảnh trước.
+  // Khóa nút submit sau khi gửi (tránh bấm 2 lần).
   function lockSubmit(f, e) {
     if ((f.method || '').toLowerCase() !== 'post') return;
-    const files = $$('input[type=file][data-shrink]', f).filter(i => i.files && i.files.length);
-    if (files.length && !f.dataset.shrunk) {
-      e.preventDefault();
-      Promise.all(files.map(shrinkInput)).finally(() => { f.dataset.shrunk = '1'; f.dataset.qmPassed = '1'; if (f.requestSubmit) f.requestSubmit(); else f.submit(); });
-      return;
-    }
     const btn = e.submitter || f.querySelector('button:not([type=button])');
     if (btn) { setTimeout(() => { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Đang lưu…'; }, 0); }
   }
 
-  // ---------- thu nhỏ ảnh ----------
-  async function shrink(file) {
+  // ---------- thông báo đẩy (SignalR /hubs/notify) — bổ sung, không có trong artifact ----------
+  // body[data-notify="1"] khi tài khoản bật thông báo (Cài đặt). Mỗi sự kiện: thẻ thông báo trên trang + thông báo của
+  // hệ điều hành nếu trình duyệt đã cho phép và tab đang ẩn. Payload: { type, label, title, body, url, at }.
+  const notifBox = $('#notifs');
+  function showNotif(n) {
+    if (!notifBox) return;
+    const el = document.createElement('div');
+    el.className = 'notif card';
+    el.innerHTML = `<div class="notif-h"><span class="pill p-info">${esc(n.label || 'Thông báo')}</span><span class="note mono">${esc(n.at || '')}</span><button type="button" class="notif-x" aria-label="Đóng">×</button></div>
+      <div class="notif-t">${esc(n.title)}</div>${n.body ? `<div class="note">${esc(n.body)}</div>` : ''}
+      ${n.url ? `<a class="link" href="${esc(n.url)}">Xem ›</a>` : ''}`;
+    el.querySelector('.notif-x').onclick = () => el.remove();
+    notifBox.prepend(el);
+    while (notifBox.children.length > 4) notifBox.lastElementChild.remove();
+    setTimeout(() => el.remove(), 15000);
+  }
+  function osNotif(n) {
     try {
-      const bmp = await createImageBitmap(file);
-      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-      const blob = await new Promise(r => c.toBlob(b => r(b), 'image/jpeg', .82));
-      return blob ? new File([blob], (file.name || 'anh').replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
-    } catch { return file; }
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const x = new Notification(n.title, { body: [n.body, n.label].filter(Boolean).join(' · '), icon: '/icon-192.png', tag: n.type + '|' + n.title });
+      x.onclick = () => { window.focus(); if (n.url) location.href = n.url; x.close(); };
+    } catch { /* trình duyệt chặn: bỏ qua */ }
   }
-  async function shrinkInput(input) {
-    const files = [...input.files].slice(0, 4);
-    const out = await Promise.all(files.map(shrink));
-    try { const dt = new DataTransfer(); out.forEach(f => dt.items.add(f)); input.files = dt.files; } catch { /* trình duyệt cũ: gửi ảnh gốc */ }
+  window.qmShowNotif = n => { showNotif(n); if (document.hidden) osNotif(n); };
+  if (document.body.dataset.notify === '1' && window.signalR) {
+    const conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notify').withAutomaticReconnect([0, 2000, 5000, 10000, 30000]).build();
+    conn.on('notify', n => window.qmShowNotif(n));
+    const start = () => conn.start().catch(() => setTimeout(start, 15000));
+    conn.onclose(() => setTimeout(start, 15000));
+    start();
   }
+  // Trang Cài đặt: quyền thông báo hệ điều hành, gửi thử, chọn / bỏ chọn tất cả.
+  const osStatus = $('[data-os-status]');
+  function paintOs() {
+    if (!osStatus) return;
+    const p = !('Notification' in window) ? 'unsupported' : Notification.permission;
+    const map = { granted: ['Đã cho phép', 'p-ok'], denied: ['Trình duyệt đang chặn — mở cài đặt trang web để cho phép', 'p-bad'], default: ['Chưa cho phép', 'p-warn'], unsupported: ['Trình duyệt không hỗ trợ', 'p-idle'] }[p];
+    osStatus.textContent = map[0]; osStatus.className = 'pill ' + map[1];
+  }
+  paintOs();
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-os-notify]')) { if ('Notification' in window) Notification.requestPermission().then(paintOs); }
+    if (e.target.closest('[data-test-notify]')) {
+      const n = { type: 'Test', label: 'Thử', title: 'Thông báo thử', body: 'Thông báo đẩy đang hoạt động trên thiết bị này.', at: new Date().toTimeString().slice(0, 5) };
+      showNotif(n); osNotif(n);
+    }
+    const checkAll = e.target.closest('[data-check-all]');
+    if (checkAll) $$('[data-notify-types] input[type=checkbox]').forEach(x => x.checked = checkAll.dataset.checkAll === '1');
+  });
 
   // ---------- change handlers ----------
   document.addEventListener('change', e => {

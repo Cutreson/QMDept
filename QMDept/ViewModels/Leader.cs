@@ -3,14 +3,14 @@ using QMDept.Services;
 
 namespace QMDept.ViewModels;
 
-/// <summary>Model trang Leader → Theo dõi (ldTrack). Mode: "nv" (theo nhân viên) | "da" (theo dự án); ProjectId: lọc dự án (ldTrPj).</summary>
+/// <summary>Model trang Leader → Theo dõi (ldTrack). Mode: "staff" (theo nhân viên) | "project" (theo dự án); ProjectId: lọc dự án (ldTrPj).</summary>
 public sealed class LeaderTrackVm
 {
     public required string Mode { get; init; }
     public int? ProjectId { get; init; }
 }
 
-/// <summary>Model trang Leader → Báo cáo TP (ldReport). Tab: "ngay" | "tuan".</summary>
+/// <summary>Model trang Leader → Báo cáo TP (ldReport). Tab: "day" | "week".</summary>
 public sealed class LeaderReportVm
 {
     public required string Tab { get; init; }
@@ -32,24 +32,6 @@ public static class LeaderUi
     /// </summary>
     public static string Post(HttpRequest r, ViewScope s, string path) =>
         Ui.To(r, path, ("d", Fmt.Key(s.Date)), ("as", s.MeId?.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-
-    /// <summary>Kiểu ảnh PhotoStore nhận (bản sao danh sách trong PhotoStore — giữ đồng bộ).</summary>
-    static readonly HashSet<string> PhotoTypes = new(StringComparer.OrdinalIgnoreCase)
-        { "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic" };
-
-    /// <summary>
-    /// Kiểm ảnh TRƯỚC khi gọi Flow.CreateExtraAsync (hàm đó lưu phát sinh rồi mới kiểm ảnh) — cùng luật, cùng câu báo lỗi
-    /// với PhotoStore.SaveAsync. Bỏ khi WorkflowService tự kiểm ảnh trước lần SaveChanges đầu.
-    /// </summary>
-    public static void CheckPhotos(IEnumerable<IFormFile>? files)
-    {
-        if (files is null) return;
-        foreach (var f in files.Where(f => f.Length > 0).Take(PhotoStore.MaxFiles))
-        {
-            if (!PhotoTypes.Contains(f.ContentType ?? "")) throw new BizException("Chỉ nhận file ảnh (jpg, png, webp, gif, heic)");
-            if (f.Length > PhotoStore.MaxBytes) throw new BizException("Ảnh vượt quá 10 MB");
-        }
-    }
 
     /// <summary>% hoàn thành (Math.round của artifact) — 0 khi không có việc.</summary>
     public static int Pct(int done, int total) =>

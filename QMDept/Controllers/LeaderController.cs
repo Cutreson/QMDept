@@ -10,59 +10,62 @@ namespace QMDept.Controllers;
 /// <summary>
 /// Giao diện Leader: Tổng quan (ldOverview), Theo dõi (ldTrack), Báo cáo TP (ldReport + weekReport).
 /// Phạm vi = Leader đang xem (Scope.Me; TP chọn Leader ở ô "Xem Leader") → D.Staff()/D.InScope() theo nhóm đó.
-/// Tab "Kế hoạch &amp; duyệt" nằm ở KeHoachController; "Làm thêm" ở LamThemController.
+/// Tab "Kế hoạch &amp; duyệt" nằm ở PlanningController; "Làm thêm" ở OvertimeController.
 /// </summary>
 [UiRole(Role.Leader)]
 public partial class LeaderController : AppController
 {
+    /// <summary>/Controller → trang mặc định của giao diện.</summary>
+    [HttpGet] public IActionResult Index() => Redirect(Ui.To(Request, "/Leader/Overview"));
+
     // ======================= GET =======================
 
-    /// <summary>GET /Leader/TongQuan — ldOverview.</summary>
+    /// <summary>GET /Leader/Overview — ldOverview.</summary>
     [HttpGet]
-    public async Task<IActionResult> TongQuan()
+    public async Task<IActionResult> Overview()
     {
         await D.EnsureAsync(Date, Date.AddDays(1));
         ViewData["Title"] = "Tổng quan";
         return View();
     }
 
-    /// <summary>GET /Leader/TheoDoi?mode=nv|da&amp;pj= — ldTrack.</summary>
+    /// <summary>GET /Leader/Tracking?mode=staff|project&amp;pj= — ldTrack.</summary>
     [HttpGet]
-    public async Task<IActionResult> TheoDoi(string? mode, string? pj)
+    public async Task<IActionResult> Tracking(string? mode, string? pj)
     {
         await D.EnsureAsync(Date, Date.AddDays(1));
         ViewData["Title"] = "Theo dõi";
         return View(new LeaderTrackVm
         {
-            Mode = mode == "da" ? "da" : "nv",
+            Mode = mode == "project" ? "project" : "staff",
             ProjectId = int.TryParse(pj, NumberStyles.Integer, CultureInfo.InvariantCulture, out var p) ? p : null,
         });
     }
 
-    /// <summary>GET /Leader/BaoCao?tab=ngay|tuan — ldReport (ngày) / weekReport (tuần, ?w=).</summary>
+    /// <summary>GET /Leader/Reports?tab=day|week — ldReport (ngày) / weekReport (tuần, ?w=).</summary>
     [HttpGet]
-    public async Task<IActionResult> BaoCao(string? tab)
+    public async Task<IActionResult> Reports(string? tab)
     {
         ViewData["Title"] = "Báo cáo TP";
-        if (tab == "tuan")
+        if (tab == "week")
         {
             var m = Nav.Week(Request, Date);
             await D.EnsureAsync(m, m.AddDays(6));
             await D.EnsureAsync(Date, Date);
-            return View(new LeaderReportVm { Tab = "tuan", Monday = m });
+            return View(new LeaderReportVm { Tab = "week", Monday = m });
         }
         await D.EnsureAsync(Date, Date.AddDays(1));
         var sent = Scope.MeId is int me
             ? await Db.LeaderReports.AsNoTracking().FirstOrDefaultAsync(r => r.Date == Date && r.LeaderId == me)
             : null;
-        return View(new LeaderReportVm { Tab = "ngay", Monday = Fmt.Monday(Date), Sent = sent });
+        return View(new LeaderReportVm { Tab = "day", Monday = Fmt.Monday(Date), Sent = sent });
     }
 
     // ======================= POST =======================
 
-    /// <summary>POST /Leader/ThemPhatSinh — openExtra(true): Leader thêm phát sinh cho NV trong nhóm, duyệt ngay.</summary>
+    /// <summary>POST /Leader/AddExtra — openExtra(true): Leader thêm phát sinh cho NV trong nhóm, duyệt ngay.</summary>
     [HttpPost]
-    public async Task<IActionResult> ThemPhatSinh(ExtraInput input) => await Do(async () =>
+    public async Task<IActionResult> AddExtra(ExtraInput input) => await Do(async () =>
     {
         RequireLead();
         RequireViewedLeader();
@@ -71,44 +74,42 @@ public partial class LeaderController : AppController
         if (D.PJ(input.ProjectId) is not { Closed: false }) throw new BizException("Chọn dự án");
         if ((input.Title ?? "").Trim().Length > 300) throw new BizException("Tên công việc phát sinh tối đa 300 ký tự");
         if ((input.Desc ?? "").Trim().Length > LeaderUi.NoteMax) throw new BizException($"Mô tả / lý do tối đa {LeaderUi.NoteMax} ký tự");
-        // Flow.CreateExtraAsync lưu phát sinh TRƯỚC khi kiểm ảnh → kiểm trước để ảnh sai không để lại phát sinh "Chờ duyệt" mồ côi.
-        LeaderUi.CheckPhotos(input.Photos);
         await Flow.CreateExtraAsync(Date, emp, input.ProjectId, input.Title ?? "", input.Desc,
-            string.IsNullOrEmpty(input.Start) ? null : input.Start, input.End, input.Photos, Scope.Account.Id,
+            string.IsNullOrEmpty(input.Start) ? null : input.Start, input.End,
             byLeader: true, Scope.ActorName, Role.Leader);
     }, "Đã thêm phát sinh");
 
-    /// <summary>POST /Leader/DuyetPhatSinh — xDecide (ok): duyệt phát sinh → tạo việc PhatSinh cho NV.</summary>
+    /// <summary>POST /Leader/ApproveExtra — xDecide (ok): duyệt phát sinh → tạo việc nguồn Extra (Phát sinh) cho NV.</summary>
     [HttpPost]
-    public async Task<IActionResult> DuyetPhatSinh(int id) => await Do(async () =>
+    public async Task<IActionResult> ApproveExtra(int id) => await Do(async () =>
     {
         RequireLead();
         RequireViewedLeader();
         var x = await Db.Extras.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
-        if (x is null || x.Status != ExtraStatus.ChoDuyet) return; // artifact: đã quyết định rồi → bỏ qua
+        if (x is null || x.Status != ExtraStatus.Pending) return; // artifact: đã quyết định rồi → bỏ qua
         await RequireInScopeAsync(x.EmployeeId);
         await Flow.ApproveExtraAsync(id, Scope.ActorName, Role.Leader);
         Toast("Đã duyệt phát sinh");
     });
 
-    /// <summary>POST /Leader/TuChoiPhatSinh — xDecide (no): từ chối phát sinh, bắt buộc lý do (field reason).</summary>
+    /// <summary>POST /Leader/RejectExtra — xDecide (no): từ chối phát sinh, bắt buộc lý do (field reason).</summary>
     [HttpPost]
-    public async Task<IActionResult> TuChoiPhatSinh(int id, string? reason) => await Do(async () =>
+    public async Task<IActionResult> RejectExtra(int id, string? reason) => await Do(async () =>
     {
         RequireLead();
         RequireViewedLeader();
         var x = await Db.Extras.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
-        if (x is null || x.Status != ExtraStatus.ChoDuyet) return; // artifact: đã quyết định rồi → bỏ qua (trước khi hỏi lý do)
+        if (x is null || x.Status != ExtraStatus.Pending) return; // artifact: đã quyết định rồi → bỏ qua (trước khi hỏi lý do)
         await RequireInScopeAsync(x.EmployeeId);
-        if (string.IsNullOrWhiteSpace(reason)) throw new BizException("Nhập lý do");
+        if (string.IsNullOrWhiteSpace(reason)) throw new BizException("Nhập lý do từ chối");
         if (reason.Trim().Length > LeaderUi.NoteMax) throw new BizException($"Lý do tối đa {LeaderUi.NoteMax} ký tự");
         await Flow.RejectExtraAsync(id, reason, Scope.ActorName, Role.Leader);
         Toast("Đã từ chối");
     });
 
-    /// <summary>POST /Leader/NhuCau — change "need": sửa nhu cầu nhân sự (ngày, dự án) trực tiếp trong bảng Kế hoạch ngày mai.</summary>
+    /// <summary>POST /Leader/SetNeed — change "need": sửa nhu cầu nhân sự (ngày, dự án) trực tiếp trong bảng Kế hoạch ngày mai.</summary>
     [HttpPost]
-    public async Task<IActionResult> NhuCau(string? date, int projectId, string? need) => await Do(async () =>
+    public async Task<IActionResult> SetNeed(string? date, int projectId, string? need) => await Do(async () =>
     {
         RequireLead();
         if (Fmt.ParseKey(date) is not DateOnly d) throw new BizException("Ngày không hợp lệ");
@@ -122,9 +123,9 @@ public partial class LeaderController : AppController
         await Db.SaveChangesAsync();
     }, "Đã lưu nhu cầu");
 
-    /// <summary>POST /Leader/GuiBaoCao — ldRepForm: gửi (hoặc gửi lại) báo cáo ngày cho TP kèm ảnh chụp số liệu.</summary>
+    /// <summary>POST /Leader/SubmitReport — ldRepForm: gửi (hoặc gửi lại) báo cáo ngày cho TP kèm ảnh chụp số liệu.</summary>
     [HttpPost]
-    public async Task<IActionResult> GuiBaoCao(string? note) => await Do(async () =>
+    public async Task<IActionResult> SubmitReport(string? note) => await Do(async () =>
     {
         RequireLead();
         var me = RequireViewedLeader();
@@ -139,6 +140,7 @@ public partial class LeaderController : AppController
         r.Note = string.IsNullOrEmpty(note) ? null : note;
         r.SummaryJson = summary;
         await Db.SaveChangesAsync();
+        await Notify.LeaderReportSentAsync(me.Id, Date);
     }, "Đã gửi báo cáo cho TP");
 
     /// <summary>

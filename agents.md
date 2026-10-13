@@ -20,6 +20,40 @@
    **Cuối mỗi phiên tự động `git commit` và `git push origin master`.**
 5. **Quy tắc phải ghi vào file**: mọi quy tắc / yêu cầu làm việc chủ dự án đưa ra phải được ghi vào `agents.md`
    (hoặc file `docs/` tương ứng), không chỉ lưu trong bộ nhớ riêng của AI — phiên / AI khác chỉ đọc được file.
+6. **Giao diện dùng tốt cả trên máy tính và điện thoại** (yêu cầu 2026-10-13): mọi màn hình mới/sửa phải kiểm tra ở
+   ~375px (điện thoại), ~768px (máy tính bảng) và ≥1280px (máy tính) — quy ước ở `docs/kien-truc.md` mục "Giao diện responsive".
+7. **Chỉ dùng văn bản** (yêu cầu 2026-10-13): web không có bất kỳ chỗ đính kèm file / hình ảnh nào (đã gỡ ảnh hiện trường
+   của artifact, bảng `photos`). Không thêm `<input type=file>`, upload, lưu file người dùng.
+8. **Cấp trên xem màn hình cấp dưới — chỉ xem** (yêu cầu 2026-10-13): combobox "Xem màn hình" trên header cho phép
+   Quản trị → TP/Leader/NV, TP → Leader/NV, Leader → NV trong nhóm xem đúng các màn hình của người đó, **không thao tác gì**
+   (server chặn mọi POST — `AppController`). Mỗi người chỉ thao tác trong giao diện của chính mình. Xem `docs/kien-truc.md`.
+   Combobox chỉ gồm "Màn hình của tôi" + cấp dưới; **lịch tháng cả nhóm không nằm trong combobox** mà là nút "Lịch nhóm" cạnh
+   combobox (`?as=all`, `ChromeModel.TeamHref`) — yêu cầu 2026-10-13.
+9. **Quản trị (admin) cao hơn Trưởng phòng, bao trùm mọi chức năng TP** (yêu cầu 2026-10-13): Quản trị dùng toàn bộ giao diện
+   và quyền thao tác của TP (tổng quan, phê duyệt, dự án, báo cáo, làm thêm, nhân sự, nhận thông báo của TP) + thêm tab "Tài khoản"
+   (toàn quyền tài khoản: tạo, sửa vai trò/nhóm/cấp bậc, đặt mật khẩu, xóa, khôi phục) + xem được màn hình của mọi người (chỉ xem).
+   Cơ chế: `ScopeResolver.UiRoleOf(Admin) = Manager`, `ViewScope.IsManager` gồm cả Admin, trang `[UiRole(Admin)]` chỉ mở ở màn hình
+   của chính tài khoản Quản trị.
+10. **Thông báo đẩy bằng SignalR** (yêu cầu 2026-10-13): mọi sự kiện cần người khác xử lý / có kết quả đều đẩy thông báo
+    (`Services/Notifier.cs`); người dùng bật/tắt và chọn loại thông báo ở trang Cài đặt (`/Settings`). Thao tác mới có
+    người liên quan ⇒ thêm lời gọi `Notify.…Async` sau `SaveChangesAsync`.
+11. **Nhận diện**: favicon / icon ứng dụng (lịch có dấu tích, xanh → tím thương hiệu SORA) trong `wwwroot` — giữ đồng bộ
+    `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192/512.png`, `site.webmanifest`.
+12. **Code bằng tiếng Anh (định danh, route, khóa query, tên field, tên file), UI tiếng Việt, comment được phép tiếng Việt**
+    (yêu cầu 2026-10-13): lớp / hàm / thuộc tính / biến / giá trị enum, route & URL, khóa và giá trị query, tên field form và giá trị
+    option, định danh JS, id/class HTML-CSS, tên file đều tiếng Anh. Chữ hiển thị cho người dùng vẫn tiếng Việt.
+    Chi tiết: `docs/kien-truc.md` mục "Quy ước C#"; bảng route: `docs/man-hinh.md`.
+13. **Giờ luôn theo giờ Việt Nam qua `VnTime` (server đặt ở nước ngoài)** (yêu cầu 2026-10-13): mọi "hôm nay / bây giờ" nghiệp vụ
+    dùng `Services/VnTime.cs` (UTC+7); không dùng `DateTime.Now` / `DateTime.Today` / giờ máy chủ; JS không tự tính ngày nghiệp vụ
+    từ đồng hồ trình duyệt.
+14. **Giao diện gọn** (yêu cầu 2026-10-13): **không dùng placeholder** (gợi ý nhập) trong ô nhập liệu / textarea (kể cả đặt bằng JS);
+    không thêm dòng giới thiệu dưới tiêu đề trang, chú thích hướng dẫn, chú giải "bấm vào…", giải thích ai duyệt…
+    Chỉ giữ chữ mang dữ liệu (giờ gửi, người duyệt, trạng thái, danh sách trống…) và nhãn cần thiết.
+15. **Tài khoản đã xóa không hiện trên giao diện nghiệp vụ** (yêu cầu 2026-10-13): mọi danh sách / combobox / nhóm chỉ dùng tài khoản
+    đang hoạt động. Riêng trang Quản trị → Tài khoản là một danh sách duy nhất, mỗi tài khoản có trạng thái
+    "Đang hoạt động" / "Đã xóa" (lọc `?st=all|active|deleted`), tài khoản đã xóa chỉ có nút "Khôi phục".
+16. **Trao đổi với chủ dự án bằng tiếng Việt** (yêu cầu 2026-10-13): mọi câu trả lời, báo cáo, câu hỏi gửi chủ dự án viết bằng
+    tiếng Việt (tài liệu docs/ và comment vẫn tiếng Việt như hiện tại; định danh trong code vẫn tiếng Anh theo quy tắc 12).
 
 ## 2. Tổng quan kỹ thuật
 
@@ -62,7 +96,10 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
 - Luật nghiệp vụ có bản C# (`Services/Rules.cs`, `Services/Dept.cs`) và bản JS xem trước trên form
   (`wwwroot/js/*.js`) — sửa luật phải sửa cả hai.
 - Form POST có `action` viết tay phải có `asp-antiforgery="true"` (xem `docs/kien-truc.md`).
-- Không tin client: mọi POST tự kiểm quyền (`RequireSelfNv/RequireLead/RequireTp/RequireInScopeAsync`).
+- Không tin client: mọi POST tự kiểm quyền (`RequireSelfStaff/RequireLead/RequireManager/RequireInScopeAsync`); ngoài ra
+  `AppController` tự chặn mọi POST khi đang xem màn hình cấp dưới (`Scope.IsViewingOther`).
+- Mỗi controller khai báo giao diện bằng `[UiRole(...)]` (một vai trò), không khai báo = dùng chung NV/Leader/TP,
+  `[AnyUiRole]` = mọi vai trò kể cả Quản trị; muốn chia theo action thì override `UiRoles(ctx)` (xem `PlanningController.cs`).
 - `ScopeResolver` lấy ngày đang chọn (`Scope.Date`) từ query `?d=`; với POST không có `?d=` thì lấy field form `d`.
   `@Ui.ReturnField(Context.Request)` tự chèn field ẩn `d` → mọi form POST thao tác theo ngày đang xem phải có
   `@Ui.ReturnField(...)` (hoặc ghi `?d=yyyy-MM-dd` trong `action`), nếu không `Scope.Date` sẽ là hôm nay.

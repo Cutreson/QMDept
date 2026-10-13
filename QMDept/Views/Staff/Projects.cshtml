@@ -1,0 +1,33 @@
+@model StaffProjectsVm
+@* nvProjects(): danh sách dự án (Đang triển khai / Đã hoàn thành) → projectCard; ?pj= → projectDetail(pj, 'nv'). *@
+@{
+    var req = Context.Request;
+}
+@if (Model.Detail is not null)
+{
+    <partial name="_ProjectDetail" model="Model.Detail" />
+}
+else
+{
+    var seg = new[]
+    {
+        (Ui.Here(req, ("pt", "active")), $"Đang triển khai ({Model.Active.Count})", Model.Tab == "active", 0),
+        (Ui.Here(req, ("pt", "done")), $"Đã hoàn thành ({Model.Done.Count})", Model.Tab == "done", 0),
+    };
+    var list = Model.List;
+    @Ui.Head(2, "Thông tin dự án")
+    @Ui.Seg(seg)
+    if (list.Count > 0)
+    {
+        <div class="plist">
+            @foreach (var p in list)
+            {
+                @D.ProjectCard(p, Ui.Here(req, ("pj", p.Id.ToString()), ("tab", null)), Model.MineOf(p.Id))
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty">Chưa có dự án.</div>
+    }
+}

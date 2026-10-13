@@ -3,10 +3,11 @@ using QMDept.Data;
 
 namespace QMDept.Services;
 
-public sealed record Counts(int HoanThanh, int DangLam, int Cham, int ChuaLam)
+/// <summary>Số công việc theo trạng thái (Hoàn thành / Đang làm / Chậm / Chưa làm).</summary>
+public sealed record Counts(int Done, int InProgress, int Late, int NotStarted)
 {
-    public int Total => HoanThanh + DangLam + Cham + ChuaLam;
-    public int Of(TaskState s) => s switch { TaskState.HoanThanh => HoanThanh, TaskState.DangLam => DangLam, TaskState.Cham => Cham, _ => ChuaLam };
+    public int Total => Done + InProgress + Late + NotStarted;
+    public int Of(TaskState s) => s switch { TaskState.Done => Done, TaskState.InProgress => InProgress, TaskState.Late => Late, _ => NotStarted };
 }
 
 /// <summary>Một dòng "Vấn đề nổi bật" (issuesOf).</summary>
@@ -26,7 +27,7 @@ public sealed record Kpi(Counts C, int Working, int Total, int Projects);
 ///   truy vấn ngày ngoài khoảng sẽ ném InvalidOperationException để lộ lỗi sớm.
 /// - Thực thể nạp ở chế độ AsNoTracking: CHỈ ĐỌC. Muốn ghi, truy vấn lại qua AppDbContext.
 /// </summary>
-public sealed class Dept(AppDbContext db, ViewScope scope)
+public sealed class Dept(ViewScope scope, DataCache cache)
 {
     readonly List<(DateOnly From, DateOnly To)> _ranges = [];
     bool _base;
@@ -59,34 +60,23 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     public async Task EnsureAsync(DateOnly from, DateOnly to)
     {
         if (to < from) (from, to) = (to, from);
+        // Dữ liệu lấy từ DataCache (dùng chung giữa các request, tự làm mới khi có lệnh ghi) — chỉ đọc.
         if (!_base)
         {
-            People = await db.People.AsNoTracking().ToListAsync();
-            Projects = await db.Projects.AsNoTracking().ToListAsync();
-            Items = await db.PlanItems.AsNoTracking().ToListAsync();
-            Assigns = await db.Assignments.AsNoTracking().ToListAsync();
+            var b = await cache.GetBaseAsync();
+            People = b.People; Projects = b.Projects; Items = b.Items; Assigns = b.Assigns;
             _base = true;
         }
         if (_ranges.Any(r => r.From <= from && to <= r.To)) return;
 
-        var tasks = await db.WorkTasks.AsNoTracking().Include(t => t.Photos)
-            .Where(t => (t.Date >= from && t.Date <= to) || (t.FromDate != null && t.FromDate >= from && t.FromDate <= to))
-            .ToListAsync();
-        foreach (var t in tasks) _tasks.TryAdd(t.Id, t);
-        // việc chuyển tiếp được tham chiếu từ việc đã nạp (có thể nằm ngoài khoảng)
-        var refIds = tasks.Where(t => t.CarriedToId != null).Select(t => t.CarriedToId!.Value)
-            .Concat(tasks.Where(t => t.CarriedFromId != null).Select(t => t.CarriedFromId!.Value))
-            .Where(id => !_tasks.ContainsKey(id)).Distinct().ToList();
-        if (refIds.Count > 0)
-            foreach (var t in await db.WorkTasks.AsNoTracking().Include(t => t.Photos).Where(t => refIds.Contains(t.Id)).ToListAsync())
-                _tasks.TryAdd(t.Id, t);
-
-        foreach (var x in await db.DayPlans.AsNoTracking().Include(p => p.PlanTasks).Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _plans.TryAdd(x.Id, x);
-        foreach (var x in await db.DayReports.AsNoTracking().Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _reports.TryAdd(x.Id, x);
-        foreach (var x in await db.Leaves.AsNoTracking().Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _leaves.TryAdd(x.Id, x);
-        foreach (var x in await db.ProjectNeeds.AsNoTracking().Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _needs.TryAdd(x.Id, x);
-        foreach (var x in await db.Extras.AsNoTracking().Include(e => e.Photos).Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _extras.TryAdd(x.Id, x);
-        foreach (var x in await db.Overtimes.AsNoTracking().Include(o => o.Items).Where(p => p.Date >= from && p.Date <= to).ToListAsync()) _ots.TryAdd(x.Id, x);
+        var r = await cache.GetRangeAsync(from, to); // gồm việc chuyển tiếp được tham chiếu nằm ngoài khoảng
+        foreach (var x in r.Tasks) _tasks.TryAdd(x.Id, x);
+        foreach (var x in r.Plans) _plans.TryAdd(x.Id, x);
+        foreach (var x in r.Reports) _reports.TryAdd(x.Id, x);
+        foreach (var x in r.Leaves) _leaves.TryAdd(x.Id, x);
+        foreach (var x in r.Needs) _needs.TryAdd(x.Id, x);
+        foreach (var x in r.Extras) _extras.TryAdd(x.Id, x);
+        foreach (var x in r.Ots) _ots.TryAdd(x.Id, x);
         _ranges.Add((from, to));
     }
 
@@ -115,18 +105,21 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
 
     /// <summary>Người còn hoạt động (chưa xóa).</summary>
     public IEnumerable<Person> Active => People.Where(p => !p.IsDeleted);
-    public List<Person> AllNv() { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Nv)); }
+    public List<Person> AllStaff() { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Staff)); }
     public List<Person> Leaders() { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Leader)); }
     /// <summary>team(lid): NV thuộc nhóm của Leader.</summary>
-    public List<Person> Team(int leaderId) { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Nv && p.LeaderId == leaderId)); }
+    public List<Person> Team(int leaderId) { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Staff && p.LeaderId == leaderId)); }
     /// <summary>staff(): ở giao diện Leader → nhóm của Leader đang xem; còn lại → toàn bộ NV.</summary>
-    public List<Person> Staff() => scope.Role == Role.Leader ? (scope.MeId is int id ? Team(id) : []) : AllNv();
+    public List<Person> Staff() => scope.Role == Role.Leader ? (scope.MeId is int id ? Team(id) : []) : AllStaff();
     /// <summary>inScope(emp): ở giao diện Leader chỉ tính Leader đang xem và NV trong nhóm; giao diện khác: tất cả.</summary>
-    public bool InScope(int emp) => scope.Role != Role.Leader || emp == scope.MeId || P(emp)?.LeaderId == scope.MeId;
+    /// Không có Leader nào đang được xem (MeId null) → không ai trong phạm vi; người đã xóa không còn trong phạm vi Leader
+    /// (artifact: người bị xóa biến khỏi S.people nên inScope = false).
+    public bool InScope(int emp) => scope.Role != Role.Leader
+        || (scope.MeId is int id && (emp == id || (P(emp) is { IsDeleted: false } p && p.LeaderId == id)));
     /// <summary>accTeam(a): mô tả nhóm của tài khoản.</summary>
     public string TeamText(Person a) => a.Role switch
     {
-        Role.Nv => a.LeaderId is int l ? "Nhóm " + PName(l) : "Chưa xếp nhóm",
+        Role.Staff => a.LeaderId is int l ? "Nhóm " + PName(l) : "Chưa xếp nhóm",
         Role.Leader => $"Leader · nhóm {Team(a.Id).Count} người",
         Role.Admin => "Quản trị hệ thống",
         _ => "Trưởng phòng",
@@ -144,7 +137,7 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     public List<Assignment> AssignsOf(int emp) => Assigns.Where(a => a.EmployeeId == emp && PJ(a.ProjectId) is { Closed: false }).ToList();
     public Assignment? AssignOf(int pid, int emp) => Assigns.Find(a => a.ProjectId == pid && a.EmployeeId == emp);
     /// <summary>teamProjects(): dự án (chưa đóng) có NV trong phạm vi được phân công.</summary>
-    public List<int> TeamProjects() => Assigns.Where(a => P(a.EmployeeId)?.Role == Role.Nv && InScope(a.EmployeeId)).Select(a => a.ProjectId)
+    public List<int> TeamProjects() => Assigns.Where(a => P(a.EmployeeId)?.Role == Role.Staff && InScope(a.EmployeeId)).Select(a => a.ProjectId)
         .Distinct().Where(id => PJ(id) is { Closed: false }).ToList();
 
     // ======================= Công việc & ngày =======================
@@ -174,19 +167,19 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     /// Ngoài kế hoạch → Leader đã duyệt kế hoạch đầu ngày chứa việc đó; chuyển tiếp → Leader đã duyệt chuyển.</summary>
     public bool OkCal(WorkTask t)
     {
-        if (t.Source == TaskSource.NgoaiKeHoach)
+        if (t.Source == TaskSource.Unplanned)
         {
             var p = PlanOf(t.Date, t.EmployeeId);
             return p?.LeaderDecision == Decision.Ok && TaskIdsOf(p).Contains(t.Id);
         }
-        if (t.Source == TaskSource.ChuyenTiep) return t.CarryOk;
+        if (t.Source == TaskSource.CarryOver) return t.CarryOk;
         return true;
     }
 
     public static Counts Count(IEnumerable<WorkTask> list)
     {
         int a = 0, b = 0, c = 0, d = 0;
-        foreach (var t in list) switch (t.Status) { case TaskState.HoanThanh: a++; break; case TaskState.DangLam: b++; break; case TaskState.Cham: c++; break; default: d++; break; }
+        foreach (var t in list) switch (t.Status) { case TaskState.Done: a++; break; case TaskState.InProgress: b++; break; case TaskState.Late: c++; break; default: d++; break; }
         return new(a, b, c, d);
     }
     public static Counts CountItems(IEnumerable<PlanItem> list) => Count(list.Select(i => new WorkTask { Status = i.Status }));
@@ -206,39 +199,39 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     }
 
     /// <summary>carriesFrom(d): đề xuất chuyển tiếp phát sinh từ ngày d (trong phạm vi).</summary>
-    public List<WorkTask> CarriesFrom(DateOnly d) { Guard(d); return _tasks.Values.Where(t => t.Source == TaskSource.ChuyenTiep && t.FromDate == d && InScope(t.EmployeeId)).ToList(); }
+    public List<WorkTask> CarriesFrom(DateOnly d) { Guard(d); return _tasks.Values.Where(t => t.Source == TaskSource.CarryOver && t.FromDate == d && InScope(t.EmployeeId)).ToList(); }
 
     // ======================= Trạng thái =======================
 
-    public static SupportScope SupScope(DayPlan? p) => p?.SupportScope ?? SupportScope.Khong;
+    public static SupportScope SupScope(DayPlan? p) => p?.SupportScope ?? SupportScope.None;
     /// <summary>needTp(p): cần nhân sự nhóm khác / phòng ban khác → thêm bước TP duyệt.</summary>
-    public static bool NeedTp(DayPlan? p) => SupScope(p) is SupportScope.NhomKhac or SupportScope.PhongKhac;
+    public static bool NeedsManager(DayPlan? p) => SupScope(p) is SupportScope.OtherTeam or SupportScope.OtherDept;
     /// <summary>planSt(p)</summary>
     public static PlanState PlanSt(DayPlan? p)
     {
-        if (p is null) return PlanState.ChuaGui;
-        if (p.LeaderDecision == Decision.No || p.TpDecision == Decision.No) return PlanState.TuChoi;
-        if (p.LeaderDecision == Decision.Ok) return NeedTp(p) && p.TpDecision != Decision.Ok ? PlanState.ChoTp : PlanState.DaDuyet;
-        return PlanState.ChoDuyet;
+        if (p is null) return PlanState.NotSent;
+        if (p.LeaderDecision == Decision.No || p.ManagerDecision == Decision.No) return PlanState.Rejected;
+        if (p.LeaderDecision == Decision.Ok) return NeedsManager(p) && p.ManagerDecision != Decision.Ok ? PlanState.PendingManager : PlanState.Approved;
+        return PlanState.Pending;
     }
     /// <summary>eodSt(r)</summary>
-    public static EodState EodSt(DayReport? r) => r is null ? EodState.ChuaGui
-        : r.LeaderDecision == Decision.Ok ? EodState.DaDuyet : r.LeaderDecision == Decision.No ? EodState.TuChoi : EodState.ChoDuyet;
+    public static EodState EodSt(DayReport? r) => r is null ? EodState.NotSent
+        : r.LeaderDecision == Decision.Ok ? EodState.Approved : r.LeaderDecision == Decision.No ? EodState.Rejected : EodState.Pending;
     /// <summary>exSt(x): trạng thái hiển thị của phát sinh theo tiến độ việc đã tạo.</summary>
     public ExtraView ExSt(Extra x)
     {
-        if (x.Status == ExtraStatus.ChoDuyet) return ExtraView.ChoDuyet;
-        if (x.Status == ExtraStatus.TuChoi) return ExtraView.TuChoi;
+        if (x.Status == ExtraStatus.Pending) return ExtraView.Pending;
+        if (x.Status == ExtraStatus.Rejected) return ExtraView.Rejected;
         var t = Task(x.TaskId);
-        if (t is null) return ExtraView.DaDuyet;
-        return t.Status == TaskState.HoanThanh ? ExtraView.Xong : t.Status == TaskState.ChuaLam ? ExtraView.DaDuyet : ExtraView.DangXuLy;
+        if (t is null) return ExtraView.Approved;
+        return t.Status == TaskState.Done ? ExtraView.Done : t.Status == TaskState.NotStarted ? ExtraView.Approved : ExtraView.InProgress;
     }
 
     // ======================= Tiến độ dự án =======================
 
     static int Pct(int part, int total) => total == 0 ? 0 : (int)Math.Round(part * 100.0 / total, MidpointRounding.AwayFromZero);
     /// <summary>pjPct(pid): % đầu mục đã hoàn thành.</summary>
-    public int PjPct(int pid) { var it = ItemsOf(pid); return Pct(it.Count(i => i.Status == TaskState.HoanThanh), it.Count); }
+    public int PjPct(int pid) { var it = ItemsOf(pid); return Pct(it.Count(i => i.Status == TaskState.Done), it.Count); }
     /// <summary>pjPlanPct(pid, date): % đầu mục có hạn kết thúc TRƯỚC ngày date (kế hoạch đến hôm nay).</summary>
     public int PjPlanPct(int pid, DateOnly date) { var it = ItemsOf(pid); return Pct(it.Count(i => i.EndDate is DateOnly e && e < date), it.Count); }
     /// <summary>pjStatus(pid, date): Hoàn thành nếu đóng / 100%; override nếu có; ngược lại theo chênh lệch kế hoạch – thực tế
@@ -246,11 +239,11 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     public ProjectStatus PjStatus(int pid, DateOnly date)
     {
         var p = PJ(pid);
-        if (p is null) return ProjectStatus.DangLam;
-        if (p.Closed || (ItemsOf(pid).Count > 0 && PjPct(pid) == 100)) return ProjectStatus.HoanThanh;
+        if (p is null) return ProjectStatus.InProgress;
+        if (p.Closed || (ItemsOf(pid).Count > 0 && PjPct(pid) == 100)) return ProjectStatus.Completed;
         if (p.StatusOverride is ProjectStatus o) return o;
         var gap = PjPlanPct(pid, date) - PjPct(pid);
-        return gap <= 0 ? ProjectStatus.Dat : gap <= 10 ? ProjectStatus.DangLam : gap <= 25 ? ProjectStatus.Cham : ProjectStatus.NguyCo;
+        return gap <= 0 ? ProjectStatus.OnTrack : gap <= 10 ? ProjectStatus.InProgress : gap <= 25 ? ProjectStatus.Behind : ProjectStatus.AtRisk;
     }
     /// <summary>need(date, pid): nhu cầu nhân sự trong ngày (ghi đè theo ngày hoặc mặc định của dự án).</summary>
     public int Need(DateOnly date, int pid) { Guard(date); return _needs.Values.FirstOrDefault(n => n.Date == date && n.ProjectId == pid)?.Need ?? PJ(pid)?.Need ?? 0; }
@@ -266,8 +259,8 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     public List<Project> TableProjects()
     {
         if (scope.Role != Role.Leader) return ActivePj();
-        var tp = TeamProjects();
-        return ActivePj().Where(p => tp.Contains(p.Id)).ToList();
+        var teamProjects = TeamProjects();
+        return ActivePj().Where(p => teamProjects.Contains(p.Id)).ToList();
     }
 
     /// <summary>issuesOf(d): phát sinh chờ duyệt, NV báo vướng mắc, dự án nguy cơ, thiếu nhân sự ngày mai.</summary>
@@ -276,11 +269,11 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
         var tm = d.AddDays(1);
         Guard(d); Guard(tm);
         var outp = new List<Issue>();
-        foreach (var x in ExtrasOn(d).Where(x => x.Status == ExtraStatus.ChoDuyet))
+        foreach (var x in ExtrasOn(d).Where(x => x.Status == ExtraStatus.Pending))
             outp.Add(new("var(--bad)", $"{PjName(x.ProjectId)}: {x.Title}", string.IsNullOrEmpty(x.Description) ? "Phát sinh chờ duyệt" : x.Description, x.Start ?? VnTime.Hm(x.CreatedAt)));
         foreach (var r in _reports.Values.Where(r => r.Date == d && r.Blocked && InScope(r.EmployeeId)))
             outp.Add(new("var(--warn)", $"{PName(r.EmployeeId)} báo vướng mắc", r.Note, VnTime.Hm(r.SentAt)));
-        foreach (var p in ActivePj().Where(p => PjStatus(p.Id, d) == ProjectStatus.NguyCo))
+        foreach (var p in ActivePj().Where(p => PjStatus(p.Id, d) == ProjectStatus.AtRisk))
             outp.Add(new("var(--bad)", $"{p.Name}: nguy cơ trễ tiến độ", $"Kế hoạch {PjPlanPct(p.Id, d)}% · thực tế {PjPct(p.Id)}%", ""));
         foreach (var p in ActivePj())
         {
@@ -297,7 +290,7 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     public List<Overtime> OtPending(DateOnly d)
     {
         Guard(d);
-        var r = scope.Role == Role.Leader ? Role.Nv : Role.Leader;
+        var r = scope.Role == Role.Leader ? Role.Staff : Role.Leader;
         return _ots.Values.Where(x => x.Date == d && x.Role == r && InScope(x.PersonId)).ToList();
     }
 
@@ -305,8 +298,8 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
 
     /// <summary>Số mục chờ Leader xử lý trong ngày (badge tab Kế hoạch &amp; duyệt).</summary>
     public int LeaderPending(DateOnly d) =>
-        _plans.Values.Count(p => p.Date == d && PlanSt(p) == PlanState.ChoDuyet && InScope(p.EmployeeId))
-        + ExtrasOn(d).Count(x => x.Status == ExtraStatus.ChoDuyet)
-        + _reports.Values.Count(r => r.Date == d && EodSt(r) == EodState.ChoDuyet && InScope(r.EmployeeId))
+        _plans.Values.Count(p => p.Date == d && PlanSt(p) == PlanState.Pending && InScope(p.EmployeeId))
+        + ExtrasOn(d).Count(x => x.Status == ExtraStatus.Pending)
+        + _reports.Values.Count(r => r.Date == d && EodSt(r) == EodState.Pending && InScope(r.EmployeeId))
         + CarriesFrom(d).Count(t => !t.CarryOk);
 }

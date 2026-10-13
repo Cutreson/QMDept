@@ -1,0 +1,71 @@
+@model LeaderReportVm
+@* ldReport(): tab Báo cáo ngày (KPI, tiến độ dự án, vấn đề nổi bật, kế hoạch ngày mai + sửa nhu cầu, gửi báo cáo cho TP)
+   / tab Báo cáo tuần (weekReport). Controller đã EnsureAsync(Date, Date+1) hoặc cả tuần + Date. *@
+@{
+    var req = Context.Request;
+    var tab = Model.Tab;
+    var canWrite = Scope.CanLead && !Scope.IsReadOnly;
+}
+@Ui.Head(4, "Báo cáo & gửi cho TP")
+@Ui.Subtabs(new[] { (Ui.Here(req, ("tab", "day")), "Báo cáo ngày", tab == "day"), (Ui.Here(req, ("tab", "week")), "Báo cáo tuần", tab == "week") })
+@if (tab == "week")
+{
+    <partial name="_WeekBar" />
+    @D.WeekReport(Model.Monday)
+}
+else
+{
+    var d = Scope.Date;
+    var tm = d.AddDays(1);
+    var k = D.Kpis(d);
+    var sent = Model.Sent;
+    <partial name="_DayBar" />
+    <div class="h2">Tóm tắt ngày @Fmt.Dm(d)</div>
+    <div class="kpis k4"><div class="kpi k-info"><b>@k.Working/@k.Total</b><span>Nhân sự</span></div><div class="kpi k-ok"><b>@k.C.Done</b><span>Hoàn thành</span></div><div class="kpi k-warn"><b>@k.C.InProgress</b><span>Đang làm</span></div><div class="kpi k-bad"><b>@k.C.Late</b><span>Chậm</span></div></div>
+    <section class="card sec"><h2>Tiến độ theo dự án</h2>
+        @foreach (var p in D.ActivePj())
+        {
+            var st = D.PjStatus(p.Id, d);
+            <div class="row"><span style="width:96px;font-weight:600;font-size:13px">@p.Name</span><div style="flex:1">@Ui.Bar(D.PjPct(p.Id), Labels.Color(st))</div></div>
+        }
+    </section>
+    <section class="card sec"><h2>Vấn đề nổi bật</h2>@Blocks.IssueList(D.IssuesOf(d))</section>
+    <section class="card sec"><h2>Kế hoạch ngày mai (@Fmt.Dm(tm))</h2><div class="tbl-wrap"><table><thead><tr><th>Dự án</th><th class="n">Nhu cầu</th><th class="n">Đã bố trí</th><th class="n">Chênh lệch</th></tr></thead><tbody>
+        @foreach (var p in D.ActivePj())
+        {
+            var n = D.Need(tm, p.Id);
+            var a = D.OnSite(tm, p.Id).Count;
+            var g = a - n;
+            <tr><td>@p.Name</td><td class="n">
+                @if (canWrite)
+                {
+                    @* change "need": đổi giá trị → tự gửi form (data-autosubmit). novalidate: số âm / lẻ vẫn gửi, server làm tròn
+                       và chặn dưới 0 như artifact (Math.max(0, Math.round(+v||0))) thay vì trình duyệt chặn im lặng. *@
+                    <form method="post" action="@LeaderUi.Post(req, Scope, "/Leader/SetNeed")" asp-antiforgery="true" novalidate style="margin:0">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="date" value="@Fmt.Key(tm)">
+                        <input type="hidden" name="projectId" value="@p.Id">
+                        <input class="in mono" style="width:60px;padding:4px 6px;text-align:center" type="number" min="0" name="need" value="@n" data-autosubmit aria-label="Nhu cầu @p.Name">
+                    </form>
+                }
+                else
+                {
+                    @n
+                }
+            </td><td class="n">@a</td><td class="n @(g < 0 ? "red" : g > 0 ? "green" : "")">@(g > 0 ? "+" : "")@g</td></tr>
+        }
+    </tbody></table></div>
+        </section>
+    <form method="post" action="@LeaderUi.Post(req, Scope, "/Leader/SubmitReport")" asp-antiforgery="true" class="card sec"><h2>Gửi báo cáo cho TP</h2>
+        @Ui.ReturnField(req)
+        @if (sent is not null)
+        {
+            <div class="notice"><span class="ic">✓</span><div><b>Đã gửi lúc @VnTime.Hm(sent.SentAt)</b></div></div>
+        }
+        <label class="f" for="lrN" style="margin-top:0">Ghi chú cho TP (nếu có)</label><textarea class="in" id="lrN" name="note" maxlength="@LeaderUi.NoteMax">@(sent?.Note)</textarea>
+        @if (canWrite)
+        {
+            <button class="btn btn-primary btn-block" style="margin-top:12px">➤ @(sent is not null ? "Gửi lại báo cáo cho TP" : "Gửi báo cáo cho TP")</button>
+        }
+    </form>
+}

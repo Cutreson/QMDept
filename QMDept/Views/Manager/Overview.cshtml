@@ -1,0 +1,93 @@
+@model ManagerOverviewVm
+@* tpOverview(): Dashboard tổng quan của Trưởng phòng. Controller nạp Date..Date+1 (issuesOf cần ngày mai). *@
+@{
+    ViewData["Title"] = "Tổng quan";
+    var req = Context.Request;
+    var d = Scope.Date;
+    var ps = D.ActivePj();
+    var avg = ps.Count > 0 ? (int)Math.Round(ps.Average(p => (double)D.PjPct(p.Id)), MidpointRounding.AwayFromZero) : 0;
+    var iss = D.IssuesOf(d);
+    var xs = D.ExtrasOn(d);
+    var staff = D.Staff();
+    var tot = staff.Count;
+    var onLeave = staff.Count(p => D.OnLeave(d, p.Id) is not null);
+    var w = D.Working(d).Count;
+}
+@Ui.Head(1, "Dashboard tổng quan")
+<partial name="_DayBar" />
+<div class="kpis">
+    <div class="kpi k-mgr"><b>@ps.Count</b><span>Dự án</span></div>
+    <div class="kpi k-mgr"><b>@tot</b><span>Nhân sự</span></div>
+    <div class="kpi k-ok"><b>@(avg)%</b><span>Tiến độ TB</span></div>
+    <div class="kpi k-bad"><b>@iss.Count</b><span>Vấn đề</span></div>
+    <div class="kpi k-warn"><b>@xs.Count</b><span>Phát sinh</span></div>
+</div>
+
+@* Báo cáo ngày của Leader (khác artifact: mỗi Leader gửi một báo cáo cho nhóm mình). *@
+@if (Model.Reports.Count > 0)
+{
+    foreach (var r in Model.Reports)
+    {
+        <div class="notice" style="--nbg:var(--mgr-soft);--nfg:var(--mgr)"><span class="ic">✉</span><div>
+            <b>Leader @ManagerText.LeaderName(r) đã gửi báo cáo ngày lúc @VnTime.Hm(r.SentAt)</b>
+            @if (ManagerText.OtherSender(r) is string by)
+            {
+                <div class="note">Người gửi: @by</div>
+            }
+            @if (!string.IsNullOrEmpty(r.Note))
+            {
+                <div class="note">@r.Note</div>
+            }
+            <a class="link" href="@Ui.To(req, "/Manager/Reports", ("tab", "day"))">Xem báo cáo ›</a>
+        </div></div>
+    }
+    if (Model.NotSent.Count > 0)
+    {
+        <p class="note">Chưa gửi: @string.Join(", ", Model.NotSent.Select(p => p.Name))</p>
+    }
+}
+else
+{
+    <p class="note">Leader chưa gửi báo cáo ngày @Fmt.Dm(d).</p>
+}
+
+<section class="card sec"><h2>Tiến độ dự án</h2>@D.PjTable(d)</section>
+
+<section class="card sec"><h2>Biểu đồ tiến độ</h2>
+    <div class="legend"><span><i style="background:var(--plan)"></i>Kế hoạch (đến hôm nay)</span><span><i style="background:var(--mgr)"></i>Thực tế</span></div>
+    <div class="cols" role="img" aria-label="So sánh tiến độ kế hoạch và thực tế theo dự án">
+        @foreach (var p in ps)
+        {
+            var plan = D.PjPlanPct(p.Id, d);
+            var act = D.PjPct(p.Id);
+            <div class="col"><div class="c" style="height:@(plan)%;--cc:var(--plan)"><i>@(plan)%</i></div><div class="c" style="height:@(act)%;--cc:var(--mgr)"><i>@(act)%</i></div></div>
+        }
+    </div>
+    <div class="col-lbl">
+        @foreach (var p in ps)
+        {
+            <div>@p.Name</div>
+        }
+    </div>
+</section>
+
+@{
+    // Donut nhân sự: Đang làm = working(d); Chờ phân công = còn lại; Nghỉ / Khác = NV đang nghỉ.
+    var busy = w;
+    var waiting = tot - w - onLeave;
+    var absent = onLeave;
+    var g = tot > 0
+        ? $"conic-gradient(var(--ok) 0 {ManagerText.Pct(busy * 100.0 / tot)}%, var(--warn) 0 {ManagerText.Pct((busy + waiting) * 100.0 / tot)}%, var(--bad) 0 100%)"
+        : "var(--surface-2)";
+}
+<section class="card sec"><h2>Tình hình nhân sự</h2>
+    <div class="donut-wrap"><div class="donut" style="--g:@Html.Raw(g)" role="img" aria-label="@tot người"><b>@tot</b><span>người</span></div>
+        <ul class="dl">
+            <li><i style="--c:var(--ok)"></i><b>@busy</b>Đang làm</li>
+            <li><i style="--c:var(--warn)"></i><b>@waiting</b>Chờ phân công</li>
+            <li><i style="--c:var(--bad)"></i><b>@absent</b>Nghỉ / Khác</li>
+        </ul>
+    </div>
+</section>
+
+<section class="card sec"><h2>Vấn đề cần TP xem xét</h2>@Blocks.IssueList(iss)</section>

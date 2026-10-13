@@ -1,0 +1,38 @@
+@model OvertimeVm
+@* otScreen(): tiêu đề, thanh ngày, hạn đăng ký (otDeadline), tab con cho Leader/TP → otMine / otApprove / otSummary. *@
+@{
+    ViewData["Title"] = "Làm thêm";
+    var req = Context.Request;
+    var d = Scope.Date;
+}
+@Ui.Head(0, "Đăng ký làm thêm")
+<partial name="_DayBar" />
+@OvertimeUi.Deadline(d)
+@if (Scope.Role != Role.Staff)
+{
+    var approveLabel = $"Duyệt {(Scope.Role == Role.Leader ? "nhân viên" : "Leader")}{(Model.Pending > 0 ? $" ({Model.Pending})" : "")}";
+    @Ui.Subtabs(new[]
+    {
+        (Ui.Here(req, ("tab", "mine"), ("edit", null)), "Của tôi", Model.Tab == "mine"),
+        (Ui.Here(req, ("tab", "approve"), ("edit", null)), approveLabel, Model.Tab == "approve"),
+        (Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"),
+    })
+}
+@if (Model.Tab == "approve")
+{
+    <partial name="_Approve" model="Model" />
+}
+else if (Model.Tab == "summary")
+{
+    <partial name="_Summary" model="Model" />
+}
+else
+{
+    <partial name="_Mine" model="Model" />
+}
+@section Scripts {
+    @if (Model.Tab == "mine")
+    {
+        <script src="~/js/overtime.js" asp-append-version="true"></script>
+    }
+}

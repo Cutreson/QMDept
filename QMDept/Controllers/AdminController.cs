@@ -14,19 +14,22 @@ namespace QMDept.Controllers;
 [UiRole(Role.Admin)]
 public class AdminController(IPasswordHasher<Person> hasher) : AppController
 {
+    /// <summary>/Controller → trang mặc định của giao diện.</summary>
+    [HttpGet] public IActionResult Index() => Redirect(Ui.To(Request, "/Admin/Accounts"));
+
     public sealed class AccountInput
     {
         public int Id { get; set; }
         public string? Name { get; set; }
         public string? Code { get; set; }
-        public Role Role { get; set; } = Role.Nv;
+        public Role Role { get; set; } = Role.Staff;
         public int? LeaderId { get; set; }
         public Level? Level { get; set; }
         public string? Password { get; set; }
     }
 
     [HttpGet]
-    public async Task<IActionResult> TaiKhoan()
+    public async Task<IActionResult> Accounts()
     {
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Tài khoản";
@@ -43,12 +46,15 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         var name = (x.Name ?? "").Trim();
         var code = AccountRules.NormalizeCode(x.Code);
         if (name.Length == 0 || code.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
+        if (name.Length > 100) throw new BizException("Họ tên tối đa 100 ký tự");
+        if (!Enum.IsDefined(x.Role)) throw new BizException("Chọn vai trò");
+        if (x.Level is Level lvl && !Enum.IsDefined(lvl)) throw new BizException("Chọn cấp bậc");
         await AccountRules.ValidateCodeAsync(Db, code, p.Id == 0 ? null : p.Id);
         if (p.Id == Scope.Account.Id && x.Role != Role.Admin) throw new BizException("Không thể tự đổi vai trò của tài khoản đang đăng nhập");
         int? leader = null;
-        if (x.Role == Role.Nv && x.LeaderId is int lid)
+        if (x.Role == Role.Staff && x.LeaderId is int lid)
         {
-            if (!await Db.People.AnyAsync(l => l.Id == lid && l.Role == Role.Leader && !l.IsDeleted)) throw new BizException("Nhóm không hợp lệ");
+            if (lid == p.Id || !await Db.People.AnyAsync(l => l.Id == lid && l.Role == Role.Leader && !l.IsDeleted)) throw new BizException("Nhóm không hợp lệ");
             leader = lid;
         }
         var changed = p.Id != 0 && (p.Code != code || p.Role != x.Role);
@@ -56,14 +62,17 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         p.Code = code;
         p.Role = x.Role;
         p.LeaderId = leader;
-        p.Level = x.Role == Role.Nv ? x.Level : null;
+        p.Level = x.Role == Role.Staff ? x.Level : null;
         if (changed) p.SecurityStamp = AccountRules.NewStamp();
     }
 
     [HttpPost]
-    public Task<IActionResult> Tao(AccountInput x) => Do(async () =>
+    public Task<IActionResult> Create(AccountInput x) => Do(async () =>
     {
         RequireAdmin();
+        if (!ModelState.IsValid) throw new BizException("Dữ liệu không hợp lệ (vai trò / cấp bậc / nhóm)");
+        // Tài khoản Quản trị / Trưởng phòng phải có mật khẩu ngay (tránh người khác đăng nhập trước để chiếm quyền).
+        if (x.Role is Role.Admin or Role.Manager && string.IsNullOrEmpty(x.Password)) throw new BizException("Tài khoản Quản trị / Trưởng phòng phải đặt mật khẩu khi tạo");
         var p = new Person { CreatedAt = VnTime.UtcNow, SortOrder = await Db.People.CountAsync() + 1 };
         await ApplyAsync(p, x);
         if (!string.IsNullOrEmpty(x.Password)) { AccountRules.ValidatePassword(x.Password); AccountRules.SetPassword(p, x.Password, hasher); }
@@ -73,10 +82,14 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
     });
 
     [HttpPost]
-    public Task<IActionResult> Sua(AccountInput x) => Do(async () =>
+    public Task<IActionResult> Edit(AccountInput x) => Do(async () =>
     {
         RequireAdmin();
-        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == x.Id) ?? throw new BizException("Không tìm thấy tài khoản");
+        if (!ModelState.IsValid) throw new BizException("Dữ liệu không hợp lệ (vai trò / cấp bậc / nhóm)");
+        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == x.Id && !q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
+        // Không nâng tài khoản chưa có mật khẩu lên Quản trị / TP (ai đăng nhập trước sẽ đặt mật khẩu và chiếm quyền).
+        if (x.Role is Role.Admin or Role.Manager && p.PasswordHash is null)
+            throw new BizException("Tài khoản chưa có mật khẩu — đặt mật khẩu trước khi đổi sang Quản trị / Trưởng phòng");
         var wasLeader = p.Role == Role.Leader;
         await ApplyAsync(p, x);
         // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm".
@@ -87,11 +100,17 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
 
     /// <summary>Đặt mật khẩu trực tiếp; clear=true → xóa mật khẩu để người dùng tự đặt ở lần đăng nhập tới.</summary>
     [HttpPost]
-    public Task<IActionResult> DatMatKhau(int id, string? password, string? confirm, bool clear = false) => Do(async () =>
+    public Task<IActionResult> SetPassword(int id, string? password, string? confirm, bool clear = false) => Do(async () =>
     {
         RequireAdmin();
         var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && !q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
-        if (clear) AccountRules.SetPassword(p, null, hasher);
+        if (clear)
+        {
+            // Không để tài khoản có quyền cao ở trạng thái "chưa có mật khẩu" (ai đăng nhập trước sẽ đặt mật khẩu và chiếm quyền).
+            if (p.Id == Scope.Account.Id || p.Role is Role.Admin or Role.Manager)
+                throw new BizException("Không xóa mật khẩu của chính mình / Quản trị / Trưởng phòng — hãy đặt mật khẩu mới");
+            AccountRules.SetPassword(p, null, hasher);
+        }
         else
         {
             AccountRules.ValidatePassword(password);
@@ -103,7 +122,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
     });
 
     [HttpPost]
-    public Task<IActionResult> Xoa(int id) => Do(async () =>
+    public Task<IActionResult> Delete(int id) => Do(async () =>
     {
         RequireAdmin();
         if (id == Scope.Account.Id) throw new BizException("Không thể xóa tài khoản đang đăng nhập");
@@ -115,7 +134,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
     }, "Đã xóa");
 
     [HttpPost]
-    public Task<IActionResult> KhoiPhuc(int id) => Do(async () =>
+    public Task<IActionResult> Restore(int id) => Do(async () =>
     {
         RequireAdmin();
         var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");

@@ -1,0 +1,21 @@
+@model ManagerProjectsVm
+@* tpProjects(): chip mọi dự án (?pj=) + projectDetail(pid, 'tp') (tab con ?tab=overview|plan|people giữ nguyên khi đổi dự án). *@
+@{
+    ViewData["Title"] = "Dự án";
+    var req = Context.Request;
+}
+@if (Model.Detail is null)
+{
+    @Ui.Head(0, "Chi tiết dự án", "")
+    <div class="empty">Chưa có dự án.</div>
+}
+else
+{
+    <div class="pchips" style="margin-top:14px">
+        @foreach (var x in Model.Projects)
+        {
+            <a class="pchip" href="@Ui.Here(req, ("pj", x.Id.ToString()))" aria-pressed="@(x.Id == Model.Pid ? "true" : "false")">@x.Name</a>
+        }
+    </div>
+    <partial name="_ProjectDetail" model="Model.Detail" />
+}

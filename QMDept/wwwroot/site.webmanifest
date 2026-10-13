@@ -1,0 +1,15 @@
+{
+  "name": "SORA · Quản lý công việc phòng QLCL&BD",
+  "short_name": "SORA QLCL",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eef2f8",
+  "theme_color": "#1747d6",
+  "lang": "vi",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

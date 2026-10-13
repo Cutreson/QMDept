@@ -1,15 +1,16 @@
 namespace QMDept.Data;
 
 // Toàn bộ enum được lưu xuống MySQL dưới dạng chuỗi (tên enum) — xem AppDbContext.ConfigureConventions.
-// Nhãn tiếng Việt, class CSS và màu nằm trong Labels.cs. Khóa gốc trong artifact ghi ở comment từng giá trị.
+// Tên trong code là tiếng Anh (yêu cầu chủ dự án); nhãn tiếng Việt, class CSS và màu nằm trong Labels.cs.
+// Comment từng giá trị ghi khóa gốc trong artifact để tra cứu.
 
 /// <summary>Vai trò tài khoản (people.role).</summary>
 public enum Role
 {
-    Nv,     // 'nv'     Nhân viên Setup
-    Leader, // 'leader' Leader Setup
-    Tp,     // 'tp'     Trưởng phòng
-    Admin,  // (không có trong artifact) Quản trị hệ thống: chỉ quản lý tài khoản — tạo, sửa, đặt mật khẩu
+    Staff,   // 'nv'     Nhân viên Setup
+    Leader,  // 'leader' Leader Setup
+    Manager, // 'tp'     Trưởng phòng
+    Admin,   // (không có trong artifact) Quản trị: toàn quyền tài khoản + xem màn hình của mọi người
 }
 
 /// <summary>Cấp bậc nhân viên (people.level).</summary>
@@ -20,33 +21,33 @@ public enum Level
     Tech3, // 'tech3'
 }
 
-/// <summary>Trạng thái công việc / đầu mục (TS). Đầu mục không dùng Cham.</summary>
+/// <summary>Trạng thái công việc / đầu mục (TS). Đầu mục không dùng Late.</summary>
 public enum TaskState
 {
-    ChuaLam,   // 'chua_lam'
-    DangLam,   // 'dang_lam'
-    HoanThanh, // 'hoan_thanh'
-    Cham,      // 'cham'
+    NotStarted, // 'chua_lam'   Chưa làm
+    InProgress, // 'dang_lam'   Đang làm
+    Done,       // 'hoan_thanh' Hoàn thành
+    Late,       // 'cham'       Chậm
 }
 
 /// <summary>Nguồn gốc công việc (tasks.source, SRC).</summary>
 public enum TaskSource
 {
-    KeHoach,      // 'ke_hoach'        Leader xếp lịch tuần (không gắn nhãn)
-    NgoaiKeHoach, // 'ngoai_ke_hoach'  NV tự thêm ở báo cáo đầu ngày
-    PhatSinh,     // 'phat_sinh'       tạo ra khi phát sinh được duyệt
-    ChuyenTiep,   // 'chuyen_tiep'     chuyển tiếp từ việc chưa xong
-    GiaoViec,     // 'giao_viec'       Leader / TP giao
+    Planned,   // 'ke_hoach'        Leader xếp lịch tuần (không gắn nhãn)
+    Unplanned, // 'ngoai_ke_hoach'  NV tự thêm ở báo cáo đầu ngày ("Ngoài kế hoạch")
+    Extra,     // 'phat_sinh'       tạo ra khi phát sinh được duyệt ("Phát sinh")
+    CarryOver, // 'chuyen_tiep'     chuyển tiếp từ việc chưa xong ("Chuyển tiếp")
+    Assigned,  // 'giao_viec'       Leader / TP giao ("Leader giao")
 }
 
-/// <summary>Trạng thái dự án (PS). Override chỉ dùng Dat/DangLam/Cham/NguyCo; HoanThanh là trạng thái tính ra.</summary>
+/// <summary>Trạng thái dự án (PS). Override chỉ dùng OnTrack/InProgress/Behind/AtRisk; Completed là trạng thái tính ra.</summary>
 public enum ProjectStatus
 {
-    Dat,       // 'dat'
-    DangLam,   // 'dang_lam'
-    Cham,      // 'cham'
-    NguyCo,    // 'nguy_co'
-    HoanThanh, // 'hoan_thanh'
+    OnTrack,    // 'dat'        Đạt
+    InProgress, // 'dang_lam'   Đang làm
+    Behind,     // 'cham'       Chậm
+    AtRisk,     // 'nguy_co'    Nguy cơ
+    Completed,  // 'hoan_thanh' Hoàn thành
 }
 
 /// <summary>Quyết định duyệt (leaderSt / tpSt = 'ok' | 'no'); null = chưa quyết định.</summary>
@@ -59,112 +60,112 @@ public enum Decision
 /// <summary>Trạng thái kế hoạch đầu ngày — giá trị TÍNH RA (planSt), không lưu DB.</summary>
 public enum PlanState
 {
-    ChuaGui,  // 'chua_gui'
-    ChoDuyet, // 'cho_duyet'
-    ChoTp,    // 'cho_tp'
-    DaDuyet,  // 'da_duyet'
-    TuChoi,   // 'tu_choi'
+    NotSent,        // 'chua_gui'  Chưa gửi
+    Pending,        // 'cho_duyet' Chờ duyệt
+    PendingManager, // 'cho_tp'    Chờ TP duyệt
+    Approved,       // 'da_duyet'  Đã duyệt
+    Rejected,       // 'tu_choi'   Từ chối
 }
 
 /// <summary>Trạng thái báo cáo cuối ngày — giá trị TÍNH RA (eodSt), không lưu DB.</summary>
 public enum EodState
 {
-    ChuaGui,  // 'chua_gui'
-    ChoDuyet, // 'cho_duyet'
-    DaDuyet,  // 'da_duyet'
-    TuChoi,   // 'tu_choi' (hiển thị "Yêu cầu bổ sung")
+    NotSent,  // 'chua_gui'
+    Pending,  // 'cho_duyet'
+    Approved, // 'da_duyet'
+    Rejected, // 'tu_choi' (hiển thị "Yêu cầu bổ sung")
 }
 
 /// <summary>Trạng thái làm việc khai báo đầu ngày (WST).</summary>
 public enum WorkStatus
 {
-    CongTy,   // 'cong_ty'   Làm việc tại công ty
-    CtNgay,   // 'ct_ngay'   Công tác trong ngày
-    CtDai,    // 'ct_dai'    Công tác dài ngày
-    NghiPhep, // 'nghi_phep' Xin nghỉ phép
-    NghiKl,   // 'nghi_kl'   Xin nghỉ không lương
+    AtOffice,    // 'cong_ty'   Làm việc tại công ty
+    DayTrip,     // 'ct_ngay'   Công tác trong ngày
+    LongTrip,    // 'ct_dai'    Công tác dài ngày
+    PaidLeave,   // 'nghi_phep' Xin nghỉ phép
+    UnpaidLeave, // 'nghi_kl'   Xin nghỉ không lương
 }
 
 /// <summary>Báo cơm đầu ngày (MEAL).</summary>
 public enum Meal
 {
-    Cat, // 'cat' Cắt cơm
-    Com, // 'com' Cơm
-    Bun, // 'bun' Bún
+    None,   // 'cat' Cắt cơm
+    Rice,   // 'com' Cơm
+    Noodle, // 'bun' Bún
 }
 
 /// <summary>Loại nghỉ (LT): nghỉ phép theo buổi / nghỉ không lương theo giờ.</summary>
 public enum LeaveType
 {
-    Phep, // 'phep'
-    Kl,   // 'kl'
+    Paid,   // 'phep'
+    Unpaid, // 'kl'
 }
 
 /// <summary>Buổi nghỉ phép (LS).</summary>
 public enum LeaveSession
 {
-    Sang,   // 'sang'    08:00–12:00
-    Chieu,  // 'chieu'   13:00–17:00
-    CaNgay, // 'ca_ngay' 08:00–17:00
+    Morning,   // 'sang'    08:00–12:00
+    Afternoon, // 'chieu'   13:00–17:00
+    FullDay,   // 'ca_ngay' 08:00–17:00
 }
 
-/// <summary>Phạm vi nhân sự hỗ trợ (SUP). NhomKhac / PhongKhac cần thêm Trưởng phòng duyệt.</summary>
+/// <summary>Phạm vi nhân sự hỗ trợ (SUP). OtherTeam / OtherDept cần thêm Trưởng phòng duyệt.</summary>
 public enum SupportScope
 {
-    Khong,     // 'khong'      Không cần hỗ trợ
-    Nhom,      // 'nhom'       Nhân sự trong nhóm (Leader duyệt)
-    NhomKhac,  // 'nhom_khac'  Nhân sự nhóm khác (cần TP duyệt)
-    PhongKhac, // 'phong_khac' Nhân sự phòng ban khác (cần TP duyệt)
+    None,      // 'khong'      Không cần hỗ trợ
+    Team,      // 'nhom'       Nhân sự trong nhóm (Leader duyệt)
+    OtherTeam, // 'nhom_khac'  Nhân sự nhóm khác (cần TP duyệt)
+    OtherDept, // 'phong_khac' Nhân sự phòng ban khác (cần TP duyệt)
 }
 
 /// <summary>Trạng thái LƯU của phát sinh (extras.status).</summary>
 public enum ExtraStatus
 {
-    ChoDuyet, // 'cho_duyet'
-    DaDuyet,  // 'da_duyet'
-    TuChoi,   // 'tu_choi'
+    Pending,  // 'cho_duyet'
+    Approved, // 'da_duyet'
+    Rejected, // 'tu_choi'
 }
 
 /// <summary>Trạng thái HIỂN THỊ của phát sinh (XS) — tính bởi Dept.ExSt.</summary>
 public enum ExtraView
 {
-    ChoDuyet,  // 'cho_duyet'
-    DaDuyet,   // 'da_duyet'
-    DangXuLy,  // 'dang_xu_ly'
-    Xong,      // 'xong'
-    TuChoi,    // 'tu_choi'
+    Pending,    // 'cho_duyet'
+    Approved,   // 'da_duyet'
+    InProgress, // 'dang_xu_ly'
+    Done,       // 'xong'
+    Rejected,   // 'tu_choi'
 }
 
 /// <summary>Trạng thái đăng ký làm thêm (OT_ST).</summary>
 public enum OtStatus
 {
-    ChoDuyet, // 'cho_duyet'
-    DaDuyet,  // 'da_duyet'
-    TuChoi,   // 'tu_choi'
+    Pending,  // 'cho_duyet'
+    Approved, // 'da_duyet'
+    Rejected, // 'tu_choi'
 }
 
 /// <summary>Hạn đăng ký làm thêm (OT_REG).</summary>
 public enum OtReg
 {
-    DuTru,     // 'du_tru'      trước 14:00 ngày làm việc liền trước
-    ChinhThuc, // 'chinh_thuc'  trước 14:00 cùng ngày
-    TreHan,    // 'tre_han'     sau 14:00 cùng ngày
+    Early,  // 'du_tru'      dự trù: trước 14:00 ngày làm việc liền trước
+    OnTime, // 'chinh_thuc'  chính thức: trước 14:00 cùng ngày
+    Late,   // 'tre_han'     sau 14:00 cùng ngày
 }
 
 /// <summary>Loại ngày làm thêm (OT_DAY).</summary>
 public enum OtDayType
 {
-    Lv,   // 'lv'   Ngày làm việc — ngoài giờ hành chính
-    Nghi, // 'nghi' Ngày nghỉ / lễ
+    Workday, // 'lv'   Ngày làm việc — ngoài giờ hành chính
+    Holiday, // 'nghi' Ngày nghỉ / lễ
 }
 
 /// <summary>Suất ăn tăng ca.</summary>
 public enum OtMeal
 {
-    Khong, // 'khong' Không đăng ký
-    Nhe,   // 'nhe'   Ăn nhẹ (15.000đ)
-    Com,   // 'com'   Cơm (35.000đ)
-    Bun,   // 'bun'   Bún (35.000đ) — tính như suất cơm
+    None,   // 'khong' Không đăng ký
+    Snack,  // 'nhe'   Ăn nhẹ (15.000đ)
+    Rice,   // 'com'   Cơm (35.000đ)
+    Noodle, // 'bun'   Bún (35.000đ) — tính như suất cơm
 }
 
 /// <summary>Vai trò trong dự án (AROLE).</summary>
@@ -172,4 +173,25 @@ public enum ProjectRole
 {
     Lead,    // 'lead'    Leader dự án
     Support, // 'support' Hỗ trợ dự án
+}
+
+/// <summary>
+/// Loại thông báo đẩy (SignalR) — KHÔNG có trong artifact, bổ sung theo yêu cầu chủ dự án 2026-10-13.
+/// Người dùng bật/tắt từng loại ở trang Cài đặt (/Settings). Danh mục + người nhận: Services/Notifier.cs (NotifyCatalog).
+/// </summary>
+public enum NotifyType
+{
+    PlanSubmitted,       // NV gửi / gửi lại kế hoạch đầu ngày → Leader nhóm
+    PlanDecided,         // kế hoạch được duyệt / từ chối / góp ý → NV
+    SupportNeedsManager, // kế hoạch cần TP duyệt hỗ trợ nhân sự → TP
+    ReportSubmitted,     // NV gửi báo cáo cuối ngày → Leader nhóm
+    ReportDecided,       // báo cáo cuối ngày được duyệt / yêu cầu bổ sung → NV
+    ExtraProposed,       // NV đề xuất công việc phát sinh → Leader nhóm
+    ExtraDecided,        // phát sinh được duyệt / từ chối / Leader thêm phát sinh → NV
+    CarryOver,           // kế hoạch chuyển tiếp được duyệt / sửa / hoàn tác → NV
+    TaskAssigned,        // được giao việc, thêm / xóa việc trong lịch → NV
+    LeaveMarked,         // Leader ghi nghỉ / bỏ nghỉ → NV
+    OvertimeSubmitted,   // đăng ký làm thêm cần duyệt → Leader (của NV) / TP (của Leader)
+    OvertimeDecided,     // đăng ký làm thêm được duyệt / từ chối / hoàn tác → người đăng ký
+    LeaderReportSent,    // Leader gửi báo cáo ngày → TP
 }

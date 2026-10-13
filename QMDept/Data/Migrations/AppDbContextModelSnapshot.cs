@@ -65,7 +65,7 @@ namespace QMDept.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<int>("EmployeeId")
@@ -110,6 +110,21 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<DateTime?>("ManagerAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ManagerBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ManagerDecision")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("ManagerNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
                     b.Property<string>("Meal")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -133,21 +148,6 @@ namespace QMDept.Data.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<string>("SupportText")
-                        .HasMaxLength(2000)
-                        .HasColumnType("varchar(2000)");
-
-                    b.Property<DateTime?>("TpAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("TpBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("TpDecision")
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<string>("TpNote")
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
@@ -193,7 +193,7 @@ namespace QMDept.Data.Migrations
                     b.Property<bool>("Blocked")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<int>("EmployeeId")
@@ -240,7 +240,7 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<DateTime?>("DecidedAt")
@@ -312,7 +312,7 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<int>("LeaderId")
@@ -345,7 +345,7 @@ namespace QMDept.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<int>("EmployeeId")
@@ -365,36 +365,36 @@ namespace QMDept.Data.Migrations
                     b.ToTable("leaves", (string)null);
                 });
 
-            modelBuilder.Entity("QMDept.Data.OtSend", b =>
+            modelBuilder.Entity("QMDept.Data.MealOrder", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("Bun")
+                    b.Property<int>("AllowanceCount")
                         .HasColumnType("int");
 
                     b.Property<string>("By")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<int>("Com")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int>("Nhe")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Pc")
+                    b.Property<int>("NoodleCount")
                         .HasColumnType("int");
 
                     b.Property<int>("People")
                         .HasColumnType("int");
 
+                    b.Property<int>("RiceCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int>("SnackCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -402,6 +402,27 @@ namespace QMDept.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("ot_sends", (string)null);
+                });
+
+            modelBuilder.Entity("QMDept.Data.NotifySetting", b =>
+                {
+                    b.Property<int>("PersonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DisabledTypes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("PersonId");
+
+                    b.ToTable("notify_settings", (string)null);
                 });
 
             modelBuilder.Entity("QMDept.Data.Overtime", b =>
@@ -429,7 +450,7 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<string>("DayType")
@@ -600,46 +621,6 @@ namespace QMDept.Data.Migrations
                     b.ToTable("people", (string)null);
                 });
 
-            modelBuilder.Entity("QMDept.Data.Photo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int?>("ExtraId")
-                        .HasColumnType("int");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("StoredName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<int?>("TaskId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UploadedById")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExtraId");
-
-                    b.HasIndex("TaskId");
-
-                    b.ToTable("photos", (string)null);
-                });
-
             modelBuilder.Entity("QMDept.Data.PlanItem", b =>
                 {
                     b.Property<int>("Id")
@@ -650,10 +631,10 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateOnly?>("DoneDate")
+                    b.Property<DateTime?>("DoneDate")
                         .HasColumnType("date");
 
-                    b.Property<DateOnly?>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<int>("ProjectId")
@@ -662,7 +643,7 @@ namespace QMDept.Data.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly?>("StartDate")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Status")
@@ -694,7 +675,7 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateOnly?>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Factory")
@@ -716,7 +697,7 @@ namespace QMDept.Data.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly?>("StartDate")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("date");
 
                     b.Property<string>("StatusOverride")
@@ -734,7 +715,7 @@ namespace QMDept.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<int>("Need")
@@ -772,7 +753,7 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<DateOnly?>("CarryDate")
+                    b.Property<DateTime?>("CarryDate")
                         .HasColumnType("date");
 
                     b.Property<bool>("CarryOk")
@@ -781,7 +762,7 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateOnly>("Date")
+                    b.Property<DateTime>("Date")
                         .HasColumnType("date");
 
                     b.Property<DateTime?>("EditedAt")
@@ -802,7 +783,7 @@ namespace QMDept.Data.Migrations
                     b.Property<int?>("ExtraId")
                         .HasColumnType("int");
 
-                    b.Property<DateOnly?>("FromDate")
+                    b.Property<DateTime?>("FromDate")
                         .HasColumnType("date");
 
                     b.Property<string>("GivenBy")
@@ -970,6 +951,17 @@ namespace QMDept.Data.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("QMDept.Data.NotifySetting", b =>
+                {
+                    b.HasOne("QMDept.Data.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+                });
+
             modelBuilder.Entity("QMDept.Data.Overtime", b =>
                 {
                     b.HasOne("QMDept.Data.Person", "Person")
@@ -1014,23 +1006,6 @@ namespace QMDept.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Leader");
-                });
-
-            modelBuilder.Entity("QMDept.Data.Photo", b =>
-                {
-                    b.HasOne("QMDept.Data.Extra", "Extra")
-                        .WithMany("Photos")
-                        .HasForeignKey("ExtraId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("QMDept.Data.WorkTask", "Task")
-                        .WithMany("Photos")
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Extra");
-
-                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("QMDept.Data.PlanItem", b =>
@@ -1086,11 +1061,6 @@ namespace QMDept.Data.Migrations
                     b.Navigation("PlanTasks");
                 });
 
-            modelBuilder.Entity("QMDept.Data.Extra", b =>
-                {
-                    b.Navigation("Photos");
-                });
-
             modelBuilder.Entity("QMDept.Data.Overtime", b =>
                 {
                     b.Navigation("Items");
@@ -1104,11 +1074,6 @@ namespace QMDept.Data.Migrations
             modelBuilder.Entity("QMDept.Data.Project", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("QMDept.Data.WorkTask", b =>
-                {
-                    b.Navigation("Photos");
                 });
 #pragma warning restore 612, 618
         }

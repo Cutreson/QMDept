@@ -48,7 +48,9 @@ public static class Fmt
     /// <summary>"HH:mm" → số phút (hmMin). "24:00" → 1440.</summary>
     public static int Min(string hhmm) => int.Parse(hhmm[..2], Inv) * 60 + int.Parse(hhmm[3..5], Inv);
     public static string Hhmm(int min) => $"{min / 60:00}:{min % 60:00}";
-    public static bool IsHhmm(string? s) => s is { Length: 5 } && s[2] == ':' && int.TryParse(s[..2], out var h) && int.TryParse(s[3..], out var m) && h is >= 0 and <= 24 && m is >= 0 and < 60 && (h < 24 || m == 0);
+    /// <summary>Đúng dạng "HH:mm" (4 chữ số ASCII + dấu ':'; 00:00–24:00). Không dùng int.TryParse (nhận " 9", "+9" → so sánh chuỗi sai).</summary>
+    public static bool IsHhmm(string? s) => s is { Length: 5 } && s[2] == ':' && char.IsAsciiDigit(s[0]) && char.IsAsciiDigit(s[1])
+        && char.IsAsciiDigit(s[3]) && char.IsAsciiDigit(s[4]) && Min(s) is var t && t <= 1440 && s[3] <= '5';
 
     /// <summary>T24: 00:00–24:00 bước 30 phút.</summary>
     public static readonly string[] T24 = Enumerable.Range(0, 49).Select(k => Hhmm(k * 30)).ToArray();

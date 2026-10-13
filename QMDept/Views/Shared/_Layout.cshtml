@@ -2,6 +2,15 @@
 @{
     var chrome = await CB.BuildAsync();
     var toast = TempData["toast"] as string;
+    var hasSide = chrome is not null && chrome.Tabs.Count > 0;
+    // Màn hình máy tính (≥1024px): các trang dạng "bảng điều khiển / danh sách thẻ" xếp thẻ thành 2 cột (xem site.css: main.grid-page).
+    var page = $"{Context.GetRouteValue("controller")}/{Context.GetRouteValue("action")}";
+    var gridPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Leader/Overview", "Leader/Tracking", "Leader/Reports", "Manager/Overview", "Manager/Approvals", "Manager/Reports",
+        "Planning/Approvals", "Planning/Reports", "Planning/Projects", "Planning/People", "Admin/Accounts",
+    };
+    var mainClass = "shell" + (gridPages.Contains(page) ? " grid-page" : "");
 }
 <!DOCTYPE html>
 <html lang="vi" style="--accent:@(chrome?.Accent ?? "var(--brand)")">
@@ -9,84 +18,85 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>@(ViewData["Title"] is string t ? t + " · " : "")Quản lý công việc phòng QLCL&amp;BD</title>
+    <link rel="icon" href="~/favicon.ico" sizes="48x48" asp-append-version="true">
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" asp-append-version="true">
+    <link rel="apple-touch-icon" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest">
+    <meta name="theme-color" content="#1747d6">
+    <meta name="apple-mobile-web-app-title" content="SORA QLCL">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body class="@(hasSide ? "has-side" : "no-side")@(Scope.Resolved && Scope.IsViewingOther ? " readonly" : "")" data-notify="@(chrome?.NotifyEnabled == true ? "1" : "0")">
+@* Thanh trên. Điện thoại: logo + tài khoản / chọn giao diện / xem người (3 hàng). Máy tính: một hàng (site.css .top-grid). *@
 <header class="top">
-    <div class="shell">
-        <div class="top-row">
-            <a class="logo" href="/" style="text-decoration:none">SORA<small>Phòng QLCL&amp;BD</small></a>
-            <div class="me" id="me">
-                @if (chrome is not null)
-                {
-                    <div class="acc"><b>@chrome.Account.Name @Ui.LvPill(chrome.Account)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
-                    @Ui.Av(chrome.Account.Name, chrome.Account.Role == Role.Tp)
-                    <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
-                }
-            </div>
+    <div class="shell top-grid">
+        <a class="logo" href="/" style="text-decoration:none">SORA<small>Phòng QLCL&amp;BD</small></a>
+        <div class="me" id="me">
+            @if (chrome is not null)
+            {
+                <div class="acc"><b>@chrome.Account.Name @Ui.LevelPill(chrome.Account)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
+                @Ui.Av(chrome.Account.Name, chrome.Account.Role == Role.Manager)
+                <a class="btn btn-sm" href="/Settings?as=me" title="Cài đặt thông báo" aria-label="Cài đặt">⚙</a>
+                <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
+            }
         </div>
-        @if (chrome is not null && chrome.Roles.Count > 1)
+        @if (chrome is not null && chrome.ViewOptions.Count > 0)
         {
-            <div class="roles" role="group" aria-label="Chọn giao diện" style="grid-template-columns:repeat(@chrome.Roles.Count,1fr)">
-                @foreach (var r in chrome.Roles)
-                {
-                    <a href="@r.Href" style="--rc:@r.Color" aria-pressed="@(r.Active ? "true" : "false")">@r.Label</a>
-                }
-            </div>
-        }
-        @if (chrome is not null && chrome.ShowViewAs)
-        {
-            <div class="row" style="flex-wrap:wrap;gap:6px 12px">
-                <form method="get" action="@Context.Request.Path" class="row va">
-                    @foreach (var kv in Context.Request.Query.Where(k => k.Key != "as"))
+            @* Cấp trên chọn cấp dưới để xem màn hình của họ (chỉ xem) — xem ViewScope. *@
+            <form method="get" action="@Context.Request.Path" class="row va viewas">
+                @if (!string.IsNullOrEmpty(Context.Request.Query["d"])) { <input type="hidden" name="d" value="@Context.Request.Query["d"]"> }
+                <span class="note" style="white-space:nowrap">Xem màn hình:</span>
+                <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
+                    @if (chrome.TeamActive) { <option value="" selected disabled hidden>Lịch nhóm</option> }
+                    @foreach (var o in chrome.ViewOptions.Where(o => o.Group is null))
                     {
-                        <input type="hidden" name="@kv.Key" value="@kv.Value">
+                        <option value="@o.Value" selected="@o.Selected">@o.Label</option>
                     }
-                    <span class="note" style="white-space:nowrap">Xem @chrome.ViewAsLabel:</span>
-                    <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem">
-                        @foreach (var (v, l, sel) in chrome.ViewAsOptions)
-                        {
-                            <option value="@v" selected="@sel">@l</option>
-                        }
-                    </select>
-                </form>
-                @if (chrome.ViewAsInfoHtml is not null) { @Html.Raw(chrome.ViewAsInfoHtml) }
-            </div>
-        }
-        else if (chrome is not null && chrome.EmptyTeamNote)
-        {
-            <p class="note" style="margin:0">Nhóm của bạn chưa có nhân viên. Trưởng phòng xếp nhóm ở Nhân sự.</p>
+                    @foreach (var g in chrome.ViewOptions.Where(o => o.Group is not null).GroupBy(o => o.Group))
+                    {
+                        <optgroup label="@g.Key">
+                            @foreach (var o in g) { <option value="@o.Value" selected="@o.Selected">@o.Label</option> }
+                        </optgroup>
+                    }
+                </select>
+                @if (chrome.TeamHref is not null)
+                {
+                    <a class="btn btn-sm@(chrome.TeamActive ? " btn-primary" : "")" href="@chrome.TeamHref" style="white-space:nowrap" aria-current="@(chrome.TeamActive ? "page" : null)">Lịch nhóm</a>
+                }
+            </form>
         }
     </div>
 </header>
-<main class="shell" id="app">
-    @if (chrome is not null && Scope.IsReadOnly)
+<main class="@mainClass" id="app">
+    @if (chrome is not null && chrome.ViewingName is not null)
     {
-        <div class="notice ro-note" style="--nbg:var(--brand-soft);--nfg:var(--brand);margin-top:12px"><span class="ic">i</span><div>
-            <b>Chế độ xem: @(Scope.AllNv ? "Tất cả nhân viên" : Scope.Me?.Name ?? "—")</b>
-            <div class="note">@(Scope.AllNv ? "Bấm một ngày để xem việc cả nhóm và giao thêm việc." : "Chỉ xem, không sửa. Chọn \"Tất cả nhân viên\" để giao thêm việc.") Đổi người ở ô "Xem nhân viên" phía trên.</div>
+        <div class="notice ro-note" style="--nbg:var(--warn-soft);--nfg:var(--warn);margin-top:12px"><span class="ic">i</span><div>
+            <b>Đang xem màn hình của @chrome.ViewingName — chỉ xem</b>
+            <div class="note">@chrome.ViewingInfo · <a class="link" href="@chrome.HomeHref">Về màn hình của tôi ›</a></div>
         </div></div>
     }
     @RenderBody()
 </main>
-@if (chrome is not null && chrome.Tabs.Count > 0)
+@* Điện thoại / máy tính bảng: thanh tab dưới đáy. Máy tính: menu dọc bên trái (site.css body.has-side .tabbar). *@
+@if (hasSide)
 {
     <nav class="tabbar" aria-label="Màn hình"><div class="shell">
-        @foreach (var t in chrome.Tabs)
+        @foreach (var t in chrome!.Tabs)
         {
-            <a href="@t.Href" aria-current="@(t.Active ? "page" : null)">@Ui.Icon(t.Icon)@t.Label@if (t.Badge > 0) {<span class="badge">@t.Badge</span>}</a>
+            <a href="@t.Href" aria-current="@(t.Active ? "page" : null)">@Ui.Icon(t.Icon)<span class="tl">@t.Label</span>@if (t.Badge > 0) {<span class="badge">@t.Badge</span>}</a>
         }
     </div></nav>
 }
-else
-{
-    <style>main{padding-bottom:24px}</style>
-}
 <div id="toast" class="toast" hidden role="status" data-msg="@toast"></div>
+<div id="notifs" class="notifs" aria-live="polite"></div>
 <div id="dlg" class="dlg" hidden></div>
+@if (chrome is not null)
+{
+    <script src="~/lib/microsoft-signalr/signalr.min.js" asp-append-version="true"></script>
+}
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>

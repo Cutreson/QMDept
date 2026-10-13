@@ -1,0 +1,43 @@
+@model Overtime
+@* otDetail(x): thời gian, mức, nghỉ giải lao, suất ăn, phụ cấp, công việc, hạn đăng ký, lý do từ chối. *@
+@{
+    var x = Model;
+    var items = x.Items.OrderBy(i => i.Id).ToList();
+}
+<dl class="kvl">
+    <dt>Thời gian</dt><dd><b class="mono">@x.Start–@x.End</b> · @Fmt.Num(x.Hours) giờ · @(x.DayType == OtDayType.Holiday ? "ngày nghỉ / lễ" : "ngoài giờ hành chính")</dd>
+    <dt>Mức</dt><dd>@x.Tier</dd>
+    <dt>Nghỉ giải lao</dt><dd class="mono">@x.Break</dd>
+    <dt>Suất ăn</dt><dd>@OtRules.MealText(x)</dd>
+    @if (x.Allowance > 0)
+    {
+        <dt>Phụ cấp</dt><dd>@Fmt.Money(x.Allowance), trả vào lương</dd>
+    }
+    <dt>Công việc</dt><dd>
+        @if (items.Count > 0)
+        {
+            <ul class="otl">
+                @foreach (var i in items)
+                {
+                    <li>@i.Title <span class="note">· @D.PjName(i.ProjectId)</span></li>
+                }
+            </ul>
+            @if (!string.IsNullOrEmpty(x.ExtraContent))
+            {
+                <div>Khác: @(x.ExtraContent)@if (x.ProjectId is not null && x.ProjectId != items[0].ProjectId)
+                    {
+                        <text> </text><span class="note">· @D.PjName(x.ProjectId)</span>
+                    }</div>
+            }
+        }
+        else
+        {
+            <div>@x.Content <span class="note">· @(x.ProjectId is not null ? D.PjName(x.ProjectId) : "Việc chung / nội bộ")</span></div>
+        }
+    </dd>
+    <dt>Đăng ký</dt><dd>@Ui.Pill(x.Reg) <span class="note mono">@VnTime.Hm(x.CreatedAt) @Fmt.Dm(VnTime.DateOf(x.CreatedAt))</span></dd>
+</dl>
+@if (!string.IsNullOrEmpty(x.Reason))
+{
+    <div class="cmt" style="margin-top:10px"><b>Lý do từ chối:</b> @x.Reason</div>
+}

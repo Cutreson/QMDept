@@ -1,0 +1,109 @@
+@model ManagerApprovalsVm
+@* tpApprove(): Hỗ trợ nhân sự (kế hoạch cần TP duyệt — tpDecide) / Phát sinh (chỉ theo dõi, Leader duyệt). *@
+@{
+    ViewData["Title"] = "Phê duyệt";
+    var req = Context.Request;
+}
+@Ui.Head(2, "Chi tiết & phê duyệt")
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("mode", "plan")), "Hỗ trợ nhân sự", Model.Mode == "plan", Model.PendingManager),
+    (Ui.Here(req, ("mode", "extra")), "Phát sinh", Model.Mode == "extra", 0),
+})
+<form method="get" action="@req.Path">
+    @foreach (var kv in req.Query.Where(k => k.Key != "f"))
+    {
+        <input type="hidden" name="@kv.Key" value="@kv.Value">
+    }
+    <label class="row" style="margin-bottom:12px"><span class="note">Trạng thái:</span>@Ui.Select("f", ManagerApprovalsVm.Filters, Model.Filter, id: "approvalFilter", extraAttrs: "data-autosubmit")</label>
+</form>
+
+@if (Model.Mode == "plan")
+{
+    <partial name="_DayBar" />
+    if (Model.Plans.Count == 0)
+    {
+        <div class="empty">Không có yêu cầu hỗ trợ nhân sự phù hợp bộ lọc.</div>
+    }
+    foreach (var p in Model.Plans)
+    {
+        var st = Dept.PlanSt(p);
+        var name = D.PName(p.EmployeeId);
+        <section class="card apv">
+            <div class="hd">@Ui.Av(name)<b>@name</b>@Ui.Pill(st)</div>
+            <p class="note" style="margin:0 0 8px">Leader: @(p.LeaderDecision is Decision ld ? (ld == Decision.Ok ? "đã duyệt" : "từ chối") + " lúc " + VnTime.Hm(p.LeaderAt) : "chưa duyệt")</p>
+            @Blocks.PlanMeta(p)
+            @D.PlanTable(p)
+            @if (!string.IsNullOrEmpty(p.Note))
+            {
+                <div class="cmt"><b>Nhân viên:</b> @p.Note</div>
+            }
+            @if (!string.IsNullOrEmpty(p.LeaderNote))
+            {
+                <div class="cmt"><b>Leader:</b> @p.LeaderNote</div>
+            }
+            @if (!string.IsNullOrEmpty(p.ManagerNote))
+            {
+                <div class="cmt"><b>TP:</b> @p.ManagerNote</div>
+            }
+            @if (st == PlanState.Pending)
+            {
+                <p class="note" style="margin:0">Đang chờ Leader duyệt trước.</p>
+            }
+            @if (st == PlanState.PendingManager)
+            {
+                <div class="btn-row">
+                    <form method="post" action="/Manager/Decide" asp-antiforgery="true"
+                          data-prompt="Từ chối kế hoạch của @name" data-prompt-label="Lý do" data-prompt-required
+                          data-prompt-name="note" data-prompt-value="@p.ManagerNote">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id">
+                        <input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">Từ chối</button>
+                    </form>
+                    <form method="post" action="/Manager/Decide" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id">
+                        <input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">Duyệt</button>
+                    </form>
+                </div>
+            }
+        </section>
+    }
+}
+else
+{
+    if (Model.Extras.Count == 0)
+    {
+        <div class="empty">Không có phát sinh phù hợp bộ lọc.</div>
+    }
+    foreach (var x in Model.Extras)
+    {
+        var xst = D.ExSt(x);
+        <section class="card apv">
+            <div class="hd"><span class="av" style="background:@Labels.Color(xst);color:#fff">!</span><b>@x.Title</b>@Ui.Pill(xst)</div>
+            <div style="font-size:13px;display:grid;gap:2px;margin-bottom:10px">
+                <div><span class="muted">Dự án:</span> @D.PjName(x.ProjectId)</div>
+                <div><span class="muted">Người đề xuất:</span> @D.PName(x.EmployeeId)</div>
+                <div><span class="muted">Thời gian:</span> <span class="mono">@Fmt.Dmy(x.Date) @(x.Start ?? "")@(string.IsNullOrEmpty(x.End) ? "" : "–" + x.End)</span></div>
+                @if (!string.IsNullOrEmpty(x.Description))
+                {
+                    <div><span class="muted">Mô tả:</span> @x.Description</div>
+                }
+                @if (!string.IsNullOrEmpty(x.DecidedBy))
+                {
+                    <div class="note">@(x.Status == ExtraStatus.Rejected ? "Từ chối" : "Duyệt") bởi @x.DecidedBy lúc @VnTime.Hm(x.DecidedAt)</div>
+                }
+                @if (!string.IsNullOrEmpty(x.Reason))
+                {
+                    <div class="note red">Lý do: @x.Reason</div>
+                }
+            </div>
+            @if (x.Status == ExtraStatus.Pending)
+            {
+                <p class="note" style="margin:0">Chờ Leader duyệt.</p>
+            }
+        </section>
+    }
+}

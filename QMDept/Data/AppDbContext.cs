@@ -15,11 +15,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Leave> Leaves => Set<Leave>();
     public DbSet<ProjectNeed> ProjectNeeds => Set<ProjectNeed>();
     public DbSet<Extra> Extras => Set<Extra>();
-    public DbSet<Photo> Photos => Set<Photo>();
     public DbSet<LeaderReport> LeaderReports => Set<LeaderReport>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
     public DbSet<OvertimeTask> OvertimeTasks => Set<OvertimeTask>();
-    public DbSet<OtSend> OtSends => Set<OtSend>();
+    public DbSet<MealOrder> MealOrders => Set<MealOrder>();
+    public DbSet<NotifySetting> NotifySettings => Set<NotifySetting>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder b)
     {
@@ -27,7 +27,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         foreach (var t in typeof(Role).Assembly.GetTypes().Where(t => t.IsEnum && t.Namespace == typeof(Role).Namespace))
             b.Properties(t).HaveConversion<string>().HaveMaxLength(20);
         b.Properties<decimal>().HavePrecision(9, 2);
+        // MySql.Data (driver của MySql.EntityFrameworkCore) không đọc được DateOnly: "Unable to cast DateTime to DateOnly"
+        // khi bảng có dữ liệu → chuyển DateOnly ↔ DateTime ở tầng EF, cột vẫn là kiểu `date`.
+        b.Properties<DateOnly>().HaveConversion<DateOnlyConverter>().HaveColumnType("date");
     }
+
+    sealed class DateOnlyConverter() : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateOnly, DateTime>(
+        d => d.ToDateTime(TimeOnly.MinValue), dt => DateOnly.FromDateTime(dt));
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -112,13 +118,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Task).WithMany().HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        m.Entity<Photo>(e =>
-        {
-            e.ToTable("photos");
-            e.HasOne(x => x.Task).WithMany(x => x.Photos).HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.Extra).WithMany(x => x.Photos).HasForeignKey(x => x.ExtraId).OnDelete(DeleteBehavior.SetNull);
-        });
-
         m.Entity<LeaderReport>(e =>
         {
             e.ToTable("leader_reports");
@@ -142,7 +141,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.WorkTask).WithMany().HasForeignKey(x => x.WorkTaskId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        m.Entity<OtSend>(e =>
+        m.Entity<NotifySetting>(e =>
+        {
+            e.ToTable("notify_settings");
+            e.HasKey(x => x.PersonId);
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        m.Entity<MealOrder>(e =>
         {
             e.ToTable("ot_sends");
             e.HasIndex(x => x.Date).IsUnique();

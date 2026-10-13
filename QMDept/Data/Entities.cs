@@ -55,7 +55,7 @@ public class PlanItem
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public int SortOrder { get; set; }
-    public TaskState Status { get; set; } = TaskState.ChuaLam;      // chỉ ChuaLam / DangLam / HoanThanh
+    public TaskState Status { get; set; } = TaskState.NotStarted;      // chỉ NotStarted / InProgress / Done
     public DateOnly? DoneDate { get; set; }
     [MaxLength(100)] public string? DoneBy { get; set; }
 }
@@ -88,13 +88,13 @@ public class WorkTask
     [MaxLength(300)] public string Title { get; set; } = "";
     [MaxLength(5)] public string Start { get; set; } = "08:00";
     [MaxLength(5)] public string End { get; set; } = "17:00";
-    public TaskState Status { get; set; } = TaskState.ChuaLam;
-    public TaskSource Source { get; set; } = TaskSource.KeHoach;
+    public TaskState Status { get; set; } = TaskState.NotStarted;
+    public TaskSource Source { get; set; } = TaskSource.Planned;
     public bool Selected { get; set; }                               // NV đã chọn làm trong ngày (báo cáo đầu ngày)
     [MaxLength(2000)] public string? Note { get; set; }              // Kết quả / lý do chưa hoàn thành
 
     // Chuyển tiếp (việc chưa xong → kế hoạch tiếp theo)
-    public bool CarryOk { get; set; }                                // việc chuyen_tiep đã được Leader duyệt (mới vào lịch)
+    public bool CarryOk { get; set; }                                // việc CarryOver (chuyen_tiep) đã được Leader duyệt (mới vào lịch)
     public int? CarriedFromId { get; set; }                          // (trên việc chuyen_tiep) việc gốc
     public int? CarriedToId { get; set; }                            // (trên việc gốc) việc chuyển tiếp
     public DateOnly? FromDate { get; set; }                          // (trên việc chuyen_tiep) ngày của việc gốc
@@ -104,13 +104,12 @@ public class WorkTask
     [MaxLength(100)] public string? EditedBy { get; set; }           // Leader đã chỉnh đề xuất chuyển
     public DateTime? EditedAt { get; set; }
 
-    [MaxLength(100)] public string? GivenBy { get; set; }            // người giao (source = GiaoViec)
-    public int? ExtraId { get; set; }                                // phát sinh đã tạo ra việc này (source = PhatSinh)
+    [MaxLength(100)] public string? GivenBy { get; set; }            // người giao (source = Assigned)
+    public int? ExtraId { get; set; }                                // phát sinh đã tạo ra việc này (source = Extra)
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
-    public ICollection<Photo> Photos { get; set; } = new List<Photo>();
 }
 
 /// <summary>Kế hoạch đầu ngày của NV (collection `dayPlans`, id = `${date}_${employee}`).</summary>
@@ -124,7 +123,7 @@ public class DayPlan
     public WorkStatus Status { get; set; }
     public Meal Meal { get; set; }
 
-    // Nghỉ (khi Status = NghiPhep / NghiKl)
+    // Nghỉ (khi Status = PaidLeave / UnpaidLeave)
     public LeaveType? LeaveType { get; set; }
     public LeaveSession? LeaveSession { get; set; }                  // chỉ với nghỉ phép
     [MaxLength(5)] public string? LeaveFrom { get; set; }
@@ -132,12 +131,12 @@ public class DayPlan
     public decimal? LeaveHours { get; set; }
     public decimal? LeaveDays { get; set; }                          // chỉ với nghỉ phép: 0.5 / 1
 
-    // Công tác (khi Status = CtNgay / CtDai)
+    // Công tác (khi Status = DayTrip / LongTrip)
     [MaxLength(100)] public string? TripProvince { get; set; }
     [MaxLength(200)] public string? TripCustomer { get; set; }
 
     // Nhân sự hỗ trợ
-    public SupportScope SupportScope { get; set; } = SupportScope.Khong;
+    public SupportScope SupportScope { get; set; } = SupportScope.None;
     [MaxLength(2000)] public string? SupportText { get; set; }
 
     [MaxLength(2000)] public string? Note { get; set; }
@@ -148,10 +147,10 @@ public class DayPlan
     public DateTime? LeaderAt { get; set; }
     [MaxLength(2000)] public string? LeaderNote { get; set; }
 
-    public Decision? TpDecision { get; set; }                        // tpSt
-    [MaxLength(100)] public string? TpBy { get; set; }
-    public DateTime? TpAt { get; set; }
-    [MaxLength(2000)] public string? TpNote { get; set; }
+    public Decision? ManagerDecision { get; set; }                        // tpSt
+    [MaxLength(100)] public string? ManagerBy { get; set; }
+    public DateTime? ManagerAt { get; set; }
+    [MaxLength(2000)] public string? ManagerNote { get; set; }
 
     /// <summary>taskIds: các việc NV chọn làm trong ngày (+ việc được thêm sau khi gửi: phát sinh đã duyệt, việc được giao).</summary>
     public ICollection<DayPlanTask> PlanTasks { get; set; } = new List<DayPlanTask>();
@@ -215,7 +214,7 @@ public class Extra
     [MaxLength(2000)] public string? Description { get; set; }
     [MaxLength(5)] public string? Start { get; set; }
     [MaxLength(5)] public string? End { get; set; }                  // null = chưa rõ
-    public ExtraStatus Status { get; set; } = ExtraStatus.ChoDuyet;
+    public ExtraStatus Status { get; set; } = ExtraStatus.Pending;
     [MaxLength(2000)] public string? Reason { get; set; }            // lý do từ chối
     public int? TaskId { get; set; }                                 // việc được tạo khi duyệt
     public WorkTask? Task { get; set; }
@@ -224,23 +223,8 @@ public class Extra
     public DateTime? DecidedAt { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public ICollection<Photo> Photos { get; set; } = new List<Photo>();
 }
 
-/// <summary>Ảnh hiện trường đính kèm công việc hoặc phát sinh (file lưu trên đĩa, xem PhotoStore).</summary>
-public class Photo
-{
-    public int Id { get; set; }
-    [MaxLength(100)] public string StoredName { get; set; } = "";   // tên file trên đĩa
-    [MaxLength(100)] public string ContentType { get; set; } = "image/jpeg";
-    public long Size { get; set; }
-    public int? TaskId { get; set; }
-    public WorkTask? Task { get; set; }
-    public int? ExtraId { get; set; }
-    public Extra? Extra { get; set; }
-    public int? UploadedById { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
 
 /// <summary>Báo cáo ngày Leader gửi TP (collection `leaderReports`). Khác artifact: khóa theo (ngày, leader).</summary>
 public class LeaderReport
@@ -278,7 +262,7 @@ public class Overtime
     public Project? Project { get; set; }
     [MaxLength(2000)] public string Content { get; set; } = "";      // nội dung tổng hợp
     [MaxLength(2000)] public string? ExtraContent { get; set; }      // "Nội dung khác"
-    public OtStatus Status { get; set; } = OtStatus.ChoDuyet;
+    public OtStatus Status { get; set; } = OtStatus.Pending;
     [MaxLength(100)] public string? DecidedBy { get; set; }
     public DateTime? DecidedAt { get; set; }
     [MaxLength(2000)] public string? Reason { get; set; }
@@ -302,15 +286,29 @@ public class OvertimeTask
 }
 
 /// <summary>TP gửi tổng hợp suất ăn tăng ca cho Phòng HCNS (collection `otSends`, id = date).</summary>
-public class OtSend
+public class MealOrder
 {
     public int Id { get; set; }
     public DateOnly Date { get; set; }
     [MaxLength(100)] public string? By { get; set; }
     public DateTime SentAt { get; set; }
-    public int Com { get; set; }
-    public int Bun { get; set; }
-    public int Nhe { get; set; }
-    public int Pc { get; set; }
+    public int RiceCount { get; set; }                               // số suất cơm (gồm cả bún — tính như suất cơm)
+    public int NoodleCount { get; set; }                             // trong đó số suất bún
+    public int SnackCount { get; set; }                              // số suất ăn nhẹ
+    public int AllowanceCount { get; set; }                          // số người được phụ cấp 4 giờ
     public int People { get; set; }
+}
+
+/// <summary>Cài đặt thông báo đẩy của một tài khoản (không có bản ghi = bật tất cả). Bổ sung, không có trong artifact.</summary>
+public class NotifySetting
+{
+    public int PersonId { get; set; }
+    public Person? Person { get; set; }
+    /// <summary>Bật / tắt toàn bộ thông báo đẩy.</summary>
+    public bool Enabled { get; set; } = true;
+    /// <summary>Các loại bị TẮT, phân cách dấu phẩy (tên NotifyType) — loại mới thêm sau mặc định bật.</summary>
+    [MaxLength(1000)] public string DisabledTypes { get; set; } = "";
+    public DateTime UpdatedAt { get; set; }
+
+    public bool Allows(NotifyType t) => Enabled && !DisabledTypes.Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(t.ToString());
 }

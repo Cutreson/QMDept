@@ -1,0 +1,120 @@
+@model PlanningPeopleVm
+@* ldPeople(): danh sách nhân sự trong ngày đang chọn (Báo nghỉ / Bỏ nghỉ); TP: Sửa tài khoản (openPerson) + Tạo tài khoản (personForm). *@
+@{
+    var req = Context.Request;
+    var d = Scope.Date;
+    var isManager = Model.IsManager;
+    var leaders = D.Leaders();
+}
+@if (Scope.Role == Role.Manager)
+{
+    @Ui.Head(0, "Nhân sự")
+}
+else
+{
+    <partial name="_PlanningTabs" model="@("people")" />
+}
+<partial name="_DayBar" />
+<section class="card sec"><h2>@(isManager ? "Tài khoản & nhân sự" : "Nhóm của " + D.PName(Model.Leader?.Id)) (@Model.People.Count)</h2>
+    @foreach (var p in Model.People)
+    {
+        var leave = D.OnLeave(d, p.Id);
+        var sub = Labels.Title(p.Role)
+            + (p.Role == Role.Staff ? " · " + (p.LeaderId is not null ? "Nhóm " + PlanningManage.LeaderName(D, p) : "Chưa xếp nhóm") : "")
+            + (isManager && !string.IsNullOrEmpty(p.Code) && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "");
+        <div class="trow">@Ui.Av(p.Name, p.Role == Role.Manager)<div>
+            <div class="t">
+                @if (p.Role == Role.Staff)
+                {
+                    <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a>
+                }
+                else
+                {
+                    @p.Name
+                }
+                <span class="mono note">@(string.IsNullOrEmpty(p.Code) ? "chưa có mã" : p.Code)</span></div>
+            <div class="s">@sub@if (leave is not null)
+                {
+                    <text> · <b class="red">Nghỉ @Fmt.Dm(d): @leave.Reason</b></text>
+                }</div></div>
+            <span class="tm">
+                @if (p.Role == Role.Staff && leave is not null)
+                {
+                    <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="false"><button class="btn btn-sm">Bỏ nghỉ</button></form>
+                }
+                else if (p.Role == Role.Staff)
+                {
+                    <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline" data-prompt="Báo nghỉ @p.Name ngày @Fmt.Dm(d)" data-prompt-label="Lý do" data-prompt-value="Nghỉ phép" data-prompt-name="reason">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="true"><button class="btn btn-sm">Báo nghỉ</button></form>
+                }
+                @if (isManager)
+                {
+                    <button type="button" class="btn btn-sm" data-sheet="ep@(p.Id)">Sửa</button>
+                }
+            </span></div>
+    }
+</section>
+@if (!isManager)
+{
+    return;
+}
+@* openPerson(p): mỗi người một <template> sheet "Sửa tài khoản". Nút "Xóa tài khoản này" gửi form ẩn epDel{id} (data-confirm) qua thuộc tính form=. *@
+@foreach (var p in Model.People)
+{
+    var self = p.Id == Scope.Account.Id;
+    <template id="ep@(p.Id)">
+        <form method="post" action="/Planning/EditAccount">
+            @Html.AntiForgeryToken()
+            @Ui.ReturnField(req)
+            <input type="hidden" name="id" value="@p.Id">
+            <h3>Sửa tài khoản</h3>
+            <label class="f" for="epN" style="margin-top:0">Họ tên</label><input class="in" id="epN" name="name" value="@p.Name" maxlength="100" required>
+            <div class="grid2"><div><label class="f" for="epC">Mã nhân viên</label><input class="in mono" id="epC" name="code" value="@p.Code" maxlength="@AccountRules.MaxCode" autocapitalize="none" required></div>
+                <div><label class="f" for="epR">Vai trò</label>@Ui.Select("role", PlanningManage.Roles.Select(r => (r.ToString(), Labels.Title(r))), p.Role.ToString(), id: "epR")</div></div>
+            <div class="grid2"><div><label class="f" for="epL">Nhóm (với nhân viên)</label><select class="in" id="epL" name="leaderId"><option value="">— Chưa xếp nhóm —</option>
+                    @foreach (var x in leaders)
+                    {
+                        <option value="@x.Id" selected="@(p.LeaderId == x.Id)">Nhóm @x.Name</option>
+                    }
+                </select></div>
+                <div><label class="f" for="epV">Cấp bậc (với nhân viên)</label><select class="in" id="epV" name="level"><option value="">— Chưa xếp —</option>
+                    @foreach (var v in Labels.All<Level>())
+                    {
+                        <option value="@v" selected="@(p.Level == v)">@Labels.Of(v)</option>
+                    }
+                </select></div></div>
+            <label class="row" style="margin-top:12px;font-size:13px"><input type="checkbox" id="epP" name="resetPassword" value="true"> Đặt lại mật khẩu (người này đặt mật khẩu mới ở lần đăng nhập tới)</label>
+            @if (!self)
+            {
+                <button type="submit" class="link" form="epDel@(p.Id)" style="color:var(--bad);margin-top:12px">Xóa tài khoản này</button>
+            }
+            <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+        </form>
+    </template>
+    if (!self)
+    {
+        <form id="epDel@(p.Id)" method="post" action="/Planning/DeleteAccount" asp-antiforgery="true" hidden data-confirm="Xóa tài khoản @p.Name? Lịch sử công việc vẫn giữ." data-confirm-label="Xóa">@Ui.ReturnField(req)<input type="hidden" name="id" value="@p.Id"></form>
+    }
+}
+@* personForm *@
+<form id="personForm" class="card sec" method="post" action="/Planning/CreateAccount" asp-antiforgery="true">
+    <h2>Tạo tài khoản</h2>
+    @Ui.ReturnField(req)
+    <div class="grid2">
+        <div><label class="f" for="npN" style="margin-top:0">Họ tên</label><input class="in" id="npN" name="name" maxlength="100" required></div>
+        <div><label class="f" for="npC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="npC" name="code" maxlength="@AccountRules.MaxCode" autocapitalize="none" required></div>
+        <div><label class="f" for="npR">Vai trò</label>@Ui.Select("role", PlanningManage.Roles.Select(r => (r.ToString(), Labels.Title(r))), Role.Staff.ToString(), id: "npR")</div>
+        <div><label class="f" for="npL">Nhóm (với nhân viên)</label><select class="in" id="npL" name="leaderId"><option value="">— Chưa xếp nhóm —</option>
+            @foreach (var x in leaders)
+            {
+                <option value="@x.Id">Nhóm @x.Name</option>
+            }
+        </select></div>
+        <div><label class="f" for="npV">Cấp bậc (với nhân viên)</label><select class="in" id="npV" name="level"><option value="">— Chưa xếp —</option>
+            @foreach (var v in Labels.All<Level>())
+            {
+                <option value="@v">@Labels.Of(v)</option>
+            }
+        </select></div>
+    </div>
+    <button class="btn btn-primary btn-block">Tạo tài khoản</button>
+</form>

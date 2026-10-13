@@ -7,7 +7,7 @@ namespace QMDept.Services;
 
 /// <summary>
 /// Khối HTML dùng chung nhiều màn hình — port 1:1 các hàm render của artifact (taskRow, extraRow, projectCard, planTable,
-/// planMeta, supCmt, stepList, weekChart, pjTable, donut, issueList, weekReport, photoHtml). Gọi trong Razor: <c>@D.TaskRow(t)</c>.
+/// planMeta, supCmt, stepList, weekChart, pjTable, donut, issueList, weekReport). Gọi trong Razor: <c>@D.TaskRow(t)</c>.
 /// Khối chỉ hiển thị; nút thao tác do từng màn hình tự thêm.
 /// </summary>
 public static class Blocks
@@ -16,20 +16,13 @@ public static class Blocks
     static HtmlString H(string s) => new(s);
     static string Src(TaskSource s) => Labels.Of(s);
 
-    /// <summary>photoHtml(ids)</summary>
-    public static string PhotoHtml(IEnumerable<Photo>? photos)
-    {
-        var l = photos?.ToList() ?? [];
-        return l.Count == 0 ? "" : "<div class=\"photos\">" + string.Concat(l.Select(p => $"<a href=\"/photo/{p.Id}\" target=\"_blank\"><img src=\"/photo/{p.Id}\" alt=\"Ảnh hiện trường\" loading=\"lazy\"></a>")) + "</div>";
-    }
-
     /// <summary>taskRow(t). showEmployee: thêm tên NV ở dòng phụ (dùng ở Theo dõi → theo dự án). tail: HTML thêm vào cột giờ (vd nút xóa).</summary>
     public static IHtmlContent TaskRow(this Dept d, WorkTask t, bool showEmployee = false, string? tail = null)
     {
         var st = t.Status;
-        var ck = st == TaskState.HoanThanh ? "on" : st == TaskState.DangLam ? "half" : st == TaskState.Cham ? "bad" : "";
+        var ck = st == TaskState.Done ? "on" : st == TaskState.InProgress ? "half" : st == TaskState.Late ? "bad" : "";
         var src = Src(t.Source);
-        return H($"<div class=\"trow\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.HoanThanh ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
+        return H($"<div class=\"trow\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")} · {Labels.Of(st)}</div></div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span></div>");
     }
@@ -42,7 +35,7 @@ public static class Blocks
         sb.Append($"<div class=\"m\">{E(d.PjName(x.ProjectId))} · {E(d.PName(x.EmployeeId))} · <span class=\"mono\">{E(x.Start ?? VnTime.Hm(x.CreatedAt))}{(x.End is null ? "" : " – " + E(x.End))}</span>{(x.Date != d.Scope.Date ? " · " + Fmt.Dm(x.Date) : "")}</div>");
         if (!string.IsNullOrEmpty(x.Description)) sb.Append($"<div class=\"m\">{E(x.Description)}</div>");
         if (!string.IsNullOrEmpty(x.Reason)) sb.Append($"<div class=\"m\" style=\"color:var(--bad)\">Lý do từ chối: {E(x.Reason)}</div>");
-        sb.Append(PhotoHtml(x.Photos)).Append($"</div>{Labels.PillHtml(st)}</div>");
+        sb.Append($"</div>{Labels.PillHtml(st)}</div>");
         return H(sb.ToString());
     }
 
@@ -62,13 +55,13 @@ public static class Blocks
     public static string SupCmt(DayPlan? p, string style = "")
     {
         var sc = Dept.SupScope(p);
-        if (p is null || sc == SupportScope.Khong) return "";
-        return $"<div class=\"cmt\"{(style.Length > 0 ? $" style=\"{style}\"" : "")}><b>Cần hỗ trợ · {Labels.Of(sc)}{(Dept.NeedTp(p) ? " (TP duyệt)" : "")}:</b> {E(p.SupportText)}</div>";
+        if (p is null || sc == SupportScope.None) return "";
+        return $"<div class=\"cmt\"{(style.Length > 0 ? $" style=\"{style}\"" : "")}><b>Cần hỗ trợ · {Labels.Of(sc)}{(Dept.NeedsManager(p) ? " (TP duyệt)" : "")}:</b> {E(p.SupportText)}</div>";
     }
 
     /// <summary>leaveText(l): "Buổi sáng 08:00–12:00 · 0,5 ngày phép".</summary>
     public static string LeaveText(DayPlan p) =>
-        $"{(p.LeaveType == LeaveType.Phep && p.LeaveSession is LeaveSession s ? LeaveRules.Session(s).Label + " " : "")}<b class=\"mono\">{E(p.LeaveFrom)}–{E(p.LeaveTo)}</b> · {LeaveRules.Qty(p)}";
+        $"{(p.LeaveType == LeaveType.Paid && p.LeaveSession is LeaveSession s ? LeaveRules.Session(s).Label + " " : "")}<b class=\"mono\">{E(p.LeaveFrom)}–{E(p.LeaveTo)}</b> · {LeaveRules.Qty(p)}";
 
     /// <summary>planMeta(p): trạng thái làm việc, nghỉ, công tác, báo cơm + supCmt.</summary>
     public static IHtmlContent PlanMeta(DayPlan p)
@@ -103,9 +96,9 @@ public static class Blocks
         for (int k = 0; k < it.Count; k++)
         {
             var i = it[k]; var st = i.Status;
-            var cls = st == TaskState.HoanThanh ? "done" : st == TaskState.DangLam ? "cur" : "";
-            var late = st != TaskState.HoanThanh && i.EndDate is DateOnly e && e < today;
-            sb.Append($"<li class=\"{cls}\"><span class=\"node\">{(st == TaskState.HoanThanh ? "✓" : "")}</span><div><div class=\"h\"><span class=\"title\"><span class=\"num\">{k + 1}.</span>{E(i.Title)}</span>{(late ? "<span class=\"pill p-bad\">Trễ</span>" : Labels.PillHtml(st))}</div>");
+            var cls = st == TaskState.Done ? "done" : st == TaskState.InProgress ? "cur" : "";
+            var late = st != TaskState.Done && i.EndDate is DateOnly e && e < today;
+            sb.Append($"<li class=\"{cls}\"><span class=\"node\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"h\"><span class=\"title\"><span class=\"num\">{k + 1}.</span>{E(i.Title)}</span>{(late ? "<span class=\"pill p-bad\">Trễ</span>" : Labels.PillHtml(st))}</div>");
             sb.Append($"<div class=\"meta mono\">{Fmt.Dm(i.StartDate)} – {Fmt.Dm(i.EndDate)}{(i.DoneDate is DateOnly dd ? $" · xong {Fmt.Dm(dd)}{(string.IsNullOrEmpty(i.DoneBy) ? "" : " · " + E(i.DoneBy))}" : "")}</div></div></li>");
         }
         return H(sb.Append("</ol>").ToString());
@@ -123,7 +116,7 @@ public static class Blocks
         for (var m = Fmt.Monday(ps); m <= pe; m = m.AddDays(7), k++)
         {
             var inW = it.Where(i => i.EndDate is DateOnly e && e >= m && e <= m.AddDays(6)).ToList();
-            var dn = inW.Count(i => i.Status == TaskState.HoanThanh);
+            var dn = inW.Count(i => i.Status == TaskState.Done);
             data.Add(($"Tuần {k + 1}", $"{Fmt.Dm(m < ps ? ps : m)}–{Fmt.Dm(m.AddDays(6) > pe ? pe : m.AddDays(6))}",
                 inW.Count > 0 ? (int)Math.Round(dn * 100.0 / inW.Count, MidpointRounding.AwayFromZero) : null,
                 today >= m && today <= m.AddDays(6), m.AddDays(6) < today));
@@ -146,8 +139,8 @@ public static class Blocks
         var sb = new StringBuilder("<div class=\"tbl-wrap\"><table><thead><tr><th>Dự án</th><th class=\"n\">Tiến độ</th><th class=\"n\">Nhân sự KH/TT</th><th>Trạng thái</th></tr></thead><tbody>");
         foreach (var p in ps)
         {
-            var st = d.PjStatus(p.Id, date); var kh = d.Need(date, p.Id); var tt = d.OnSite(date, p.Id).Count;
-            sb.Append($"<tr><td><b>{E(p.Name)}</b></td><td class=\"n\">{Ui.PctPill(d.PjPct(p.Id), st).ToHtml()}</td><td class=\"n {(tt < kh ? "red" : "")}\">{kh} / {tt}</td><td>{Labels.PillHtml(st)}</td></tr>");
+            var st = d.PjStatus(p.Id, date); var need = d.Need(date, p.Id); var onSite = d.OnSite(date, p.Id).Count;
+            sb.Append($"<tr><td><b>{E(p.Name)}</b></td><td class=\"n\">{Ui.PctPill(d.PjPct(p.Id), st).ToHtml()}</td><td class=\"n {(onSite < need ? "red" : "")}\">{need} / {onSite}</td><td>{Labels.PillHtml(st)}</td></tr>");
         }
         sb.Append("</tbody></table></div><p class=\"note\">KH = nhu cầu nhân sự, TT = số người có việc tại dự án trong ngày. Tiến độ = % đầu mục kế hoạch đã xong.</p>");
         return H(sb.ToString());
@@ -157,7 +150,7 @@ public static class Blocks
     public static IHtmlContent Donut(Counts c)
     {
         var total = c.Total;
-        var seg = new[] { (TaskState.HoanThanh, "var(--ok)"), (TaskState.DangLam, "var(--warn)"), (TaskState.Cham, "var(--bad)"), (TaskState.ChuaLam, "var(--plan)") };
+        var seg = new[] { (TaskState.Done, "var(--ok)"), (TaskState.InProgress, "var(--warn)"), (TaskState.Late, "var(--bad)"), (TaskState.NotStarted, "var(--plan)") };
         string g = "var(--surface-2)";
         if (total > 0)
         {
@@ -185,7 +178,7 @@ public static class Blocks
         foreach (var day in days)
         {
             var c = d.DayCounts(day); var x = d.ExtrasOn(day).Count;
-            sb.Append($"<tr><td>{Fmt.Short(day)}</td><td class=\"n\">{c.Total}</td><td class=\"n\">{c.HoanThanh}</td><td class=\"n {(c.Cham > 0 ? "red" : "")}\">{c.Cham}</td><td class=\"n\">{x}</td><td class=\"n\">{(c.Total > 0 ? Math.Round(c.HoanThanh * 100.0 / c.Total, MidpointRounding.AwayFromZero) + "%" : "–")}</td></tr>");
+            sb.Append($"<tr><td>{Fmt.Short(day)}</td><td class=\"n\">{c.Total}</td><td class=\"n\">{c.Done}</td><td class=\"n {(c.Late > 0 ? "red" : "")}\">{c.Late}</td><td class=\"n\">{x}</td><td class=\"n\">{(c.Total > 0 ? Math.Round(c.Done * 100.0 / c.Total, MidpointRounding.AwayFromZero) + "%" : "–")}</td></tr>");
         }
         sb.Append("</tbody></table></div></section>");
         sb.Append("<section class=\"card sec\"><h2>Đầu mục hoàn thành trong tuần</h2><div class=\"tbl-wrap\"><table><thead><tr><th>Dự án</th><th class=\"n\">Xong tuần này</th><th class=\"n\">Tiến độ</th><th>Trạng thái</th></tr></thead><tbody>");
@@ -200,7 +193,7 @@ public static class Blocks
         {
             var ts = days.SelectMany(day => d.Chosen(day, p.Id)).ToList();
             var r = days.Count(day => d.ReportOf(day, p.Id) is not null);
-            sb.Append($"<tr><td>{E(p.Name)}</td><td class=\"n\">{ts.Count}</td><td class=\"n\">{ts.Count(t => t.Status == TaskState.HoanThanh)}</td><td class=\"n\">{r}</td></tr>");
+            sb.Append($"<tr><td>{E(p.Name)}</td><td class=\"n\">{ts.Count}</td><td class=\"n\">{ts.Count(t => t.Status == TaskState.Done)}</td><td class=\"n\">{r}</td></tr>");
         }
         sb.Append("</tbody></table></div><p class=\"note\">Chỉ tính các việc nhân viên đã chọn làm trong ngày.</p></section>");
         return H(sb.ToString());

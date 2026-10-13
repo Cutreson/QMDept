@@ -6,9 +6,21 @@
 - Provider Oracle lỗi khi lấy khóa migration trên MariaDB và lớp lịch sử của nó là internal → dùng
   `Data/MariaDbHistoryRepository.cs` (bảng `__EFMigrationsHistory` chuẩn + khóa `GET_LOCK` timeout 600s), đăng ký bằng
   `ReplaceService<IHistoryRepository, MariaDbHistoryRepository>()` trong `Program.cs`. Không hỗ trợ `migrations script --idempotent`.
-- Đã áp migration `InitialCreate` lên DB thật ngày 2026-10-13 (DB trước đó trống).
-- Mọi bảng `utf8mb4`. Enum lưu chuỗi (varchar 20). Ngày làm việc kiểu `date` (DateOnly); mốc thời gian `datetime(6)` **UTC**.
-  Giờ trong ngày là chuỗi `HH:mm` (cho phép `24:00` làm giờ kết thúc).
+- Migration đã áp lên DB thật: `InitialCreate` (2026-10-13, DB trước đó trống) và `EnglishNames` (2026-10-13 21:12):
+  xóa bảng `photos` (web chỉ dùng văn bản), tạo `notify_settings`, đổi tên cột sang tiếng Anh và đổi giá trị enum tiếng Việt
+  trong dữ liệu sang tên tiếng Anh (SQL `UPDATE … CASE` trong migration — mục "Đổi tên sang tiếng Anh" bên dưới).
+  (Migration `TextOnlyAndNotify` chưa từng áp đã được gộp vào `EnglishNames` rồi xóa.)
+- **Độ trễ DB**: máy chủ DB ở xa — mỗi vòng mạng ~250 ms, mỗi lần lấy lại kết nối từ pool của MySql.Data thêm ~500 ms.
+  Vì vậy: `KeepOpenInterceptor` giữ một kết nối suốt request; bảng nhỏ + dữ liệu theo khoảng ngày đọc qua bộ đệm dùng chung
+  `Services/DataCache.cs` (tự làm mới sau mọi lệnh ghi qua EF; nạp song song tối đa 8 kết nối). Ghi thẳng vào DB từ ngoài app
+  thì app thấy chậm tối đa 60 giây (TTL của cache).
+- Nhà cung cấp hosting (databaseasp.net) có thể **chặn IP tạm thời** sau nhiều lần đăng nhập DB thất bại (đã gặp 2026-10-13:
+  "Access denied" rồi không mở được cổng 3306 từ IP máy dev). Khi DB lỗi: dừng app để không thử lại liên tục, kiểm tra trang quản trị hosting.
+- Cột `DateOnly` dùng bộ chuyển đổi DateOnly ↔ DateTime (AppDbContext.ConfigureConventions) vì MySql.Data không đọc được
+  DateOnly ("Unable to cast DateTime to DateOnly" khi bảng có dữ liệu). Cột DB vẫn là `date`.
+- Mọi bảng `utf8mb4`. Enum lưu chuỗi (varchar 20) = **tên enum tiếng Anh** (`Data/Enums.cs`, vd `Done`, `PaidLeave`, `Manager`).
+  Ngày làm việc kiểu `date` (DateOnly); mốc thời gian `datetime(6)` **UTC** — "hôm nay"/"bây giờ" luôn tính theo giờ Việt Nam
+  qua `Services/VnTime.cs` (máy chủ đặt ở nước ngoài). Giờ trong ngày là chuỗi `HH:mm` (cho phép `24:00` làm giờ kết thúc).
 
 ## Quy tắc vận hành (bắt buộc — xem agents.md)
 
@@ -36,19 +48,42 @@
 |---|---|---|---|
 | `people` | Person | `Code` unique; `LeaderId` → people (SetNull) | Role, Level, PasswordHash (null = chưa đặt), SecurityStamp, IsDeleted (xóa mềm) |
 | `projects` | Project | | Need (nhu cầu nhân sự/ngày), StatusOverride, Closed (đã bàn giao), SortOrder |
-| `plan_items` | PlanItem | → projects (Cascade) | đầu mục kế hoạch; Status ChuaLam/DangLam/HoanThanh; DoneDate/DoneBy |
+| `plan_items` | PlanItem | → projects (Cascade) | đầu mục kế hoạch; Status NotStarted/InProgress/Done; DoneDate/DoneBy |
 | `assignments` | Assignment | (ProjectId, EmployeeId) unique | Role Lead/Support |
 | `work_tasks` | WorkTask | idx (Date, EmployeeId), idx FromDate, idx ExtraId | Source, Status, Selected, CarryOk, CarriedFromId/CarriedToId (tham chiếu mềm, không FK), GivenBy |
-| `day_plans` | DayPlan | (Date, EmployeeId) unique | trạng thái làm việc, báo cơm, nghỉ, công tác, hỗ trợ, quyết định Leader/TP |
+| `day_plans` | DayPlan | (Date, EmployeeId) unique | trạng thái làm việc, báo cơm, nghỉ, công tác, hỗ trợ, quyết định Leader (`Leader*`) / TP (`ManagerDecision/ManagerBy/ManagerAt/ManagerNote`) |
 | `day_plan_tasks` | DayPlanTask | PK (DayPlanId, WorkTaskId), cả hai Cascade | = dayPlans.taskIds |
 | `day_reports` | DayReport | (Date, EmployeeId) unique | Blocked, Note, quyết định Leader |
 | `leaves` | Leave | (Date, EmployeeId) unique | Leader báo nghỉ |
 | `project_needs` | ProjectNeed | (Date, ProjectId) unique | ghi đè nhu cầu nhân sự theo ngày |
-| `extras` | Extra | idx Date; TaskId → work_tasks (SetNull) | phát sinh; Status lưu ChoDuyet/DaDuyet/TuChoi |
-| `photos` | Photo | TaskId/ExtraId (SetNull) | file trên đĩa (`Uploads:Path`, mặc định `QMDept/App_Data/uploads`) |
-| `leader_reports` | LeaderReport | (Date, LeaderId) unique | SummaryJson = ảnh chụp số liệu lúc gửi (longtext) |
+| `extras` | Extra | idx Date; TaskId → work_tasks (SetNull) | phát sinh; Status lưu Pending/Approved/Rejected |
+| `leader_reports` | LeaderReport | (Date, LeaderId) unique | SummaryJson = ảnh chụp số liệu lúc gửi (longtext, JSON camelCase của `LeaderReportSummary`; dự án: `name, pct, need, onSite, status`) |
 | `overtimes` | Overtime | (Date, PersonId) unique | đăng ký làm thêm; Role = vai trò lúc đăng ký |
 | `overtime_tasks` | OvertimeTask | → overtimes (Cascade); WorkTaskId (SetNull) | việc làm tiếp (snapshot tiêu đề) |
-| `ot_sends` | OtSend | Date unique | TP gửi tổng hợp suất ăn cho HCNS |
+| `ot_sends` | MealOrder | Date unique | TP gửi tổng hợp suất ăn cho HCNS: `RiceCount` (cơm, gồm bún), `NoodleCount`, `SnackCount`, `AllowanceCount`, `People` |
+| `notify_settings` | NotifySetting | PK PersonId → people (Cascade) | bật/tắt thông báo đẩy + DisabledTypes (CSV tên NotifyType bị tắt) |
 
 Sơ đồ khóa của artifact (Firestore-like) → bảng: `id = ${date}_${employee}` được thay bằng unique index (Date, EmployeeId).
+
+## Đổi tên sang tiếng Anh (2026-10-13)
+
+Theo quy tắc "code bằng tiếng Anh" (agents.md §1), tên bảng giữ nguyên nhưng **tên cột và giá trị enum đã đổi** — migration
+tương ứng phải đổi tên cột (giữ dữ liệu) và cập nhật dữ liệu cũ:
+
+- Cột `day_plans`: `TpDecision/TpBy/TpAt/TpNote` → `ManagerDecision/ManagerBy/ManagerAt/ManagerNote`.
+- Cột `ot_sends` (entity `OtSend` → `MealOrder`): `Com/Bun/Nhe/Pc` → `RiceCount/NoodleCount/SnackCount/AllowanceCount`.
+- Giá trị enum (cột varchar) đổi từ tên tiếng Việt sang tên tiếng Anh, vd `Nv/Tp` → `Staff/Manager`;
+  `ChuaLam/DangLam/HoanThanh/Cham` → `NotStarted/InProgress/Done/Late`; `KeHoach/NgoaiKeHoach/PhatSinh/ChuyenTiep/GiaoViec`
+  → `Planned/Unplanned/Extra/CarryOver/Assigned`; `CongTy/CtNgay/CtDai/NghiPhep/NghiKl` → `AtOffice/DayTrip/LongTrip/PaidLeave/UnpaidLeave`;
+  `Cat/Com/Bun` → `None/Rice/Noodle`; `Phep/Kl` → `Paid/Unpaid`; `Sang/Chieu/CaNgay` → `Morning/Afternoon/FullDay`;
+  `Khong/Nhom/NhomKhac/PhongKhac` → `None/Team/OtherTeam/OtherDept`; `ChoDuyet/DaDuyet/TuChoi` → `Pending/Approved/Rejected`;
+  `DuTru/ChinhThuc/TreHan` → `Early/OnTime/Late`; `Lv/Nghi` → `Workday/Holiday`; `Khong/Nhe/Com/Bun` (suất tăng ca) →
+  `None/Snack/Rice/Noodle`; `Dat/DangLam/Cham/NguyCo/HoanThanh` (dự án) → `OnTrack/InProgress/Behind/AtRisk/Completed`.
+  Cột enum có dữ liệu: `people.Role`, `people.Level` (không đổi), `projects.StatusOverride`, `plan_items.Status`, `assignments.Role` (không đổi),
+  `work_tasks.Status/Source`, `day_plans.Status/Meal/LeaveType/LeaveSession/SupportScope`, `extras.Status/DecidedRole`,
+  `overtimes.Role/DayType/Meal/Status/Reg`; quyết định `Ok/No` không đổi.
+- `notify_settings.DisabledTypes` (CSV tên `NotifyType`): `KeHoachMoi` → `PlanSubmitted`, `KeHoachKetQua` → `PlanDecided`,
+  `HoTroCanTp` → `SupportNeedsManager`, `BaoCaoMoi` → `ReportSubmitted`, `BaoCaoKetQua` → `ReportDecided`, `PhatSinhMoi` → `ExtraProposed`,
+  `PhatSinhKetQua` → `ExtraDecided`, `ChuyenTiep` → `CarryOver`, `GiaoViec` → `TaskAssigned`, `NghiPhep` → `LeaveMarked`,
+  `LamThemMoi` → `OvertimeSubmitted`, `LamThemKetQua` → `OvertimeDecided`, `BaoCaoLeader` → `LeaderReportSent`.
+- `leader_reports.SummaryJson`: khóa dự án `kh/tt/st` → `need/onSite/status`.

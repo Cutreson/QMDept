@@ -5,6 +5,8 @@ namespace QMDept.Services;
 /// <summary>
 /// Giờ Việt Nam (UTC+7, không có giờ mùa hè). DB lưu mốc thời gian dạng UTC; mọi "hôm nay", "giờ hiện tại"
 /// và hiển thị giờ đều đi qua lớp này (tương đương todayKey()/hm()/nowISO() của artifact).
+/// Máy chủ đặt ở nước ngoài (yêu cầu chủ dự án 2026-10-13): KHÔNG dùng DateTime.Now / DateTime.Today / giờ máy chủ
+/// cho ngày nghiệp vụ; JS phía trình duyệt cũng không tự tính ngày nghiệp vụ từ đồng hồ máy người dùng (ngày luôn do server đưa xuống).
 /// </summary>
 public static class VnTime
 {

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- SORA · Phòng QLCL&BD — trang lịch có dấu tích (kế hoạch được duyệt) trên nền xanh thương hiệu -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2557ef"/>
+      <stop offset="0.55" stop-color="#1747d6"/>
+      <stop offset="1" stop-color="#6a3fd1"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <rect width="64" height="32" rx="15" fill="url(#shine)"/>
+  <!-- tờ lịch -->
+  <rect x="13" y="15" width="38" height="36" rx="7" fill="#fff"/>
+  <rect x="13" y="15" width="38" height="10" rx="5" fill="#dfe7ff"/>
+  <rect x="13" y="20" width="38" height="5" fill="#dfe7ff"/>
+  <rect x="21" y="10" width="5" height="11" rx="2.5" fill="#fff"/>
+  <rect x="38" y="10" width="5" height="11" rx="2.5" fill="#fff"/>
+  <!-- dấu tích -->
+  <path d="M22.5 37.5 L29.5 44 L42 30.5" fill="none" stroke="#1747d6" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
