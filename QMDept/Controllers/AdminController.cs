@@ -1,0 +1,126 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QMDept.Data;
+using QMDept.Services;
+
+namespace QMDept.Controllers;
+
+/// <summary>
+/// Quản trị tài khoản (KHÔNG có trong artifact — bổ sung theo yêu cầu chủ dự án 2026-10-13):
+/// tài khoản vai trò Admin tạo / sửa / xóa / khôi phục tài khoản và đặt mật khẩu trực tiếp cho bất kỳ ai.
+/// (TP vẫn quản lý tài khoản như artifact ở Kế hoạch &amp; duyệt → Nhân sự, nhưng chỉ "đặt lại" để người dùng tự đặt mật khẩu.)
+/// </summary>
+[UiRole(Role.Admin)]
+public class AdminController(IPasswordHasher<Person> hasher) : AppController
+{
+    public sealed class AccountInput
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public Role Role { get; set; } = Role.Nv;
+        public int? LeaderId { get; set; }
+        public Level? Level { get; set; }
+        public string? Password { get; set; }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> TaiKhoan()
+    {
+        await D.EnsureAsync(Date, Date);
+        ViewData["Title"] = "Tài khoản";
+        return View();
+    }
+
+    void RequireAdmin()
+    {
+        if (Scope.Account.Role != Role.Admin) throw new BizException("Chỉ tài khoản Quản trị được thực hiện");
+    }
+
+    async Task ApplyAsync(Person p, AccountInput x)
+    {
+        var name = (x.Name ?? "").Trim();
+        var code = AccountRules.NormalizeCode(x.Code);
+        if (name.Length == 0 || code.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
+        await AccountRules.ValidateCodeAsync(Db, code, p.Id == 0 ? null : p.Id);
+        if (p.Id == Scope.Account.Id && x.Role != Role.Admin) throw new BizException("Không thể tự đổi vai trò của tài khoản đang đăng nhập");
+        int? leader = null;
+        if (x.Role == Role.Nv && x.LeaderId is int lid)
+        {
+            if (!await Db.People.AnyAsync(l => l.Id == lid && l.Role == Role.Leader && !l.IsDeleted)) throw new BizException("Nhóm không hợp lệ");
+            leader = lid;
+        }
+        var changed = p.Id != 0 && (p.Code != code || p.Role != x.Role);
+        p.Name = name;
+        p.Code = code;
+        p.Role = x.Role;
+        p.LeaderId = leader;
+        p.Level = x.Role == Role.Nv ? x.Level : null;
+        if (changed) p.SecurityStamp = AccountRules.NewStamp();
+    }
+
+    [HttpPost]
+    public Task<IActionResult> Tao(AccountInput x) => Do(async () =>
+    {
+        RequireAdmin();
+        var p = new Person { CreatedAt = VnTime.UtcNow, SortOrder = await Db.People.CountAsync() + 1 };
+        await ApplyAsync(p, x);
+        if (!string.IsNullOrEmpty(x.Password)) { AccountRules.ValidatePassword(x.Password); AccountRules.SetPassword(p, x.Password, hasher); }
+        Db.People.Add(p);
+        await Db.SaveChangesAsync();
+        Toast("Đã tạo tài khoản " + p.Code);
+    });
+
+    [HttpPost]
+    public Task<IActionResult> Sua(AccountInput x) => Do(async () =>
+    {
+        RequireAdmin();
+        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == x.Id) ?? throw new BizException("Không tìm thấy tài khoản");
+        var wasLeader = p.Role == Role.Leader;
+        await ApplyAsync(p, x);
+        // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm".
+        if (wasLeader && p.Role != Role.Leader)
+            await Db.People.Where(m => m.LeaderId == p.Id).ExecuteUpdateAsync(s => s.SetProperty(m => m.LeaderId, (int?)null));
+        await Db.SaveChangesAsync();
+    }, "Đã lưu tài khoản");
+
+    /// <summary>Đặt mật khẩu trực tiếp; clear=true → xóa mật khẩu để người dùng tự đặt ở lần đăng nhập tới.</summary>
+    [HttpPost]
+    public Task<IActionResult> DatMatKhau(int id, string? password, string? confirm, bool clear = false) => Do(async () =>
+    {
+        RequireAdmin();
+        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && !q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
+        if (clear) AccountRules.SetPassword(p, null, hasher);
+        else
+        {
+            AccountRules.ValidatePassword(password);
+            if (password != confirm) throw new BizException("Mật khẩu nhập lại không khớp");
+            AccountRules.SetPassword(p, password, hasher);
+        }
+        await Db.SaveChangesAsync();
+        Toast(clear ? $"Đã xóa mật khẩu của {p.Code} — người dùng tự đặt ở lần đăng nhập tới" : "Đã đặt mật khẩu cho " + p.Code);
+    });
+
+    [HttpPost]
+    public Task<IActionResult> Xoa(int id) => Do(async () =>
+    {
+        RequireAdmin();
+        if (id == Scope.Account.Id) throw new BizException("Không thể xóa tài khoản đang đăng nhập");
+        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && !q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
+        p.IsDeleted = true;
+        p.SecurityStamp = AccountRules.NewStamp();
+        Db.Assignments.RemoveRange(Db.Assignments.Where(a => a.EmployeeId == id));
+        await Db.SaveChangesAsync();
+    }, "Đã xóa");
+
+    [HttpPost]
+    public Task<IActionResult> KhoiPhuc(int id) => Do(async () =>
+    {
+        RequireAdmin();
+        var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
+        p.IsDeleted = false;
+        p.SecurityStamp = AccountRules.NewStamp();
+        await Db.SaveChangesAsync();
+    }, "Đã khôi phục tài khoản");
+}

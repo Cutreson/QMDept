@@ -1,0 +1,95 @@
+@model KhPhanCongVm
+@* ldAssign(): giao việc cho 1 NV (assignForm), KPI phân công, việc đã giao gần đây, phân công theo nhân viên / theo dự án. *@
+@{
+    var req = Context.Request;
+    var list = Model.Staff;
+}
+<partial name="_KeHoachTabs" model="@("gv")" />
+<partial name="_DayBar" />
+@if (list.Count == 0)
+{
+    <div class="empty">Nhóm chưa có nhân viên. Trưởng phòng xếp nhóm ở tab Nhân sự.</div>
+    return;
+}
+@{
+    var tp = D.TeamProjects();
+    var mine = D.Assigns.Where(a => D.InScope(a.EmployeeId) && D.P(a.EmployeeId) is { Role: Role.Nv, IsDeleted: false } && D.PJ(a.ProjectId) is { Closed: false }).ToList();
+    var pjs = D.ActivePj();
+    var pj0 = pjs.FirstOrDefault()?.Id;
+}
+@* assignForm *@
+<form id="assignForm" class="card sec" method="post" action="/KeHoach/GiaoViec" asp-antiforgery="true">
+    <h2>Giao việc cho nhân viên</h2>
+    @Ui.ReturnField(req)
+    <div class="grid2"><div><label class="f" for="gaW" style="margin-top:0">Nhân viên</label>
+            @Ui.Select("emp", list.Select(p => (p.Id.ToString(), p.Name + (p.Level is Level lv ? " · " + Labels.Of(lv) : ""))), null, id: "gaW")</div>
+        <div><label class="f" for="gaD" style="margin-top:0">Ngày làm</label><input class="in" type="date" id="gaD" name="date" value="@Fmt.Key(Scope.Date)"></div>
+        <div><label class="f" for="gaP">Dự án</label>
+            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "gaP", extraAttrs: "data-items-for=\"gaI\"")</div>
+        <div><label class="f" for="gaI">Đầu mục kế hoạch</label><select class="in" id="gaI" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
+            @if (pj0 is int p0)
+            {
+                foreach (var i in D.ItemsOf(p0))
+                {
+                    <option value="@i.Id">@i.Title</option>
+                }
+            }
+        </select></div></div>
+    <label class="f" for="gaT">Nội dung công việc <span class="note">(để trống nếu dùng tên đầu mục)</span></label><input class="in" id="gaT" name="title" maxlength="300" placeholder="VD: Check I/O khu vực trục X">
+    <div class="pick2 eq"><div><label class="f" for="gaS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "gaS")</div><div><label class="f" for="gaE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "gaE")</div></div>
+    <label class="f">Vai trò trong dự án</label>
+    <div class="segr two" role="radiogroup" aria-label="Vai trò trong dự án"><label><input type="radio" name="role" value="@ProjectRole.Lead"><span>Leader dự án</span></label><label><input type="radio" name="role" value="@ProjectRole.Support" checked><span>Hỗ trợ dự án</span></label></div>
+    <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc</button>
+    <p class="note" style="margin-bottom:0">Việc được thêm vào lịch của nhân viên ngày đã chọn, gắn nhãn "Leader giao", và cập nhật vai trò của nhân viên trong dự án.</p>
+</form>
+<partial name="_ItemsJson" />
+<div class="kpis k4"><div class="kpi k-info"><b>@tp.Count</b><span>Dự án nhóm quản lý</span></div><div class="kpi k-tp"><b>@(mine.Count(a => a.Role == ProjectRole.Lead))</b><span>Leader dự án</span></div><div class="kpi k-ok"><b>@(mine.Count(a => a.Role != ProjectRole.Lead))</b><span>Hỗ trợ dự án</span></div><div class="kpi k-idle"><b>@(list.Count(p => D.AssignsOf(p.Id).Count == 0))</b><span>Chưa được giao</span></div></div>
+<section class="card sec"><h2>Việc đã giao gần đây (@Model.Given.Count)</h2>
+    @if (Model.Given.Count > 0)
+    {
+        foreach (var t in Model.Given)
+        {
+            var done = t.Status == TaskState.HoanThanh;
+            <div class="trow"><span class="ck @(done ? "on" : "")">@(done ? "✓" : "")</span><div><div class="t">@t.Title</div><div class="s">@D.PName(t.EmployeeId) · @D.PjName(t.ProjectId) · @Fmt.Short(t.Date) · @Labels.Of(t.Status)</div></div>
+                <span class="tm">@t.Start–@t.End <form method="post" action="/KeHoach/XoaViec" asp-antiforgery="true" class="inline" data-confirm="Xóa “@t.Title” khỏi lịch?" data-confirm-label="Xóa">@Ui.ReturnField(req)<input type="hidden" name="id" value="@t.Id"><button class="link" aria-label="Xóa việc" style="color:var(--bad);margin-left:6px">✕</button></form></span></div>
+        }
+    }
+    else
+    {
+        <p class="note">Chưa giao việc nào trong 7 ngày qua.</p>
+    }
+</section>
+<section class="card sec"><h2>Phân công theo nhân viên</h2>
+    @foreach (var p in list)
+    {
+        var asg = D.AssignsOf(p.Id);
+        <div class="asg"><div class="row"><b>@p.Name</b>@Ui.LvPill(p)<span class="note" style="margin-left:auto">@asg.Count dự án</span></div>
+            @if (asg.Count > 0)
+            {
+                foreach (var a in asg)
+                {
+                    <div class="trow">@Ui.Ptile(D.Tile(a.ProjectId), D.PjName(a.ProjectId), 22)<div><div class="t">@D.PjName(a.ProjectId)</div>@if (!string.IsNullOrEmpty(a.Note)) {<div class="s">@a.Note</div>}</div>
+                        <span class="tm"><span class="pill @(a.Role == ProjectRole.Lead ? "p-tp" : "p-info")">@Labels.Of(a.Role)</span> <form method="post" action="/KeHoach/BoGiao" asp-antiforgery="true" class="inline" data-confirm="Bỏ giao @D.PjName(a.ProjectId) cho @p.Name?" data-confirm-label="Bỏ giao">@Ui.ReturnField(req)<input type="hidden" name="id" value="@a.Id"><button class="link" style="color:var(--bad);margin-left:6px" aria-label="Bỏ giao">✕</button></form></span></div>
+                }
+            }
+            else
+            {
+                <p class="note" style="margin:4px 0 0">Chưa được giao dự án.</p>
+            }
+        </div>
+    }
+</section>
+<section class="card sec"><h2>Phân công theo dự án (@tp.Count)</h2>
+    @if (tp.Count > 0)
+    {
+        foreach (var pid in tp)
+        {
+            var asg = mine.Where(a => a.ProjectId == pid).ToList();
+            <div class="issue" style="grid-template-columns:22px 1fr auto">@Ui.Ptile(D.Tile(pid), D.PjName(pid), 22)<div><div class="t">@D.PjName(pid)</div><div class="m">@(string.Join(", ", asg.Select(a => D.PName(a.EmployeeId) + (a.Role == ProjectRole.Lead ? " (Leader)" : " (Hỗ trợ)"))))</div></div><span class="note">@asg.Count người</span></div>
+        }
+    }
+    else
+    {
+        <p class="note">Chưa giao dự án nào.</p>
+    }
+</section>

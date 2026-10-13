@@ -127,6 +127,16 @@ public static class Ui
     /// <summary>Đường dẫn hiện tại (để đặt vào hidden returnUrl).</summary>
     public static string Current(HttpRequest r) => r.Path + r.QueryString;
 
-    /// <summary>Hidden input returnUrl = trang hiện tại (AppController.Back dùng để quay lại đúng trang/tham số).</summary>
-    public static IHtmlContent ReturnField(HttpRequest r) => new HtmlString($"<input type=\"hidden\" name=\"returnUrl\" value=\"{E(Current(r))}\">");
+    /// <summary>
+    /// Hidden input returnUrl = trang hiện tại (AppController.Back dùng để quay lại đúng trang/tham số)
+    /// + hidden "d" = ngày đang chọn (nếu trang có ?d=) để POST thao tác đúng ngày (ScopeResolver đọc field "d" của form).
+    /// Vì vậy form POST KHÔNG được có field khác tên "d".
+    /// </summary>
+    public static IHtmlContent ReturnField(HttpRequest r)
+    {
+        var d = r.Query["d"].ToString();
+        if (string.IsNullOrEmpty(d) && r.HasFormContentType) d = r.Form["d"].ToString();
+        var dField = Fmt.ParseKey(d) is DateOnly dd ? $"<input type=\"hidden\" name=\"d\" value=\"{Fmt.Key(dd)}\">" : "";
+        return new HtmlString($"<input type=\"hidden\" name=\"returnUrl\" value=\"{E(Current(r))}\">{dField}");
+    }
 }

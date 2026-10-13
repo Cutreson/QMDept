@@ -88,6 +88,7 @@ public static class Labels
         [Role.Nv] = new("Nhân viên", "p-info", "var(--brand)"),
         [Role.Leader] = new("Leader", "p-info", "var(--brand)"),
         [Role.Tp] = new("Trưởng phòng", "p-tp", "var(--tp)"),
+        [Role.Admin] = new("Quản trị", "p-idle", "var(--idle)"),
         // LV
         [Level.Tech1] = new("Tech 1", "p-tp", "var(--tp)"),
         [Level.Tech2] = new("Tech 2", "p-tp", "var(--tp)"),
@@ -113,6 +114,7 @@ public static class Labels
     {
         Role.Nv => "Nhân viên Setup",
         Role.Leader => "Leader Setup",
+        Role.Admin => "Quản trị hệ thống",
         _ => "Trưởng phòng",
     };
 

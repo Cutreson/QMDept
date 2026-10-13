@@ -1,0 +1,38 @@
+@model LamThemVm
+@* otScreen(): tiêu đề, thanh ngày, hạn đăng ký (otDeadline), tab con cho Leader/TP → otMine / otApprove / otSummary. *@
+@{
+    ViewData["Title"] = "Làm thêm";
+    var req = Context.Request;
+    var d = Scope.Date;
+}
+@Ui.Head(0, "Đăng ký làm thêm", "Theo quy định nghỉ giải lao và suất ăn tăng ca, áp dụng từ 01/10/2026")
+<partial name="_DayBar" />
+@LamThemUi.Deadline(d)
+@if (Scope.Role != Role.Nv)
+{
+    var duyetLabel = $"Duyệt {(Scope.Role == Role.Leader ? "nhân viên" : "Leader")}{(Model.Pending > 0 ? $" ({Model.Pending})" : "")}";
+    @Ui.Subtabs(new[]
+    {
+        (Ui.Here(req, ("tab", "me"), ("edit", null)), "Của tôi", Model.Tab == "me"),
+        (Ui.Here(req, ("tab", "duyet"), ("edit", null)), duyetLabel, Model.Tab == "duyet"),
+        (Ui.Here(req, ("tab", "th"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "th"),
+    })
+}
+@if (Model.Tab == "duyet")
+{
+    <partial name="_Approve" model="Model" />
+}
+else if (Model.Tab == "th")
+{
+    <partial name="_Summary" model="Model" />
+}
+else
+{
+    <partial name="_Mine" model="Model" />
+}
+@section Scripts {
+    @if (Model.Tab == "me")
+    {
+        <script src="~/js/ot.js" asp-append-version="true"></script>
+    }
+}

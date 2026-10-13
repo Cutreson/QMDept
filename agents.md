@@ -18,6 +18,8 @@
    Artifact thay đổi trên claude.ai → đọc lại bằng công cụ Artifact `read`, cập nhật bản sao + `docs/nghiep-vu.md`.
 4. **Git**: chỉ làm việc trên nhánh `master` duy nhất (không tạo nhánh khác, không worktree, không PR).
    **Cuối mỗi phiên tự động `git commit` và `git push origin master`.**
+5. **Quy tắc phải ghi vào file**: mọi quy tắc / yêu cầu làm việc chủ dự án đưa ra phải được ghi vào `agents.md`
+   (hoặc file `docs/` tương ứng), không chỉ lưu trong bộ nhớ riêng của AI — phiên / AI khác chỉ đọc được file.
 
 ## 2. Tổng quan kỹ thuật
 
@@ -37,7 +39,12 @@ dotnet ef migrations add <Ten> -o Data/Migrations   # tạo migration khi đổi
 dotnet ef database update                      # áp migration lên DB thật (app cũng tự migrate khi khởi động)
 ```
 
-Connection string đặt ở `QMDept/appsettings.Local.json` (đã .gitignore) — KHÔNG commit mật khẩu DB.
+Connection string DB thật đang nằm trong `QMDept/appsettings.json` và được commit lên git — **quyết định của chủ dự án
+ngày 2026-10-13** ("cứ làm vậy đi, sau này tôi gỡ sau"). Không tự ý chuyển/xóa khi chưa được chủ dự án yêu cầu.
+(`appsettings.Local.json` vẫn được hỗ trợ, gitignore, ưu tiên cao hơn — dùng khi chủ dự án muốn gỡ mật khẩu khỏi git.)
+DB thật hiện tại là **MariaDB 10.11** (xem `docs/database.md`). Tài khoản đăng nhập thử trên DB thật: `docs/tai-khoan.local.md`
+(file local, gitignore — chỉ có trên máy chủ dự án; máy khác thì hỏi chủ dự án hoặc nhờ tài khoản `admin` đặt mật khẩu).
+Không ghi mật khẩu tài khoản người dùng vào file được commit.
 
 ## 4. Mục lục tài liệu
 
@@ -56,5 +63,9 @@ Connection string đặt ở `QMDept/appsettings.Local.json` (đã .gitignore) �
   (`wwwroot/js/*.js`) — sửa luật phải sửa cả hai.
 - Form POST có `action` viết tay phải có `asp-antiforgery="true"` (xem `docs/kien-truc.md`).
 - Không tin client: mọi POST tự kiểm quyền (`RequireSelfNv/RequireLead/RequireTp/RequireInScopeAsync`).
+- `ScopeResolver` lấy ngày đang chọn (`Scope.Date`) từ query `?d=`; với POST không có `?d=` thì lấy field form `d`.
+  `@Ui.ReturnField(Context.Request)` tự chèn field ẩn `d` → mọi form POST thao tác theo ngày đang xem phải có
+  `@Ui.ReturnField(...)` (hoặc ghi `?d=yyyy-MM-dd` trong `action`), nếu không `Scope.Date` sẽ là hôm nay.
+  Không đặt field nào khác tên `d` trong form POST.
 - Thực thể trong `Dept` là chỉ đọc (AsNoTracking); ghi qua `AppDbContext`.
 - Đổi entity ⇒ tạo migration mới; không sửa migration đã áp lên DB thật.

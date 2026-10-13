@@ -18,7 +18,7 @@ namespace QMDept.Controllers;
 /// </summary>
 public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) : Controller
 {
-    public const int MinPassword = 4;
+    public const int MinPassword = AccountRules.MinPassword;
 
     public sealed class LoginVm
     {
@@ -28,7 +28,8 @@ public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) 
         public string? Error { get; set; }
     }
 
-    async Task<bool> NeedBootstrapAsync() => !await db.People.AnyAsync(p => p.Role == Role.Tp && !p.IsDeleted && p.Code != "");
+    // Chưa có Trưởng phòng và chưa có Quản trị → cho tạo TP đầu tiên.
+    async Task<bool> NeedBootstrapAsync() => !await db.People.AnyAsync(p => (p.Role == Role.Tp || p.Role == Role.Admin) && !p.IsDeleted && p.Code != "");
 
     [HttpGet]
     public async Task<IActionResult> Login()
@@ -40,7 +41,7 @@ public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) 
     [HttpPost]
     public async Task<IActionResult> Login(string? code, string? password)
     {
-        code = (code ?? "").Trim().ToUpperInvariant();
+        code = AccountRules.NormalizeCode(code);
         password ??= "";
         var vm = new LoginVm { Code = code };
         var p = await db.People.FirstOrDefaultAsync(x => x.Code == code && !x.IsDeleted);
@@ -66,13 +67,14 @@ public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) 
     public async Task<IActionResult> Bootstrap(string? name, string? code, string? password)
     {
         name = (name ?? "").Trim();
-        code = (code ?? "").Trim().ToUpperInvariant();
+        code = AccountRules.NormalizeCode(code);
         password ??= "";
         var vm = new LoginVm { NeedBootstrap = true, Code = code, Name = name };
         if (!await NeedBootstrapAsync()) return RedirectToAction(nameof(Login));
         if (name.Length == 0 || code.Length == 0) { vm.Error = "Nhập họ tên và mã nhân viên"; return View("Login", vm); }
         if (password.Length < MinPassword) { vm.Error = $"Mật khẩu tối thiểu {MinPassword} ký tự"; return View("Login", vm); }
-        if (await db.People.AnyAsync(x => x.Code == code)) { vm.Error = "Mã nhân viên đã tồn tại"; return View("Login", vm); }
+        try { await AccountRules.ValidateCodeAsync(db, code); }
+        catch (BizException ex) { vm.Error = ex.Message; return View("Login", vm); }
         var p = new Person
         {
             Name = name, Code = code, Role = Role.Tp, CreatedAt = VnTime.UtcNow,

@@ -11,7 +11,10 @@ builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, relo
 
 // ===== Cơ sở dữ liệu: MySQL qua MySql.EntityFrameworkCore (Oracle). Connection string: ConnectionStrings:Default =====
 var conn = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(o => o.UseMySQL(string.IsNullOrWhiteSpace(conn) ? "server=not-configured" : conn));
+builder.Services.AddDbContext<AppDbContext>(o => o
+    .UseMySQL(string.IsNullOrWhiteSpace(conn) ? "server=not-configured" : conn)
+    // DB thật là MariaDB: thay khóa migration của provider (lỗi trên MariaDB) — xem Data/MariaDbHistoryRepository.cs
+    .ReplaceService<Microsoft.EntityFrameworkCore.Migrations.IHistoryRepository, MariaDbHistoryRepository>());
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>

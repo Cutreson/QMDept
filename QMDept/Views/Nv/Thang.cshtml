@@ -1,0 +1,124 @@
+@model NvThangVm
+@* nvMonth(): Kế hoạch tháng. Chế độ "Tất cả nhân viên" (Leader/TP, ?as=all): teamDayList + calAssignForm (Giao thêm việc). *@
+@{
+    var req = Context.Request;
+    var ms = Model.MonthStart;
+    var mKey = Fmt.Key(ms);
+    var today = Scope.Today;
+    var sel = Scope.Date;
+    var inM = Model.InMonth(sel);
+    var ppl = Model.People;
+    var me = Model.Me;
+    // pickDay: chọn ngày (S.date = d, S.month = tháng của d, S.week = null)
+    string DayHref(DateOnly d) => Ui.Here(req, ("d", Fmt.Key(d)), ("m", Fmt.Key(Fmt.MonthStart(d))), ("w", null));
+    string DayCls(DateOnly d) => (d == today ? "today " : "") + (d == sel ? "sel" : "");
+}
+@if (Model.AllMode)
+{
+    @Ui.Head(0, "Kế hoạch tháng · Tất cả nhân viên", $"{ppl.Count} nhân viên · số trong ô = số người có việc trong ngày")
+}
+else
+{
+    <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1><div class="sub">@(me?.Name ?? "—") @Ui.LvPill(me) · biết trước việc cần làm để chủ động thời gian</div></div></div>
+}
+<partial name="_MonthBar" />
+
+@if (Model.AllMode)
+{
+    <div class="mgrid">
+        @foreach (var x in Fmt.MonthHeader) { <div class="dow">@x</div> }
+        @for (var k = 0; k < Model.Lead; k++) { <div></div> }
+        @for (var k = 1; k <= Model.Days; k++)
+        {
+            var d = ms.AddDays(k - 1);
+            var byEmp = D.TasksOn(d).Where(D.OkCal).ToLookup(t => t.EmployeeId);
+            var per = ppl.Select(p => byEmp[p.Id].ToList()).ToList();
+            var busy = per.Count(t => t.Count > 0);
+            var tot = per.Sum(t => t.Count);
+            var late = per.Any(t => t.Any(x => x.Status == TaskState.Cham));
+            var lv = ppl.Count(p => D.OnLeave(d, p.Id) is not null);
+            var (bg, fg) = NvLich.TeamCellColor(busy, late, d == today);
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {busy}/{ppl.Count} người có việc, {tot} việc")"><small>@k</small><span class="n" style="--dbg:@bg;--dfg:@fg">@busy</span><small class="mono mg-sub">@(tot > 0 ? tot + " việc" : "–")@(lv > 0 ? " · N" + lv : "")</small></a>
+        }
+    </div>
+    @if (inM)
+    {
+        @* teamDayList(d) *@
+        <section class="card wday"><h3>Công việc cả nhóm · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h3>
+            @foreach (var p in ppl)
+            {
+                var t = D.TasksOn(sel, p.Id).Where(D.OkCal).ToList();
+                var lv = D.OnLeave(sel, p.Id);
+                var ot = D.OtOf(sel, p.Id) is { Status: not OtStatus.TuChoi } o ? o : null;
+                <div class="tmd"><div class="tmd-h"><a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a> @Ui.LvPill(p) <span class="note">@if (lv is not null) {<b class="red">Nghỉ</b>@(" · ")}@t.Count việc@(ot is not null ? $" · Làm thêm {ot.Start}–{ot.End}" : "")</span></div>
+                    @foreach (var x in t) { @D.TaskRow(x) }
+                </div>
+            }
+        </section>
+        @if (Scope.CanLead)
+        {
+            @* calAssignForm(d, ''): Giao thêm việc ngay trên lịch (form .ro-ok: dùng được ở chế độ xem) *@
+            var pj0 = NvLich.DefaultProject(D, sel);
+            <partial name="_ItemsJson" />
+            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Nv/GiaoViec?d={Fmt.Key(sel)}")" asp-antiforgery="true">
+                @Ui.ReturnField(req)
+                <h2>Giao thêm việc · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h2>
+                <div class="grid2"><div><label class="f" for="gpP" style="margin-top:0">Dự án</label>
+                        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "gpP", extraAttrs: "data-items-for=\"gpI\"")</div>
+                    <div><label class="f" for="gpI" style="margin-top:0">Đầu mục kế hoạch</label><select class="in" id="gpI" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
+                        @if (pj0 is int p0) { foreach (var i in D.ItemsOf(p0)) { <option value="@i.Id">@i.Title</option> } }
+                    </select></div></div>
+                <label class="f" for="gpT">Nội dung công việc <span class="note">(để trống nếu dùng tên đầu mục)</span></label><input class="in" id="gpT" name="title" placeholder="VD: Check I/O khu vực trục X">
+                <div class="pick2 eq"><div><label class="f" for="gpS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "gpS")</div><div><label class="f" for="gpE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "gpE")</div></div>
+                <label class="f">Người tham gia <span class="note">(tích chọn và đặt vai trò trong dự án)</span></label>
+                <div class="optbox">
+                    @foreach (var p in ppl)
+                    {
+                        var n = D.TasksOn(sel, p.Id).Count(D.OkCal);
+                        var lv = D.OnLeave(sel, p.Id);
+                        var cur = pj0 is int pa ? D.AssignOf(pa, p.Id)?.Role : null;
+                        <div class="trow"><input type="checkbox" id="gpw_@p.Id" name="emp" value="@p.Id"><label for="gpw_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LvPill(p)</div><div class="s">@if (lv is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
+                            <select class="in" id="gpR_@p.Id" name="role_@p.Id" style="padding:5px 26px 5px 8px;width:auto;font-size:12.5px" aria-label="Vai trò của @p.Name"><option value="@ProjectRole.Support">Hỗ trợ</option><option value="@ProjectRole.Lead" selected="@(cur == ProjectRole.Lead)">Leader dự án</option></select></div>
+                    }
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc cho người đã chọn</button>
+            </form>
+        }
+    }
+    else
+    {
+        <div class="empty">Bấm vào một ngày để xem công việc của cả nhóm.</div>
+    }
+    <p class="note">Số lớn trong ô = số nhân viên có việc trong ngày (trên @ppl.Count người); dòng nhỏ = tổng số việc và số người nghỉ (N).</p>
+}
+else if (me is null)
+{
+    <div class="empty">Nhóm chưa có nhân viên.</div>
+}
+else
+{
+    <div class="mgrid">
+        @foreach (var x in Fmt.MonthHeader) { <div class="dow">@x</div> }
+        @for (var k = 0; k < Model.Lead; k++) { <div></div> }
+        @for (var k = 1; k <= Model.Days; k++)
+        {
+            var d = ms.AddDays(k - 1);
+            var t = D.TasksOn(d, me.Id).Where(D.OkCal).ToList();
+            var (bg, fg) = NvLich.CellColor(t, d == today);
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {t.Count} việc")"><small>@k</small><span class="n" style="--dbg:@bg;--dfg:@fg">@t.Count</span></a>
+        }
+    </div>
+    @if (inM)
+    {
+        var t = D.TasksOn(sel, me.Id).Where(D.OkCal).ToList();
+        <section class="card wday"><h3>@Fmt.WD[Fmt.Wday(sel)] – @Fmt.Dm(sel) (@t.Count công việc)@(D.OnLeave(sel, me.Id) is not null ? " · Nghỉ" : "")</h3>
+            @if (t.Count > 0) { foreach (var x in t) { @D.TaskRow(x) } }
+            else { <p class="note" style="padding:8px 12px;margin:0">Ngày này chưa có công việc.</p> }
+        </section>
+    }
+    else
+    {
+        <div class="empty">Bấm vào một ngày trong tháng để xem công việc của ngày đó.</div>
+    }
+    <p class="note">Số trong mỗi ô là số công việc đã được duyệt của ngày. Việc ngoài kế hoạch chỉ vào lịch khi Leader duyệt báo cáo đầu ngày; việc chuyển tiếp chỉ vào lịch khi Leader duyệt báo cáo cuối ngày. Lịch do Leader sắp xếp; mỗi sáng bạn chọn việc làm trong ngày ở bước Báo cáo đầu ngày.</p>
+}

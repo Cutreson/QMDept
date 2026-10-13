@@ -1,0 +1,66 @@
+@model TpBaoCaoVm
+@* tpReports(): Báo cáo ngày Leader gửi (leaderReports, mới nhất trước) / Báo cáo tuần (weekReport). *@
+@{
+    ViewData["Title"] = "Báo cáo";
+    var req = Context.Request;
+}
+@Ui.Head(0, "Báo cáo từ Leader", "Báo cáo ngày Leader gửi và tổng hợp tuần")
+@Ui.Subtabs(new[]
+{
+    (Ui.Here(req, ("tab", "ngay")), "Báo cáo ngày", Model.Tab == "ngay"),
+    (Ui.Here(req, ("tab", "tuan")), "Báo cáo tuần", Model.Tab == "tuan"),
+})
+@if (Model.Tab == "tuan")
+{
+    <partial name="_WeekBar" />
+    @D.WeekReport(Model.Week)
+}
+else if (Model.Reports.Count == 0)
+{
+    <div class="empty">Chưa có báo cáo nào được gửi.</div>
+}
+else
+{
+    foreach (var it in Model.Reports)
+    {
+        var r = it.Report;
+        var s = it.Summary;
+        <section class="card sec">
+            <h2><span class="grow">@Fmt.DayLabel(r.Date)</span><span class="note mono" style="text-transform:none">@TpText.Sender(r) · @VnTime.Hm(r.SentAt)</span></h2>
+            <div class="kpis k4">
+                <div class="kpi k-info"><b>@it.Val("working", s.Working)/@it.Val("staff", s.Staff)</b><span>Nhân sự</span></div>
+                <div class="kpi k-ok"><b>@it.Val("done", s.Done)</b><span>Hoàn thành</span></div>
+                <div class="kpi k-warn"><b>@it.Val("doing", s.Doing)</b><span>Đang làm</span></div>
+                <div class="kpi k-bad"><b>@it.Val("late", s.Late)</b><span>Chậm</span></div>
+            </div>
+            @if (s.Projects.Count > 0)
+            {
+                <div class="tbl-wrap"><table><thead><tr><th>Dự án</th><th class="n">Tiến độ</th><th class="n">KH/TT</th><th>Trạng thái</th></tr></thead><tbody>
+                    @foreach (var p in s.Projects)
+                    {
+                        <tr><td>@p.Name</td><td class="n">@(p.Pct)%</td><td class="n">@p.Kh/@p.Tt</td><td>@Ui.Pill(p.St)</td></tr>
+                    }
+                </tbody></table></div>
+            }
+            @if (s.Issues.Count > 0)
+            {
+                <div class="h2" style="margin-top:12px">Vấn đề nổi bật</div>
+                <ul style="margin:0;padding-left:18px">
+                    @foreach (var i in s.Issues)
+                    {
+                        <li>@i</li>
+                    }
+                </ul>
+            }
+            @if (s.Tomorrow.Count > 0)
+            {
+                <div class="h2" style="margin-top:12px">Nhân sự ngày mai</div>
+                <p style="margin:0">@TpText.Tomorrow(s.Tomorrow)</p>
+            }
+            @if (!string.IsNullOrEmpty(r.Note))
+            {
+                <div class="cmt" style="margin-top:10px"><b>Ghi chú Leader:</b> @r.Note</div>
+            }
+        </section>
+    }
+}

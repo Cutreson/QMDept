@@ -1,0 +1,190 @@
+@model NvEveningVm
+@* nvEvening (Báo cáo cuối ngày). Controller: NvController.BaoCao.cs (CuoiNgay / CapNhatViec / DeXuatPhatSinh / GuiBaoCao).
+   Sheet "Cập nhật công việc" (openUpdate) = <template id="upd{id}">; hành vi trong sheet (ẩn kế hoạch tiếp, nhãn lý do,
+   tự tích đầu mục) ở wwwroot/js/nv.js. *@
+@{
+    ViewData["Title"] = "Báo cáo cuối ngày";
+    var req = Context.Request;
+    var d = Scope.Date;
+    var dkey = Fmt.Key(d);
+    var ro = Scope.IsReadOnly;
+    var me = Model.Me;
+}
+@section Scripts {
+    <script src="~/js/nv.js" asp-append-version="true"></script>
+}
+@Ui.Head(4, "Báo cáo cuối ngày", "Cập nhật kết quả từng việc, ghi nhận phát sinh và gửi Leader/TP")
+<partial name="_DayBar" />
+@if (me is null)
+{
+    return;
+}
+@{
+    var plan = D.PlanOf(d, me.Id);
+    var list = D.Chosen(d, me.Id);
+    var xs = D.ExtrasOn(d).Where(x => x.EmployeeId == me.Id).ToList();
+    var rep = D.ReportOf(d, me.Id);
+    var openCnt = list.Count(t => t.Status != TaskState.HoanThanh && t.CarriedToId is null);
+}
+@if (plan is null)
+{
+    <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">!</span><div><b>Chưa gửi kế hoạch đầu ngày</b><div class="note">Chọn việc ở bước Báo cáo đầu ngày trước khi cập nhật. <a class="link" href="@Ui.To(req, "/Nv/DauNgay")">Đi tới Báo cáo đầu ngày ›</a></div></div></div>
+}
+else if (Dept.PlanSt(plan) != PlanState.DaDuyet)
+{
+    <p class="note">Trạng thái kế hoạch: @Ui.Pill(Dept.PlanSt(plan))</p>
+}
+<div class="h2">Kết quả công việc hôm nay</div>
+@if (list.Count > 0)
+{
+    <ul class="tl">
+        @foreach (var t in list)
+        {
+            var st = t.Status;
+            var src = Labels.Of(t.Source);
+            var open = Model.Open.Contains(t.Id);
+            var n = st != TaskState.HoanThanh ? D.Task(t.CarriedToId) : null;
+            <li id="t@(t.Id)"><span class="dot" style="--nc:@Labels.Color(st)">@(st == TaskState.HoanThanh ? "✓" : "")</span><div class="card task">
+                <div class="h"><div><div class="t">@t.Title</div>@if (src.Length > 0)
+                    {
+                        <div class="src">@src</div>
+                    }</div>@Ui.Pill(st)</div>
+                <div class="tm">@t.Start – @t.End</div>
+                @if (n is not null)
+                {
+                    <div class="nx-line">Kế hoạch tiếp: <b>@Fmt.Short(n.Date)</b> <span class="mono">@(n.Start)–@(n.End)</span> · @n.Title<div class="note">@(D.OkCal(n) ? "Leader đã duyệt, đã vào lịch" : "Đề xuất, chờ Leader duyệt")@(string.IsNullOrEmpty(n.EditedBy) ? "" : " · " + n.EditedBy + " đã chỉnh")</div></div>
+                }
+                @if (t.Source == TaskSource.ChuyenTiep && t.FromDate is DateOnly fd)
+                {
+                    <div class="note" style="margin:-4px 0 8px">Chuyển tiếp từ @Fmt.Dm(fd)</div>
+                }
+                <div class="btn-row">@if (!ro)
+                    {
+                        <button type="button" class="btn btn-primary btn-sm" data-sheet="upd@(t.Id)">Cập nhật</button>
+                    }<a class="btn btn-sm btn-ghost" href="@(NvBaoCao.ToggleOpen(req, Model.Open, t.Id))#t@(t.Id)" data-detail="det@(t.Id)" aria-expanded="@(open ? "true" : "false")">Chi tiết</a></div>
+                <div class="detail" id="det@(t.Id)" hidden="@(!open)">
+                    <div><span class="muted">Dự án:</span> @D.PjName(t.ProjectId)</div>
+                    @if (t.PlanItemId is int iid)
+                    {
+                        <div><span class="muted">Đầu mục:</span> @(D.Item(iid)?.Title ?? "")</div>
+                    }
+                    <div><span class="muted">@(st == TaskState.HoanThanh ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành"):</span> @(string.IsNullOrEmpty(t.Note) ? "—" : t.Note)</div>
+                    @if (t.UpdatedAt is DateTime ua)
+                    {
+                        <div class="note">Cập nhật lúc @VnTime.Hm(ua)</div>
+                    }
+                    @Html.Raw(Blocks.PhotoHtml(t.Photos))
+                </div>
+            </div></li>
+        }
+    </ul>
+}
+else if (plan is not null)
+{
+    <div class="empty">Không có việc nào được chọn hôm nay.</div>
+}
+@if (!ro)
+{
+    <button type="button" class="btn btn-ghost btn-block" data-sheet="tplExtra" style="margin:4px 0 14px">＋ Đề xuất công việc phát sinh</button>
+}
+<section class="card sec">
+    <h2>Danh sách phát sinh trong ngày</h2>
+    @if (xs.Count > 0)
+    {
+        foreach (var x in xs)
+        {
+            @D.ExtraRow(x)
+        }
+    }
+    else
+    {
+        <p class="note">Chưa có phát sinh.</p>
+    }
+</section>
+@if (list.Count > 0 && openCnt > 0)
+{
+    <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">!</span><div><b>Còn @openCnt việc chưa hoàn thành chưa có kế hoạch tiếp theo</b><div class="note">Bấm Cập nhật ở từng việc: chọn Hoàn thành, hoặc chọn ngày và giờ để chuyển việc sang kế hoạch tiếp theo.</div></div></div>
+}
+@if (rep is not null)
+{
+    var es = Dept.EodSt(rep);
+    var by = string.IsNullOrEmpty(rep.LeaderBy) ? "Leader" : rep.LeaderBy;
+    if (es == EodState.TuChoi)
+    {
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@by yêu cầu bổ sung báo cáo</b><div class="note">@(rep.LeaderNote ?? "")</div><div class="note">Cập nhật lại và bấm gửi lại bên dưới.</div></div></div>
+    }
+    else if (es == EodState.DaDuyet)
+    {
+        <div class="notice"><span class="ic">✓</span><div><b>@by đã duyệt báo cáo lúc @VnTime.Hm(rep.LeaderAt)</b>@if (!string.IsNullOrEmpty(rep.LeaderNote))
+            {
+                <div class="note">Góp ý: @rep.LeaderNote</div>
+            }<div class="note">Gửi lại sẽ cần Leader duyệt lại.</div></div></div>
+    }
+    else
+    {
+        <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Hm(rep.SentAt) · chờ Leader duyệt</b><div class="note">Có thể sửa và gửi lại nếu cần.</div></div></div>
+    }
+}
+<form id="eodForm" class="card sec" method="post" action="@Ui.To(req, "/Nv/GuiBaoCao", ("d", dkey))" asp-antiforgery="true" data-miss="@openCnt">
+    @Ui.ReturnField(req)
+    <h2>Tình hình chung</h2>
+    <label class="f" for="eB" style="margin-top:0">Có vướng mắc không?</label>
+    <select class="in" id="eB" name="blocked" disabled="@ro">
+        <option value="khong" selected="@(rep?.Blocked != true)">Không</option>
+        <option value="co" selected="@(rep?.Blocked == true)">Có</option>
+    </select>
+    <label class="f" for="eN">Ghi chú thêm (nếu có)</label><textarea class="in" id="eN" name="note" maxlength="2000" placeholder="Nhập ghi chú…" disabled="@ro">@(rep?.Note)</textarea>
+    @if (!ro)
+    {
+        <button class="btn btn-primary btn-block" style="margin-top:12px">@(rep is not null ? "Gửi lại báo cáo cuối ngày" : "Gửi báo cáo cuối ngày")</button>
+    }
+</form>
+
+@if (!ro)
+{
+    @* openExtra(false) *@
+    <partial name="_ExtraSheet" model="@(new ExtraSheetVm { TemplateId = "tplExtra", Action = Ui.To(req, "/Nv/DeXuatPhatSinh", ("d", dkey)), ByLeader = false, EmployeeId = me.Id })" />
+
+    @* openUpdate(t): một sheet cho mỗi việc *@
+    foreach (var t in list)
+    {
+        var cur = D.Task(t.CarriedToId);
+        var it = D.Item(t.PlanItemId);
+        var nds = NvBaoCao.NextDateOptions(t.Date, cur?.Date);
+        var ndDef = cur?.Date ?? nds.First(x => x.DayOfWeek != DayOfWeek.Sunday);
+        var done = t.Status == TaskState.HoanThanh;
+        <template id="upd@(t.Id)">
+            <form method="post" action="@Ui.To(req, "/Nv/CapNhatViec", ("d", dkey))" enctype="multipart/form-data" data-upd data-st="@t.Status" data-end="@t.End">
+                @Html.AntiForgeryToken()
+                @Ui.ReturnField(req)
+                <input type="hidden" name="taskId" value="@t.Id">
+                <h3>Cập nhật công việc</h3>
+                <p class="note" style="margin:0 0 8px">@t.Title · <span class="mono">@(t.Start)–@(t.End)</span></p>
+                <div class="choices" role="radiogroup" aria-label="Trạng thái">
+                    @foreach (var s in new[] { TaskState.DangLam, TaskState.HoanThanh, TaskState.Cham, TaskState.ChuaLam })
+                    {
+                        <label class="choice" style="--cc:@Labels.Color(s)"><input type="radio" name="st" value="@s" checked="@(t.Status == s)">@Labels.Of(s)</label>
+                    }
+                </div>
+                @if (it is not null && it.Status != TaskState.HoanThanh)
+                {
+                    <label class="row" style="margin-top:10px;font-size:13px"><input type="checkbox" id="itDone" name="itemDone" value="true"> Đầu mục “@it.Title” đã xong toàn bộ</label>
+                }
+                <div id="nxWrap" class="nx" hidden="@done">
+                    <div class="nx-h">Kế hoạch tiếp theo</div>
+                    <div class="note">Việc chưa hoàn thành sẽ được chuyển sang ngày bạn chọn.</div>
+                    <label class="f" for="nxD">Chuyển sang ngày</label>@Ui.Select("nextDate", nds.Select(x => (Fmt.Key(x), NvBaoCao.NextDateLabel(x))), Fmt.Key(ndDef), id: "nxD")
+                    <div class="pick2 eq">
+                        <div><label class="f" for="nxS">Bắt đầu</label>@Ui.TimeSelect("nextStart", cur?.Start ?? t.Start, id: "nxS")</div>
+                        <div><label class="f" for="nxE">Kết thúc</label>@Ui.TimeSelect("nextEnd", cur?.End ?? t.End, end: true, id: "nxE")</div>
+                    </div>
+                    <label class="f" for="nxT">Nội dung tiếp theo</label><input class="in" id="nxT" name="nextTitle" maxlength="300" value="@(cur?.Title ?? t.Title)">
+                </div>
+                <label class="f" for="uN" id="uNL">@(done ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành (bắt buộc)")</label><textarea class="in" id="uN" name="note" maxlength="2000" placeholder="@(done ? "VD: Tín hiệu ổn định." : "VD: Chờ vật tư, khách hàng chưa bàn giao mặt bằng…")">@t.Note</textarea>
+                <label class="f" for="phF">Ảnh hiện trường (tùy chọn)</label>
+                <input class="in" type="file" id="phF" name="photos" accept="image/*" multiple data-shrink>
+                <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu cập nhật</button></div>
+            </form>
+        </template>
+    }
+}

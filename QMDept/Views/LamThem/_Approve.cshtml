@@ -1,0 +1,49 @@
+@model LamThemVm
+@* otApprove(d): Leader duyệt đăng ký của NV trong nhóm; TP duyệt đăng ký của Leader. Từ chối bắt buộc lý do; có Hoàn tác. *@
+@{
+    var req = Context.Request;
+    var forNv = Scope.Role == Role.Leader;
+    var duyetUrl = LamThemUi.PostUrl(req, "Duyet", Model.R, Scope.Date);
+    var undoUrl = LamThemUi.PostUrl(req, "HoanTac", Model.R, Scope.Date);
+}
+@if (Model.Approve.Count == 0)
+{
+    <div class="empty">Chưa có @(forNv ? "nhân viên" : "Leader") đăng ký làm thêm ngày này.</div>
+}
+@foreach (var x in Model.Approve)
+{
+    var name = D.PName(x.PersonId);
+    <section class="card apv">
+        <div class="hd">@Ui.Av(name)<b>@name</b>@Ui.Pill(x.Status)</div>
+        <partial name="_OtDetail" model="x" />
+        @if (x.Status == OtStatus.ChoDuyet)
+        {
+            <div class="btn-row" style="margin-top:12px">
+                <form method="post" action="@duyetUrl" asp-antiforgery="true"
+                      data-prompt="Từ chối làm thêm của @name" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="r" value="@Model.R">
+                    <input type="hidden" name="id" value="@x.Id">
+                    <input type="hidden" name="v" value="no">
+                    <button class="btn btn-no">Từ chối</button>
+                </form>
+                <form method="post" action="@duyetUrl" asp-antiforgery="true">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="r" value="@Model.R">
+                    <input type="hidden" name="id" value="@x.Id">
+                    <input type="hidden" name="v" value="ok">
+                    <button class="btn btn-ok">Duyệt</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <p class="note" style="margin-bottom:0">@LamThemUi.DecidedText(x) <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
+            <form id="otUndo@(x.Id)" method="post" action="@undoUrl" asp-antiforgery="true" hidden>
+                @Ui.ReturnField(req)
+                <input type="hidden" name="r" value="@Model.R">
+                <input type="hidden" name="id" value="@x.Id">
+            </form>
+        }
+    </section>
+}

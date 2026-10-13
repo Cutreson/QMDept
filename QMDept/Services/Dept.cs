@@ -128,6 +128,7 @@ public sealed class Dept(AppDbContext db, ViewScope scope)
     {
         Role.Nv => a.LeaderId is int l ? "Nhóm " + PName(l) : "Chưa xếp nhóm",
         Role.Leader => $"Leader · nhóm {Team(a.Id).Count} người",
+        Role.Admin => "Quản trị hệ thống",
         _ => "Trưởng phòng",
     };
 

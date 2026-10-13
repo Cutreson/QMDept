@@ -9,6 +9,7 @@ public enum Role
     Nv,     // 'nv'     Nhân viên Setup
     Leader, // 'leader' Leader Setup
     Tp,     // 'tp'     Trưởng phòng
+    Admin,  // (không có trong artifact) Quản trị hệ thống: chỉ quản lý tài khoản — tạo, sửa, đặt mật khẩu
 }
 
 /// <summary>Cấp bậc nhân viên (people.level).</summary>

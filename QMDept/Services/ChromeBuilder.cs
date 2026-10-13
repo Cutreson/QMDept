@@ -54,6 +54,11 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             new("bao_cao", "Báo cáo", "doc", "/Tp/BaoCao", "Tp", "BaoCao"),
             new("lam_them", "Làm thêm", "clock", "/LamThem?r=tp", "LamThem", null),
         ],
+        // Không có trong artifact: tài khoản Quản trị chỉ quản lý tài khoản.
+        [Role.Admin] =
+        [
+            new("tai_khoan", "Tài khoản", "grid", "/Admin/TaiKhoan", "Admin", "TaiKhoan"),
+        ],
     };
 
     ChromeModel? _cache;

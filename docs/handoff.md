@@ -23,7 +23,8 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - Provider `MySql.EntityFrameworkCore` (Oracle) vì Pomelo chưa có bản cho EF Core 10. File migration provider sinh
   ra thiếu `using` → đã thêm `GlobalUsings.cs` (`global using MySql.EntityFrameworkCore.Extensions;`).
 - Thời gian lưu UTC, hiển thị giờ VN (UTC+7) qua `VnTime`. Giờ trong ngày lưu chuỗi "HH:mm" (cho phép 24:00).
-- Connection string để ở `QMDept/appsettings.Local.json` (gitignore). Chưa có → app hiện trang hướng dẫn.
+- Connection string DB thật (MariaDB 10.11) nằm trong `QMDept/appsettings.json`, commit lên git theo quyết định của chủ dự án
+  (chủ dự án sẽ tự gỡ sau). Chưa có connection string → app hiện trang hướng dẫn.
 - Các khác biệt có chủ đích so với artifact: `docs/nghiep-vu.md` mục 9.
 
 ### Việc tiếp theo

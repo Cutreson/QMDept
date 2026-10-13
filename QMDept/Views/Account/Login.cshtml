@@ -12,7 +12,7 @@
         <h2>Thiết lập tài khoản Trưởng phòng</h2>
         <p class="note" style="margin-top:0">Chưa có tài khoản Trưởng phòng. Tạo tài khoản đầu tiên để quản lý nhân sự và cấp mã cho mọi người.</p>
         <label class="f" for="bN">Họ tên</label><input class="in" id="bN" name="name" value="@Model.Name" required>
-        <label class="f" for="bC">Mã nhân viên</label><input class="in mono" id="bC" name="code" value="@Model.Code" autocapitalize="characters" required>
+        <label class="f" for="bC">Mã nhân viên</label><input class="in mono" id="bC" name="code" value="@Model.Code" autocapitalize="none" required>
         <label class="f" for="bP">Mật khẩu (tối thiểu 4 ký tự)</label><input class="in" type="password" id="bP" name="password" autocomplete="new-password" minlength="4" required>
         <button class="btn btn-primary btn-block" style="margin-top:14px">Tạo tài khoản</button>
     </form>
@@ -22,7 +22,7 @@ else
     <form method="post" action="/Account/Login" class="card sec login" asp-antiforgery="true">
         <h2>Đăng nhập</h2>
         <label class="f" for="lgC" style="margin-top:0">Mã nhân viên</label>
-        <input class="in mono" id="lgC" name="code" value="@Model.Code" autocomplete="username" autocapitalize="characters" placeholder="VD: NV001" required>
+        <input class="in mono" id="lgC" name="code" value="@Model.Code" autocomplete="username" autocapitalize="none" placeholder="VD: tp.leader1.nv1" required>
         <label class="f" for="lgP">Mật khẩu</label>
         <input class="in" type="password" id="lgP" name="password" autocomplete="current-password" minlength="4" required>
         <button class="btn btn-primary btn-block" style="margin-top:14px">Đăng nhập</button>

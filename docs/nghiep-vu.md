@@ -12,10 +12,16 @@ Những điểm khác artifact được ghi rõ ở mục 9.
 | Nhân viên Setup | `Nv` | Nhân viên (của chính mình) | có cấp bậc Tech 1/2/3, thuộc nhóm của 1 Leader |
 | Leader Setup | `Leader` | Leader + "Lịch nhân viên" (NV trong nhóm, chỉ xem + giao việc) | |
 | Trưởng phòng | `Tp` | TP + Leader (chọn Leader để xem theo nhóm) + Lịch nhân viên (mọi NV) | quản lý tài khoản |
+| Quản trị (bổ sung) | `Admin` | chỉ trang **Tài khoản** (`/Admin/TaiKhoan`) | tạo/sửa/xóa/khôi phục tài khoản, **đặt mật khẩu trực tiếp** |
 
+- Vai trò Quản trị KHÔNG có trong artifact — chủ dự án yêu cầu ngày 2026-10-13 ("admin có thể tạo và đặt mật khẩu các tài khoản").
+- Quy tắc đặt mã/tên của chủ dự án: tên = mã, dạng `tp`, `tp.leaderN`, `tp.leaderN.nvM`. Mã lưu **chữ thường**
+  (artifact dùng chữ HOA), đăng nhập không phân biệt hoa/thường (`AccountRules.NormalizeCode`). Tài khoản đã tạo trên DB
+  thật: xem `docs/handoff.md` (mật khẩu ở `docs/tai-khoan.local.md`, chỉ có trên máy chủ dự án).
 - Đăng nhập: mã NV + mật khẩu (≥ 4 ký tự). Lần đầu: mật khẩu nhập vào thành mật khẩu. Quên: TP đặt lại.
-- Chưa có TP nào → màn hình "Thiết lập tài khoản Trưởng phòng" tạo TP đầu tiên.
-- Chỉ TP tạo/sửa/xóa tài khoản, cấp mã, xếp nhóm (`leader`), cấp bậc.
+- Chưa có TP nào (và chưa có Quản trị) → màn hình "Thiết lập tài khoản Trưởng phòng" tạo TP đầu tiên.
+- TP tạo/sửa/xóa tài khoản, cấp mã, xếp nhóm (`leader`), cấp bậc (như artifact; "đặt lại mật khẩu" = người dùng tự đặt
+  ở lần đăng nhập tới). Quản trị làm được mọi việc đó + đặt mật khẩu trực tiếp + khôi phục tài khoản đã xóa.
 - Leader/TP xem trang NV ở chế độ **chỉ xem** (`isRO`); riêng chế độ "Tất cả nhân viên" có form **Giao thêm việc**.
 - `inScope(emp)`: ở giao diện Leader chỉ tính Leader đang xem + NV trong nhóm; các giao diện khác: tất cả.
 

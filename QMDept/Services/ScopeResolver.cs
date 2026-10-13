@@ -18,11 +18,15 @@ public sealed class ScopeResolver(AppDbContext db, ViewScope scope)
     {
         Role.Tp => [Role.Tp, Role.Leader, Role.Nv],
         Role.Leader => [Role.Leader, Role.Nv],
+        Role.Admin => [Role.Admin],
         _ => [Role.Nv],
     };
 
     /// <summary>Trang mặc định của mỗi giao diện.</summary>
-    public static string HomeOf(Role r) => r switch { Role.Tp => "/Tp/TongQuan", Role.Leader => "/Leader/TongQuan", _ => "/Nv/Thang" };
+    public static string HomeOf(Role r) => r switch
+    {
+        Role.Tp => "/Tp/TongQuan", Role.Leader => "/Leader/TongQuan", Role.Admin => "/Admin/TaiKhoan", _ => "/Nv/Thang",
+    };
 
     static List<Person> Sorted(IEnumerable<Person> s) => s.OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList();
 
@@ -36,7 +40,10 @@ public sealed class ScopeResolver(AppDbContext db, ViewScope scope)
         scope.Account = acc;
         scope.AllowedRoles = AllowedRoles(acc.Role);
         scope.Today = VnTime.Today;
-        scope.Date = Fmt.ParseKey(http.Request.Query["d"]) ?? scope.Today;
+        // Ngày đang chọn: ?d= trên URL; với POST không có ?d= thì lấy field "d" của form (Ui.ReturnField tự chèn).
+        string? dKey = http.Request.Query["d"];
+        if (string.IsNullOrEmpty(dKey) && http.Request.HasFormContentType) dKey = (await http.Request.ReadFormAsync())["d"];
+        scope.Date = Fmt.ParseKey(dKey) ?? scope.Today;
         if (!scope.AllowedRoles.Contains(uiRole)) { scope.Role = acc.Role; scope.Resolved = true; return ScopeResult.Forbidden; }
         scope.Role = uiRole;
 
@@ -44,6 +51,7 @@ public sealed class ScopeResolver(AppDbContext db, ViewScope scope)
         List<Person> pool = uiRole switch
         {
             Role.Tp => acc.Role == Role.Tp ? [acc] : [],
+            Role.Admin => acc.Role == Role.Admin ? [acc] : [],
             Role.Leader => acc.Role == Role.Leader ? [acc] : Sorted(await db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted).ToListAsync()),
             _ => acc.Role == Role.Nv ? [acc]
                 : acc.Role == Role.Leader ? Sorted(await db.People.AsNoTracking().Where(p => p.Role == Role.Nv && p.LeaderId == acc.Id && !p.IsDeleted).ToListAsync())

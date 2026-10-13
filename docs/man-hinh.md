@@ -7,6 +7,7 @@ Route ↔ hàm artifact (`docs/artifact/qlcl-artifact.html`) ↔ file code. Tr�
 | Chung | `/Account/Login`, `/Account/Bootstrap`, `/Account/Logout` | loginView, loginForm, bootForm | AccountController, Views/Account | ✅ |
 | Chung | `/` → trang mặc định theo vai trò; `/photo/{id}` | — | HomeController | ✅ |
 | Chung | Thanh trên, chọn giao diện, "Xem nhân viên/Leader", thanh tab + badge | renderChrome | _Layout, ChromeBuilder, ScopeResolver | ✅ |
+| Quản trị | `/Admin/TaiKhoan` (tạo/sửa/xóa/khôi phục, đặt mật khẩu) | — (bổ sung theo yêu cầu chủ dự án) | AdminController, Views/Admin | ✅ |
 | NV | `/Nv/Thang` (+ `?as=all` cả nhóm, giao thêm việc) | nvMonth, teamDayList, calAssignForm | NvController, Views/Nv | 🚧 |
 | NV | `/Nv/DuAn` (+ `?pj=&tab=`) | nvProjects, projectCard, projectDetail | NvController, _ProjectDetail | 🚧 |
 | NV | `/Nv/DauNgay` | nvMorning, openLeave, applyLeave, addTaskFields | NvController, wwwroot/js/leave.js | 🚧 |

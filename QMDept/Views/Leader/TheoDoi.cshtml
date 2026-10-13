@@ -1,0 +1,126 @@
+@model LeaderTrackVm
+@* ldTrack(): theo nhân viên (lọc dự án) / theo dự án; phát sinh hôm nay + "＋ Thêm phát sinh" (newExtraLd) + Duyệt/Từ chối (xDecide).
+   Controller đã EnsureAsync(Date, Date+1). *@
+@{
+    var req = Context.Request;
+    var d = Scope.Date;
+    var mode = Model.Mode;
+    var pf = Model.ProjectId;
+    var canWrite = Scope.CanLead && !Scope.IsReadOnly;
+    var xs = D.ExtrasOn(d);
+}
+@Ui.Head(3, "Theo dõi thực hiện", "Xem tiến độ, cập nhật và xử lý phát sinh")
+<partial name="_DayBar" />
+@Ui.Seg(new[] { (Ui.Here(req, ("mode", "nv")), "Theo nhân viên", mode == "nv", 0), (Ui.Here(req, ("mode", "da")), "Theo dự án", mode == "da", 0) })
+<div class="legend"><span><i style="background:var(--ok)"></i>Hoàn thành</span><span><i style="background:var(--warn)"></i>Đang làm</span><span><i style="background:var(--bad)"></i>Chậm</span><span><i style="background:var(--plan)"></i>Chưa làm</span></div>
+@if (mode == "nv")
+{
+    @* selPj('ldTrPj', true) *@
+    <form method="get" action="@req.Path">
+        @foreach (var kv in req.Query.Where(q => q.Key != "pj"))
+        {
+            <input type="hidden" name="@kv.Key" value="@kv.Value">
+        }
+        <label class="row" style="margin-bottom:12px"><span class="note" style="white-space:nowrap">Dự án:</span><select class="in" name="pj" data-autosubmit>
+            <option value="">Tất cả</option>
+            @foreach (var p in D.ActivePj())
+            {
+                <option value="@p.Id" selected="@(pf == p.Id)">@p.Name</option>
+            }
+        </select></label>
+    </form>
+    var ppl = D.Staff().Where(p => pf is null || D.TasksOn(d, p.Id).Any(t => t.ProjectId == pf)).ToList();
+    <section class="card sec">
+        @if (ppl.Count == 0)
+        {
+            <p class="note">Không có nhân viên.</p>
+        }
+        @foreach (var p in ppl)
+        {
+            var lv = D.OnLeave(d, p.Id);
+            var ts = D.Chosen(d, p.Id).Where(t => pf is null || t.ProjectId == pf).ToList();
+            var c = Dept.Count(ts);
+            var pct = LeaderUi.Pct(c.HoanThanh, ts.Count);
+            var col = c.Cham > 0 ? "var(--bad)" : pct == 100 ? "var(--ok)" : "var(--warn)";
+            var pst = Dept.PlanSt(D.PlanOf(d, p.Id));
+            var rep = D.ReportOf(d, p.Id);
+            <details class="prow-d"><summary class="prow">@Ui.Av(p.Name)<div><b>@p.Name</b><div class="note">@(lv is not null ? "Nghỉ" : pst == PlanState.ChuaGui ? "Chưa gửi kế hoạch" : Labels.Of(pst))@if (rep?.Blocked == true) {<text> · <b class="red">Vướng mắc</b></text>}</div></div>
+                <span class="mono" style="text-align:right">@c.HoanThanh/@ts.Count</span>@Ui.Bar(pct, col)<span class="chev">›</span></summary>
+                <div style="padding:0 0 8px 40px">
+                    @if (ts.Count > 0)
+                    {
+                        foreach (var t in ts) { @D.TaskRow(t) }
+                    }
+                    else
+                    {
+                        <p class="note">Không có việc.</p>
+                    }
+                    @if (!string.IsNullOrEmpty(rep?.Note))
+                    {
+                        <div class="cmt">@rep.Note</div>
+                    }
+                </div></details>
+        }
+    </section>
+}
+else
+{
+    <section class="card sec">
+        @foreach (var p in D.ActivePj())
+        {
+            var ts = D.TasksOn(d).Where(t => t.Selected && t.ProjectId == p.Id && D.InScope(t.EmployeeId)).ToList();
+            var c = Dept.Count(ts);
+            var pct = LeaderUi.Pct(c.HoanThanh, ts.Count);
+            <details class="prow-d"><summary class="prow"><span class="ptile" style="--tc:@D.Tile(p.Id);width:32px;height:32px;font-size:11px;border-radius:8px">@Fmt.Initials(p.Name)</span><div><b>@p.Name</b><div class="note">@D.OnSite(d, p.Id).Count/@D.Need(d, p.Id) người · @Labels.Of(D.PjStatus(p.Id, d))</div></div>
+                <span class="mono" style="text-align:right">@c.HoanThanh/@ts.Count</span>@Ui.Bar(pct, c.Cham > 0 ? "var(--bad)" : "var(--ok)")<span class="chev">›</span></summary>
+                <div style="padding:0 0 8px 40px">
+                    @if (ts.Count > 0)
+                    {
+                        foreach (var t in ts) { @D.TaskRow(t, showEmployee: true) }
+                    }
+                    else
+                    {
+                        <p class="note">Không có việc.</p>
+                    }
+                </div></details>
+        }
+    </section>
+}
+<section class="card sec"><h2><span class="grow">Công việc phát sinh (hôm nay)</span></h2>
+    @if (canWrite)
+    {
+        <button type="button" class="btn btn-ghost btn-block btn-sm" data-sheet="exLd" style="margin-bottom:6px">＋ Thêm phát sinh</button>
+    }
+    @if (xs.Count > 0)
+    {
+        foreach (var x in xs)
+        {
+            @D.ExtraRow(x)
+            if (canWrite && x.Status == ExtraStatus.ChoDuyet)
+            {
+                <div class="btn-row" style="margin:0 0 8px 32px">
+                    <form method="post" action="@LeaderUi.Post(req, Scope, "/Leader/DuyetPhatSinh")" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id">
+                        <button class="btn btn-sm btn-ok">Duyệt</button>
+                    </form>
+                    <form method="post" action="@LeaderUi.Post(req, Scope, "/Leader/TuChoiPhatSinh")" asp-antiforgery="true"
+                          data-prompt="Từ chối phát sinh" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id">
+                        <button class="btn btn-sm btn-no">Từ chối</button>
+                    </form>
+                </div>
+            }
+        }
+    }
+    else
+    {
+        <p class="note">Chưa có phát sinh.</p>
+    }
+</section>
+@if (canWrite)
+{
+    var exVm = new ExtraSheetVm { TemplateId = "exLd", Action = LeaderUi.Post(req, Scope, "/Leader/ThemPhatSinh"), ByLeader = true };
+    <partial name="_ExtraSheet" model="exVm" />
+}

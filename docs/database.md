@@ -1,14 +1,21 @@
 # Cơ sở dữ liệu
 
-- MySQL 8 (khuyến nghị) qua **MySql.EntityFrameworkCore 10.0.9** (provider chính thức của Oracle; Pomelo chưa hỗ trợ EF Core 10).
-  API: `options.UseMySQL(conn)`; extension cấu hình ở namespace `MySql.EntityFrameworkCore.Extensions`.
+- **DB thật hiện tại: MariaDB 10.11** (host databaseasp.net, database `db73331`, `lower_case_table_names=1`, utf8mb4_general_ci).
+  Kết nối qua **MySql.EntityFrameworkCore 10.0.9** (provider chính thức của Oracle; Pomelo chưa hỗ trợ EF Core 10).
+  API: `options.UseMySQL(conn)`; extension cấu hình ở namespace `MySql.EntityFrameworkCore.Extensions` (đã `global using`).
+- Provider Oracle lỗi khi lấy khóa migration trên MariaDB và lớp lịch sử của nó là internal → dùng
+  `Data/MariaDbHistoryRepository.cs` (bảng `__EFMigrationsHistory` chuẩn + khóa `GET_LOCK` timeout 600s), đăng ký bằng
+  `ReplaceService<IHistoryRepository, MariaDbHistoryRepository>()` trong `Program.cs`. Không hỗ trợ `migrations script --idempotent`.
+- Đã áp migration `InitialCreate` lên DB thật ngày 2026-10-13 (DB trước đó trống).
 - Mọi bảng `utf8mb4`. Enum lưu chuỗi (varchar 20). Ngày làm việc kiểu `date` (DateOnly); mốc thời gian `datetime(6)` **UTC**.
   Giờ trong ngày là chuỗi `HH:mm` (cho phép `24:00` làm giờ kết thúc).
 
 ## Quy tắc vận hành (bắt buộc — xem agents.md)
 
-- Connection string: `ConnectionStrings:Default`. Đặt ở `QMDept/appsettings.Local.json` (đã .gitignore, không commit),
-  hoặc user-secrets / biến môi trường `ConnectionStrings__Default`. Ví dụ:
+- Connection string: `ConnectionStrings:Default`. **Hiện đặt trong `QMDept/appsettings.json` và commit lên git theo
+  quyết định của chủ dự án (2026-10-13), chủ dự án sẽ tự gỡ sau** — không tự ý chuyển đi.
+  Khi muốn gỡ khỏi git: chuyển sang `QMDept/appsettings.Local.json` (gitignore, ưu tiên cao hơn appsettings.json),
+  user-secrets hoặc biến môi trường `ConnectionStrings__Default`. Ví dụ:
   ```json
   { "ConnectionStrings": { "Default": "server=HOST;port=3306;database=qmdept;user=USER;password=PASS;SslMode=Preferred" } }
   ```
