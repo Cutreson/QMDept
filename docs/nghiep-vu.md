@@ -211,7 +211,8 @@ Form gồm:
 - Duyệt phát sinh: dự án đã bàn giao → báo lỗi; hai người duyệt cùng lúc chỉ tạo một việc; giờ kết thúc "Chưa rõ" → 17:00, nếu bắt
   đầu từ 17:00 trở đi thì kết thúc = bắt đầu + 30 phút (artifact luôn 17:00, có thể kết thúc trước bắt đầu).
 - Xóa tài khoản Leader → NV trong nhóm thành "Chưa xếp nhóm" (như khi Leader đổi vai trò). NV chưa xếp nhóm không có Leader
-  duyệt kế hoạch / báo cáo — TP cần xếp lại nhóm.
+  duyệt kế hoạch / báo cáo — TP cần xếp lại nhóm: TP Tổng quan hiện cảnh báo "N nhân viên chưa xếp nhóm" (kèm tên, bấm mở Nhân sự).
+  NV gắn với Leader đã xóa / không còn là Leader cũng hiện "Chưa xếp nhóm" (`Dept.GroupText`).
 - Nhu cầu nhân sự (Leader → Kế hoạch ngày mai) chỉ nhận dự án đang triển khai.
 
 ## 10. Thông báo đẩy (bổ sung — yêu cầu 2026-10-13)

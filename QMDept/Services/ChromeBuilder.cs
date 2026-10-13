@@ -110,7 +110,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             opts.Add(new("me", $"Màn hình của tôi ({Labels.Of(acc.Role)})", !scope.AllStaff && !scope.IsViewingOther, null));
             foreach (var p in scope.Subordinates)
             {
-                var label = p.Role == Role.Staff && acc.Role != Role.Leader ? $"{p.Name} · {(p.LeaderId is int l ? "Nhóm " + d.PName(l) : "Chưa xếp nhóm")}" : p.Name;
+                var label = p.Role == Role.Staff && acc.Role != Role.Leader ? $"{p.Name} · {d.GroupText(p)}" : p.Name;
                 opts.Add(new(p.Id.ToString(), label, scope.IsViewingOther && scope.MeId == p.Id, Labels.Title(p.Role)));
             }
         }
@@ -120,7 +120,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         {
             vName = v.Name;
             var parts = new List<string> { Labels.Title(v.Role), v.Code };
-            if (v.Role == Role.Staff) parts.Add(v.LeaderId is int l ? "Nhóm " + d.PName(l) : "Chưa xếp nhóm");
+            if (v.Role == Role.Staff) parts.Add(d.GroupText(v));
             if (v.Level is Level level) parts.Add(Labels.Of(level));
             vInfo = string.Join(" · ", parts);
         }

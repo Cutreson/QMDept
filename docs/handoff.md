@@ -33,8 +33,9 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 ### Chưa làm / việc tiếp theo
 1. Việc 1–4 của phiên trước (cần DB). Khi E2E nhớ test thêm: chuyển tiếp duyệt sau khi kế hoạch đã duyệt (NV cập nhật được việc),
    xóa Leader → NV "Chưa xếp nhóm", 2 loại thông báo mới, Quản trị xem TP chuyển tab.
-2. **Khoảng trống nghiệp vụ còn để ngỏ**: NV chưa xếp nhóm không có ai duyệt kế hoạch / báo cáo / phát sinh / chuyển tiếp (artifact cho TP
-   thao tác trong giao diện Leader; bản này không). Hiện cách xử lý là TP xếp lại nhóm. Nếu chủ dự án muốn TP duyệt thay → làm sau.
+2. NV chưa xếp nhóm không có ai duyệt kế hoạch / báo cáo / phát sinh / chuyển tiếp (artifact cũng vậy: phạm vi Leader chỉ là nhóm).
+   **Đã quyết định (phiên 2, "Tiếp tục xử lý đi")**: không cho TP duyệt thay; TP Tổng quan hiện cảnh báo đỏ "N nhân viên chưa xếp nhóm"
+   (tên + link tab Nhân sự) để TP xếp nhóm. NV gắn với Leader đã xóa hiện "Chưa xếp nhóm" ở mọi nơi (`Dept.LeaderOf/GroupText/Unassigned`).
 3. Còn vài chú thích ranh giới quy tắc 14 giữ lại vì mang luật nghiệp vụ: "Nghỉ phép tối thiểu theo buổi", "Nghỉ không lương tối thiểu
    1 giờ" (StaffReports.cs, staff.js), "Tăng ca từ 3 giờ bắt buộc dùng suất cơm." (Overtime.cs).
 

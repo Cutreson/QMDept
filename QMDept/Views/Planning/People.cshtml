@@ -20,7 +20,7 @@ else
     {
         var leave = D.OnLeave(d, p.Id);
         var sub = Labels.Title(p.Role)
-            + (p.Role == Role.Staff ? " · " + (p.LeaderId is not null ? "Nhóm " + PlanningManage.LeaderName(D, p) : "Chưa xếp nhóm") : "")
+            + (p.Role == Role.Staff ? " · " + D.GroupText(p) : "")
             + (isManager && !string.IsNullOrEmpty(p.Code) && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "");
         <div class="trow">@Ui.Av(p.Name, p.Role == Role.Manager)<div>
             <div class="t">

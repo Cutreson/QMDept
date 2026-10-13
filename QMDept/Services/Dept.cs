@@ -116,10 +116,16 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// (artifact: người bị xóa biến khỏi S.people nên inScope = false).
     public bool InScope(int emp) => scope.Role != Role.Leader
         || (scope.MeId is int id && (emp == id || (P(emp) is { IsDeleted: false } p && p.LeaderId == id)));
+    /// <summary>Leader (còn hoạt động, đúng vai trò Leader) của NV; null = "Chưa xếp nhóm".</summary>
+    public Person? LeaderOf(Person a) => a.LeaderId is int l && P(l) is { IsDeleted: false, Role: Role.Leader } x ? x : null;
+    /// <summary>"Nhóm X" / "Chưa xếp nhóm".</summary>
+    public string GroupText(Person a) => LeaderOf(a) is { } l ? "Nhóm " + l.Name : "Chưa xếp nhóm";
+    /// <summary>NV chưa xếp nhóm (không có Leader duyệt kế hoạch / báo cáo) — TP cần xếp nhóm.</summary>
+    public List<Person> Unassigned() => AllStaff().Where(p => LeaderOf(p) is null).ToList();
     /// <summary>accTeam(a): mô tả nhóm của tài khoản.</summary>
     public string TeamText(Person a) => a.Role switch
     {
-        Role.Staff => a.LeaderId is int l ? "Nhóm " + PName(l) : "Chưa xếp nhóm",
+        Role.Staff => GroupText(a),
         Role.Leader => $"Leader · nhóm {Team(a.Id).Count} người",
         Role.Admin => "Quản trị hệ thống",
         _ => "Trưởng phòng",
