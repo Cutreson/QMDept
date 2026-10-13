@@ -4,48 +4,90 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
-## Phiên 1 (tiếp) — 2026-10-13 tối (Claude Code, Opus 5.5)
+## Phiên 1 (tiếp) — 2026-10-13 tối (Claude Code, Opus 5.5) — DỪNG THEO YÊU CẦU CHỦ DỰ ÁN LÚC ~23:15
 
-### Đã làm
-- Hoàn tất toàn bộ màn hình (commit `30f5781`), rồi theo yêu cầu chủ dự án:
-  - **Chỉ dùng văn bản**: gỡ ảnh hiện trường, bảng `photos`, PhotoStore.
-  - **Thông báo đẩy SignalR** + trang `/Settings`.
-  - **Xem màn hình cấp dưới (chỉ xem)**.
-  - **Favicon**.
-  - **Code tiếng Anh**: đổi toàn bộ định danh, route, file, giá trị enum sang tiếng Anh.
-  - **Giờ VN** qua `VnTime`.
-  - **Giao diện responsive**.
-- Migration `EnglishNames` áp lên DB thật (đổi tên cột + chuyển giá trị enum cũ sang tiếng Anh, xem `docs/database.md`); đã truy vấn
-  kiểm tra không còn giá trị tiếng Việt.
-- Sửa lỗi từ đợt E2E trước:
-  - Vòng chuyển hướng vô hạn khi phiên cũ bị thu hồi (`HomeController.Index`, `Account/Login` GET tự đăng xuất).
-  - Giới hạn đăng nhập 10 lần/phút/IP (`AddRateLimiter`, policy `login`).
-  - Việc ngoài KH thêm khi KH đã gửi.
-  - Dự án đã bàn giao.
-  - Lưới 30 phút / 0 giờ của làm thêm.
-  - Quyết định lại làm thêm.
-  - Các kiểm tra trong trang Quản trị.
-- Yêu cầu giao diện mới (ghi ở agents.md §1 mục 8, 9, 14, 15, 16):
-  - Bỏ mọi placeholder.
-  - Lược chú thích và phụ đề trang.
-  - **Quản trị bao trùm TP** (`ScopeResolver.UiRoleOf`).
-  - Tài khoản đã xóa chỉ hiện dạng trạng thái ở trang Tài khoản.
-  - Lịch cả nhóm chuyển từ combobox sang nút "Lịch nhóm".
-  - Trao đổi bằng tiếng Việt.
-- **Tối ưu tốc độ**: đo ~10 s/trang (mỗi truy vấn ~750 ms vì DB ở xa). Thêm `Services/DataCache.cs` (bộ đệm dùng chung tự
-  làm mới khi ghi + `KeepOpenInterceptor` + nạp song song), đăng ký `AddDbContextFactory` + DbContext scoped. Chi tiết: `docs/kien-truc.md` mục "Hiệu năng".
-- Smoke test 65 trang × 5 tài khoản: đạt (trước khi thêm cache).
+> Phiên sau: đọc `agents.md` (quy tắc §1 mục 1–16) → mục này → `docs/kien-truc.md` ("Hiệu năng", "Bảo mật đăng nhập", "Xem màn hình").
+> Trao đổi với chủ dự án bằng **tiếng Việt** (quy tắc 16).
 
-### Đang dở
-- Khoảng 21:40 DB thật báo "Access denied" cho IP máy dev rồi chặn cổng 3306 (connection string không đổi) → app dừng,
-  4 agent E2E (NV hằng ngày, làm thêm, kế hoạch + TP, tài khoản / xem màn hình / thông báo) dừng giữa chừng.
-- Chưa chạy bản có `DataCache` trên DB thật, chưa đo lại tốc độ.
-- Chưa xóa dữ liệu test (`[E2E-…]`, `[E2E2-…]`, tài khoản `zz.*` Id > 5) — chủ dự án đã đồng ý xóa; giữ 5 tài khoản chính
-  (tp, tp.leader1, tp.leader1.nv1, tp.leader1.nv2, admin).
+### Trạng thái tổng quát
+- Code ở `master` **build sạch** (0 lỗi, 0 cảnh báo). Commit cuối của phiên: xem `git log`.
+- Web chủ dự án đang dùng: **http://qlcl.runasp.net/** (MonsterASP, publish bằng Visual Studio — hồ sơ
+  `QMDept/Properties/PublishProfiles/site98406-WebDeploy.pubxml`, gitignore). Bản trên đó là bản publish lúc ~20:08,
+  **chưa có** các thay đổi của phiên này → chủ dự án cần publish lại.
+- **DB thật chặn IP máy dev `42.1.77.17` từ ~21:45**: lúc đầu "Access denied for user db73331@42.1.77.17", sau đó không mở
+  được cổng 3306, ping mất 100%. Connection string KHÔNG đổi (chủ dự án xác nhận). Đến 23:11 vẫn bị chặn. Có thể do nhà cung cấp
+  chặn IP sau nhiều lần đăng nhập DB thất bại / quá nhiều kết nối từ 4 agent test chạy song song. → Mọi việc cần DB ở dưới **chưa làm được**.
+  Lúc ~22:05 qlcl.runasp.net cũng trả 503 rồi 404 (có thể hosting đang sự cố hoặc chủ dự án đang publish).
+- **Lưu ý khi test lại**: không chạy nhiều agent / nhiều kết nối song song tới DB; khi DB lỗi phải dừng app ngay (app thử kết nối
+  lại liên tục có thể kéo dài lệnh chặn).
 
-### Việc tiếp theo
-- DB mở lại → xóa dữ liệu test → chạy app → smoke test → đo tốc độ (`perf.mjs`) → E2E lại các luồng còn thiếu
-  (đặc biệt Quản trị dùng giao diện TP, nút Lịch nhóm, trang Tài khoản lọc trạng thái).
+### Đã làm trong phiên
+- Hoàn tất toàn bộ màn hình (commit `30f5781`), rồi theo yêu cầu chủ dự án: chỉ dùng văn bản (gỡ ảnh, bảng `photos`),
+  thông báo đẩy SignalR + `/Settings`, xem màn hình cấp dưới (chỉ xem), favicon, code tiếng Anh (định danh/route/file/enum),
+  giờ VN qua `VnTime`, giao diện responsive.
+- Migration `EnglishNames` **đã áp lên DB thật** (21:12): đổi tên cột, chuyển giá trị enum tiếng Việt → tiếng Anh, bỏ `photos`,
+  thêm `notify_settings`; đã truy vấn kiểm tra không còn giá trị tiếng Việt. Smoke test 65 trang × 5 tài khoản đạt (bản chưa có cache).
+- Yêu cầu giao diện mới (agents.md §1 mục 8, 9, 14, 15, 16): bỏ mọi placeholder; lược chú thích / phụ đề trang;
+  **Quản trị bao trùm TP** (`ScopeResolver.UiRoleOf(Admin)=Manager`, tab Tài khoản thêm vào tab TP); trang Tài khoản một danh sách
+  có trạng thái Đang hoạt động / Đã xóa (`?st=`); lịch cả nhóm là nút "Lịch nhóm" cạnh combobox; trả lời bằng tiếng Việt.
+- **Tối ưu tốc độ** (chưa đo lại được vì DB bị chặn): đo trước ~10 s/trang = ~13 truy vấn × ~750 ms (RTT ~250 ms + MySql.Data lấy lại
+  kết nối từ pool ~500 ms). Thêm `Services/DataCache.cs`: `DataCache` (ảnh chụp bảng nhỏ + dữ liệu theo khoảng ngày, dùng chung mọi
+  request, tự làm mới sau mọi lệnh ghi qua `DataCacheInterceptor`, TTL 60 s, nạp song song tối đa 8 kết nối), `KeepOpenInterceptor`
+  (một kết nối suốt request). `Dept`, `ScopeResolver`, `ChromeBuilder`, `HomeController`, `Notifier`, cookie `OnValidatePrincipal`
+  đều đọc từ cache. DbContext đăng ký bằng `AddDbContextFactory` + scoped. Chi tiết: `docs/kien-truc.md` mục "Hiệu năng".
+- Sửa lỗi E2E (đợt 1 + đợt 2):
+  - vòng chuyển hướng khi phiên bị thu hồi; giới hạn đăng nhập 10/phút/IP (policy `login`);
+  - việc ngoài KH khi KH đã gửi; dự án đã bàn giao; làm thêm: lưới 30 phút, 0 giờ, quyết định lại, giờ sai định dạng (`Fmt.IsHhmm` chặt);
+  - gửi trùng chạm unique index → toast thay vì 500 (`AppController` bắt `DbUpdateException` cho mọi POST);
+  - chi tiết dự án → "Phát sinh gần đây" nạp việc đúng ngày của phát sinh (trạng thái Hoàn thành / Đang xử lý);
+  - **bảo mật**: Quản trị không đổi tài khoản chưa có mật khẩu thành Quản trị/TP; TP (Nhân sự) không tạo TP, không xóa mật khẩu / đổi mã
+    tài khoản TP; Admin không sửa tài khoản đã xóa; phiên bị thu hồi bị từ chối ở mọi endpoint kể cả hub SignalR (`OnValidatePrincipal`),
+    kết nối SignalR cũ không nhận thông báo và bị ngắt (`NotifyHub.Open`); Logout xóa cookie `qm_view`; `?as=all` khi không có NV bị bỏ qua.
+- Script kiểm thử / bảo trì đưa vào repo `tools/` (mật khẩu truyền qua biến môi trường, xem `docs/tai-khoan.local.md` trên máy chủ dự án;
+  chạy ở thư mục gốc repo): `smoke.sh` (GET mọi trang theo vai trò), `perf.mjs` (đo thời gian tải trang), `dbquery.cs` (chạy SQL trên
+  DB thật), `dblatency.cs` (đo độ trễ DB), `cleanup-test-data.sql` (xóa dữ liệu test).
+
+### Kết quả E2E đợt 2 (trước khi DB bị chặn) — đã kiểm OK
+- NV đầu ngày / cuối ngày + Leader duyệt KH + TP duyệt hỗ trợ: mọi thông báo kiểm tra và thứ tự khớp artifact, không lỗi.
+- Làm thêm: C# `OtRules.Calc` và JS `otRule` khớp nhau trên 4.608 tổ hợp giờ; đăng ký / sửa / duyệt / hoàn tác / tổng hợp / gửi HCNS;
+  chế độ chỉ xem chặn POST.
+- Dự án, đầu mục, % kế hoạch / thực tế, trạng thái dự án (biên chênh 25), lịch tuần, phân công, nhân sự (TP), phạm vi Leader;
+  SignalR "Việc mới trong lịch" / "Việc bị xóa khỏi lịch".
+- Tài khoản: mọi kiểm tra khi tạo / đặt mật khẩu / xóa / khôi phục; phiên cũ trên MVC; không có upload file; định danh tiếng Anh;
+  không dùng giờ máy chủ.
+
+### CHƯA LÀM (việc tiếp theo, theo thứ tự)
+1. Chờ DB mở lại cho IP máy dev (kiểm tra: `dotnet run tools/dblatency.cs`). Nếu vẫn bị chặn: chủ dự án vào trang quản trị
+   databaseasp.net / MonsterASP → database `db73331` → Remote access / IP whitelist.
+2. **Xóa dữ liệu test** (chủ dự án đã đồng ý): `dotnet run tools/dbquery.cs tools/cleanup-test-data.sql` — đọc chú thích đầu file:
+   nếu chủ dự án đã nhập dữ liệu thật trên qlcl.runasp.net thì xóa có chọn lọc theo tiền tố `[E2E` / mã `zz.`.
+   Dữ liệu test hiện có: dự án id 1–8 (`[E2E-…]`, `[E2E2-daily]`, `[E2E2-ot]`, `[E2E2-plan] P1/P2neg`) và việc / KH / báo cáo /
+   phát sinh / làm thêm (2026-10-13 … 2026-11-03) liên quan; tài khoản Id > 5 (`zz.acct.*` đã xóa mềm, `zz.e2e2ac.s1/s2/l1`,
+   `zz.e2e2pl.x1/l1` còn hoạt động — `zz.e2e2ac.s2` đang ở nhóm tp.leader1); 1 đăng ký làm thêm sai định dạng "2 :00–9 :30" (23/10).
+3. Chạy app bản mới: `cd QMDept && ASPNETCORE_ENVIRONMENT=Development dotnet run --launch-profile http` (cổng 5125) →
+   `QM_PW_USER=… QM_PW_ADMIN=… bash tools/smoke.sh` → `node tools/perf.mjs` (so với ~10 s/trang trước tối ưu; trang xem lại kỳ vọng < 1 s).
+4. E2E các luồng **chưa chạy được** (dừng giữa chừng vì DB):
+   - Leader `/Planning/Reports`: DecideReport (ok/no, tự duyệt chuyển tiếp), UndoReportDecision, ApproveCarry / ApproveAllCarries /
+     UndoCarry / EditCarry; việc chuyển tiếp hiện ở ngày sau.
+   - Phát sinh: ApproveExtra / RejectExtra (Planning/Approvals, Leader/Tracking AddExtra) → việc "Phát sinh".
+   - `/Leader/Overview`, `/Leader/Tracking`, `/Leader/Reports` (SetNeed, SubmitReport, tab tuần); `/Manager/Overview`, `/Manager/Reports`,
+     `/Manager/Approvals` (plan/extra × bộ lọc), `/Manager/Projects` tab overview / people.
+   - Nghỉ không lương biên giờ, nghỉ phép cả ngày không chọn việc, công tác dài ngày, ngày không có việc; `/Staff/Month` + lịch nhóm AssignTask.
+   - Làm thêm: Cancel (kể cả sau duyệt), chọn "Công việc làm tiếp", gửi lại HCNS, badge tab.
+   - Xem màn hình: ma trận `?as=` (Leader → NV nhóm khác, TP → admin, NV → đồng nghiệp phải bị từ chối), mọi POST khi đang xem người khác.
+   - **Tính năng mới của phiên chưa test chạy thật**: Quản trị dùng giao diện TP (duyệt, làm thêm tự ghi nhận, gửi HCNS, nhận thông báo TP),
+     nút "Lịch nhóm", trang Tài khoản lọc trạng thái, DataCache (dữ liệu mới thấy ngay sau khi ghi), thông báo SignalR sau khi bị thu hồi phiên.
+   - Giao diện 375 / 768 / 1280 px: header có nút "Lịch nhóm" + combobox; thanh tab dưới của Quản trị có 7 tab.
+5. Rà soát code (3 agent đọc code bị dừng giữa chừng theo yêu cầu chủ dự án — **chưa có kết quả**): Leader/TP báo cáo + chuyển tiếp +
+   phát sinh; bảo mật xem màn hình + lịch tháng + DataCache; NV đầu/cuối ngày + làm thêm + thông báo + responsive.
+6. Commit + push cuối phiên (máy dev chưa cấu hình credential helper cho git → push có thể cần chủ dự án đăng nhập GitHub:
+   `git config --global credential.helper manager` rồi `git push origin master`).
+
+### Quyết định trong phiên
+- Quản trị cao hơn TP, dùng giao diện + quyền TP (đăng ký làm thêm của Quản trị được ghi nhận ngay như TP).
+- Tài khoản TP / Quản trị không bao giờ ở trạng thái "chưa có mật khẩu"; TP mới do Quản trị tạo kèm mật khẩu (khác artifact — nghiep-vu.md §9).
+- Mọi ghi phải qua EF (để `DataCache` tự làm mới); entity của `Dept` / cache là chỉ đọc, dùng chung giữa các request.
+- Giới hạn đăng nhập theo IP: nếu sau này chạy sau reverse proxy phải cấu hình ForwardedHeaders (`docs/kien-truc.md`).
 
 ---
 

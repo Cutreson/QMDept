@@ -73,6 +73,19 @@ dotnet ef migrations add <Ten> -o Data/Migrations   # tạo migration khi đổi
 dotnet ef database update                      # áp migration lên DB thật (app cũng tự migrate khi khởi động)
 ```
 
+Script kiểm thử / bảo trì ở `tools/` (chạy ở thư mục gốc repo; mật khẩu tài khoản test truyền qua biến môi trường `QM_PW_USER`,
+`QM_PW_ADMIN` — không ghi vào file):
+
+```bash
+bash tools/smoke.sh                            # đăng nhập từng vai trò, GET mọi trang, báo lỗi 500 / exception
+node tools/perf.mjs                            # đo thời gian tải trang
+dotnet run tools/dbquery.cs <file.sql>         # chạy SQL (mỗi câu một dòng) trên DB thật
+dotnet run tools/dblatency.cs                  # đo độ trễ DB / kiểm tra DB có kết nối được không
+```
+
+`tools/cleanup-test-data.sql` xóa toàn bộ dữ liệu test (giữ 5 tài khoản chính) — đọc chú thích đầu file trước khi chạy.
+**Không chạy nhiều tiến trình test song song tới DB** (2026-10-13 nhà cung cấp đã chặn IP máy dev sau đợt test 4 agent song song).
+
 Connection string DB thật đang nằm trong `QMDept/appsettings.json` và được commit lên git — **quyết định của chủ dự án
 ngày 2026-10-13** ("cứ làm vậy đi, sau này tôi gỡ sau"). Không tự ý chuyển/xóa khi chưa được chủ dự án yêu cầu.
 (`appsettings.Local.json` vẫn được hỗ trợ, gitignore, ưu tiên cao hơn — dùng khi chủ dự án muốn gỡ mật khẩu khỏi git.)
