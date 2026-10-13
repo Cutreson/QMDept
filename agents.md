@@ -54,6 +54,9 @@
     "Đang hoạt động" / "Đã xóa" (lọc `?st=all|active|deleted`), tài khoản đã xóa chỉ có nút "Khôi phục".
 16. **Trao đổi với chủ dự án bằng tiếng Việt** (yêu cầu 2026-10-13): mọi câu trả lời, báo cáo, câu hỏi gửi chủ dự án viết bằng
     tiếng Việt (tài liệu docs/ và comment vẫn tiếng Việt như hiện tại; định danh trong code vẫn tiếng Anh theo quy tắc 12).
+17. **Tự chủ hoàn toàn** (yêu cầu 2026-10-13): tuân thủ tài liệu trong repo, tự quyết định cho phù hợp, tự động code → test →
+    hoàn thiện liên tục cho đến khi thấy ổn; không dừng lại hỏi chủ dự án (trừ việc không thể tự làm, ví dụ mở IP DB).
+    Ghi các quyết định đã tự đưa ra vào `docs/handoff.md`.
 
 ## 2. Tổng quan kỹ thuật
 
