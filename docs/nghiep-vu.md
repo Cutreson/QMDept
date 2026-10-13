@@ -205,11 +205,12 @@ Form gồm:
   trong nghỉ trưa (artifact chấp nhận 0 giờ). Giờ phải đúng dạng HH:mm. Hai lần gửi cùng lúc trùng khóa → thông báo "Dữ liệu vừa được
   cập nhật ở nơi khác" thay vì lỗi.
 - Việc chuyển tiếp được duyệt (duyệt / duyệt tất cả / sửa và duyệt / duyệt báo cáo) khi NV **đã gửi kế hoạch** ngày chuyển sang →
-  việc được chọn sẵn và gắn vào kế hoạch ngày đó (như việc được giao / phát sinh đã duyệt), để NV vẫn cập nhật / báo cáo được kể cả
+  việc được chọn sẵn và gắn vào kế hoạch ngày đó (như việc được giao / phát sinh đã duyệt; trừ khi NV đã gửi báo cáo cuối ngày
+  đó — khi ấy việc chỉ hiện trong lịch), để NV vẫn cập nhật / báo cáo được kể cả
   khi kế hoạch đã được duyệt (artifact: việc hiện trong lịch nhưng NV không thao tác được). Hoàn tác / NV sửa đề xuất / đổi ngày →
   gỡ khỏi kế hoạch cũ.
 - Duyệt phát sinh: dự án đã bàn giao → báo lỗi; hai người duyệt cùng lúc chỉ tạo một việc; giờ kết thúc "Chưa rõ" → 17:00, nếu bắt
-  đầu từ 17:00 trở đi thì kết thúc = bắt đầu + 30 phút (artifact luôn 17:00, có thể kết thúc trước bắt đầu).
+  đầu từ 17:00 trở đi thì kết thúc = bắt đầu + 30 phút (artifact luôn 17:00, có thể kết thúc trước bắt đầu); giờ bắt đầu phát sinh không được là 24:00.
 - Xóa tài khoản Leader → NV trong nhóm thành "Chưa xếp nhóm" (như khi Leader đổi vai trò). NV chưa xếp nhóm không có Leader
   duyệt kế hoạch / báo cáo — TP cần xếp lại nhóm: TP Tổng quan hiện cảnh báo "N nhân viên chưa xếp nhóm" (kèm tên, bấm mở Nhân sự).
   NV gắn với Leader đã xóa / không còn là Leader cũng hiện "Chưa xếp nhóm" (`Dept.GroupText`).

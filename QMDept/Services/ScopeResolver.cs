@@ -68,8 +68,9 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         if (!explicitSel) sel = http.Request.Cookies[ViewCookie];
         // Mở trang thuộc giao diện của chính mình mà không chỉ định ?as= → về màn hình của mình (vd. bấm link thông báo).
         // Ngoại lệ: người trong cookie dùng cùng giao diện với trang (Quản trị đang xem TP rồi bấm tab TP) → giữ người đó.
+        // Chỉ áp dụng ngoại lệ cho GET: form POST không có ?as= luôn là thao tác ở màn hình của chính mình.
         if (!explicitSel && allowed.Count == 1 && (allowed.Contains(acc.Role) || allowed.Contains(UiRoleOf(acc.Role)))
-            && !(int.TryParse(sel, out var cid) && subs.Find(p => p.Id == cid) is { } cp && allowed.Contains(UiRoleOf(cp.Role)))) sel = "me";
+            && !(HttpMethods.IsGet(http.Request.Method) && int.TryParse(sel, out var cid) && subs.Find(p => p.Id == cid) is { } cp && allowed.Contains(UiRoleOf(cp.Role)))) sel = "me";
 
         Person? viewed = null;
         var allStaff = false;

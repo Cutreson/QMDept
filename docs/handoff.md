@@ -39,6 +39,11 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 3. Còn vài chú thích ranh giới quy tắc 14 giữ lại vì mang luật nghiệp vụ: "Nghỉ phép tối thiểu theo buổi", "Nghỉ không lương tối thiểu
    1 giờ" (StaffReports.cs, staff.js), "Tăng ca từ 3 giờ bắt buộc dùng suất cơm." (Overtime.cs).
 
+### Vòng 2 (sau "Tiếp tục xử lý đi")
+- Rà soát lại toàn bộ thay đổi của phiên (1 agent): sửa thêm — ngoại lệ giữ người trong cookie của `ScopeResolver` chỉ áp dụng cho GET
+  (form POST không có `?as=` luôn là màn hình của mình); phát sinh không nhận giờ bắt đầu 24:00; chuyển tiếp duyệt muộn không chèn vào
+  ngày NV đã gửi báo cáo cuối ngày.
+
 ### Quyết định tự đưa ra
 - Việc chuyển tiếp được duyệt vào ngày NV đã gửi kế hoạch thì tự gắn vào kế hoạch (giống việc được giao / phát sinh).
 - Không cho TP duyệt thay NV chưa xếp nhóm trong phiên này (thay đổi mô hình giao diện lớn, chưa test được vì không có DB).

@@ -63,7 +63,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (title.Length == 0) throw new BizException("Nhập tên công việc phát sinh");
         if (title.Length > 300) throw new BizException("Tên công việc tối đa 300 ký tự");
         if ((desc?.Trim().Length ?? 0) > 2000) throw new BizException("Mô tả tối đa 2000 ký tự");
-        if (start is not null && !Fmt.IsHhmm(start)) throw new BizException("Giờ bắt đầu không hợp lệ");
+        if (start is not null && (!Fmt.IsHhmm(start) || start == "24:00")) throw new BizException("Giờ bắt đầu không hợp lệ");
         if (!string.IsNullOrEmpty(end) && (!Fmt.IsHhmm(end) || (start is not null && end.Le(start)))) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         if (!await db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Chọn dự án");
         var x = new Extra
@@ -137,8 +137,10 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         var links = await db.DayPlanTasks.Where(x => x.WorkTaskId == n.Id).Include(x => x.DayPlan).ToListAsync();
         foreach (var l in links.Where(l => !n.CarryOk || l.DayPlan!.Date != n.Date)) db.DayPlanTasks.Remove(l);
         if (!n.CarryOk) { n.Selected = false; return; }
+        if (links.Any(l => l.DayPlan!.Date == n.Date)) { n.Selected = true; return; }   // đã gắn sẵn vào kế hoạch ngày đó
         var plan = await db.DayPlans.FirstOrDefaultAsync(p => p.Date == n.Date && p.EmployeeId == n.EmployeeId);
-        if (plan is null) { n.Selected = false; return; }
+        // Chưa gửi kế hoạch, hoặc NV đã gửi báo cáo cuối ngày đó → không chèn vào ngày đã báo cáo (chỉ hiện trong lịch).
+        if (plan is null || await db.DayReports.AnyAsync(r => r.Date == n.Date && r.EmployeeId == n.EmployeeId)) { n.Selected = false; return; }
         n.Selected = true;
         if (!links.Any(l => l.DayPlanId == plan.Id)) db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = n.Id });
     }
