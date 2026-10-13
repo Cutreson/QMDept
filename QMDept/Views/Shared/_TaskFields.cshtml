@@ -1,0 +1,26 @@
+@model TaskFieldsVm
+@* addTaskFields(px, pid, withDate): các ô nhập việc. Tên field: projectId, itemId, title, [date], start, end → bind TaskFieldsInput.
+   Trang dùng partial này phải nhúng <partial name="_ItemsJson" /> 1 lần để đổi dự án thì nạp lại đầu mục. *@
+@{
+    var px = Model.Prefix;
+    var pid = Model.ProjectId ?? D.ActivePj().FirstOrDefault()?.Id;
+}
+<div class="grid2" style="margin-top:8px">
+    <div><label class="f" for="@(px)P">Dự án</label>
+        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: px + "P", extraAttrs: $"data-items-for=\"{px}I\" required")</div>
+    <div><label class="f" for="@(px)I">Đầu mục kế hoạch</label>
+        <select class="in" id="@(px)I" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
+            @if (pid is int p0) { foreach (var i in D.ItemsOf(p0)) { <option value="@i.Id">@i.Title</option> } }
+        </select></div>
+</div>
+<label class="f" for="@(px)T">Nội dung công việc <span class="note">(để trống nếu dùng tên đầu mục)</span></label>
+<input class="in" id="@(px)T" name="title" placeholder="VD: Check I/O khu vực trục X">
+<div class="grid2">
+    @if (Model.Dates is { } dates)
+    {
+        <div><label class="f" for="@(px)D">Ngày</label>
+            @Ui.Select("date", dates.Select(x => (Fmt.Key(x), Fmt.Short(x))), Fmt.Key(Model.SelectedDate ?? Scope.Date), id: px + "D")</div>
+    }
+    <div class="row"><div style="flex:1"><label class="f" for="@(px)S">Bắt đầu</label>@Ui.TimeSelect("start", Model.Start, id: px + "S")</div>
+        <div style="flex:1"><label class="f" for="@(px)E">Kết thúc</label>@Ui.TimeSelect("end", Model.End, end: true, id: px + "E")</div></div>
+</div>

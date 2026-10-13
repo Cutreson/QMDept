@@ -1,0 +1,83 @@
+@model ProjectDetailVm
+@* projectDetail(pid, who) của artifact. Controller nạp bằng ProjectDetailVm.LoadAsync(...). *@
+@{
+    var p = D.PJ(Model.Pid);
+    var date = Scope.Date;
+}
+@if (p is null)
+{
+    <div class="empty">Không tìm thấy dự án.</div>
+    return;
+}
+@{
+    var st = D.PjStatus(p.Id, date);
+    var pct = D.PjPct(p.Id);
+    var it = D.ItemsOf(p.Id);
+    var place = Dept.Place(p);
+}
+<div class="head">
+    @if (Model.Who != "tp" && Model.BackHref is not null)
+    {
+        <a class="back" href="@Model.BackHref" aria-label="Quay lại" style="text-decoration:none">‹</a>
+    }
+    <div style="flex:1;min-width:0"><h1>@p.Name</h1><div class="sub">@place</div></div>
+    @Ui.Ptile(D.Tile(p.Id), p.Name, 40)
+</div>
+@Ui.Subtabs(new[] { ("tq", "Tổng quan"), ("kh", "Kế hoạch"), ("ns", "Nhân sự") }.Select(x => (Model.TabHref(x.Item1), x.Item2, Model.Tab == x.Item1)))
+
+@if (Model.Tab != "ns")
+{
+    <section class="card sec">
+        <h2>Thông tin dự án</h2>
+        <div class="row" style="justify-content:space-between">
+            <div>
+                <div>🏭 @(string.IsNullOrEmpty(place) ? "—" : place)</div>
+                <div class="mono note">📅 @Fmt.Dmy(p.StartDate) – @Fmt.Dmy(p.EndDate) (@(p.StartDate is DateOnly s0 && p.EndDate is DateOnly e0 ? (Fmt.DaysBetween(s0, e0) + 1).ToString() : "?") ngày)</div>
+            </div>
+            @Ui.Pill(st)
+        </div>
+        @Ui.Bar(pct, Labels.Color(st))
+        <div class="note">Kế hoạch đến hôm nay: <b class="mono">@D.PjPlanPct(p.Id, date)%</b> · Thực tế: <b class="mono">@pct%</b> (@it.Count(i => i.Status == TaskState.HoanThanh)/@it.Count đầu mục)</div>
+    </section>
+}
+
+@if (Model.Tab == "kh")
+{
+    <section class="card sec"><h2>Danh sách công việc <span class="note" style="text-transform:none;font-weight:600">(theo giai đoạn)</span></h2>@D.StepList(it)</section>
+    <section class="card sec"><h2>Tiến độ theo tuần</h2>@D.WeekChart(p.Id)</section>
+}
+else if (Model.Tab == "tq")
+{
+    var c = Dept.CountItems(it);
+    <div class="kpis k4">
+        <div class="kpi k-ok"><b>@c.HoanThanh</b><span>Xong</span></div>
+        <div class="kpi k-warn"><b>@c.DangLam</b><span>Đang làm</span></div>
+        <div class="kpi k-idle"><b>@c.ChuaLam</b><span>Chưa làm</span></div>
+        <div class="kpi k-info"><b>@D.OnSite(date, p.Id).Count/@D.Need(date, p.Id)</b><span>Nhân sự TT/KH</span></div>
+    </div>
+    <section class="card sec"><h2>Phát sinh gần đây</h2>
+        @if (Model.RecentExtras.Count > 0) { foreach (var x in Model.RecentExtras) { @D.ExtraRow(x) } }
+        else { <p class="note">Chưa có phát sinh.</p> }
+    </section>
+}
+else
+{
+    var m = Fmt.Monday(date);
+    var ppl = Enumerable.Range(0, 7).SelectMany(k => D.TasksOn(m.AddDays(k))).Where(t => t.ProjectId == p.Id).Select(t => t.EmployeeId).Distinct().ToList();
+    <section class="card sec">
+        <h2>Nhân sự tuần @Fmt.Dm(m) – @Fmt.Dm(m.AddDays(6))</h2>
+        <p class="note" style="margin-top:0">Hôm nay: <b>@D.OnSite(date, p.Id).Count</b> người tại công trường / nhu cầu <b>@D.Need(date, p.Id)</b></p>
+        @if (ppl.Count == 0)
+        {
+            <p class="note">Chưa có ai được xếp lịch tuần này.</p>
+        }
+        @foreach (var e in ppl)
+        {
+            var tt = D.TasksOn(date, e).Where(t => t.ProjectId == p.Id).ToList();
+            var lv = D.OnLeave(date, e);
+            <div class="trow">@Ui.Av(D.PName(e))<div><div class="t">@D.PName(e)</div>
+                <div class="s">@(lv is not null ? "Nghỉ: " + lv.Reason : tt.Count > 0 ? string.Join(" · ", tt.Select(t => t.Title)) : "Hôm nay không có việc ở dự án này")</div></div>
+                <span class="tm">@tt.Count việc</span></div>
+        }
+    </section>
+}

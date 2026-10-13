@@ -1,0 +1,10 @@
+@* weekBar(): chuyển tuần (?w= thứ 2 của tuần). *@
+@{
+    var req = Context.Request;
+    var m = Nav.Week(req, Scope.Date);
+}
+<div class="daybar">
+    <a class="icon-btn" href="@Ui.Here(req, ("w", Fmt.Key(m.AddDays(-7))))" aria-label="Tuần trước">‹</a>
+    <span class="date">@Fmt.Dm(m) – @Fmt.Dmy(m.AddDays(6))</span>
+    <a class="icon-btn" href="@Ui.Here(req, ("w", Fmt.Key(m.AddDays(7))))" aria-label="Tuần sau">›</a>
+</div>

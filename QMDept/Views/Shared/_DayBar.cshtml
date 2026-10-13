@@ -1,0 +1,14 @@
+@* dayBar(): chuyển ngày (?d=). Đổi ngày thì bỏ ?w= và ?m= (giống artifact đặt S.week/S.month = null). *@
+@{
+    var d = Scope.Date;
+    var req = Context.Request;
+}
+<div class="daybar">
+    <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(-1))), ("w", null), ("m", null))" aria-label="Ngày trước">‹</a>
+    <span class="date">@Fmt.DayLabel(d)</span>
+    @if (d != Scope.Today)
+    {
+        <a class="icon-btn" href="@Ui.Here(req, ("d", null), ("w", null), ("m", null))">Hôm nay</a>
+    }
+    <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(1))), ("w", null), ("m", null))" aria-label="Ngày sau">›</a>
+</div>

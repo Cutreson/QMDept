@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# QMDept: cấu hình riêng máy (connection string thật) và ảnh upload — không commit
+appsettings.Local.json
+**/App_Data/uploads/

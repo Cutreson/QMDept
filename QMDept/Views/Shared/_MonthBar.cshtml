@@ -1,0 +1,15 @@
+@* Thanh chuyển tháng (?m=yyyy-MM-01) của Kế hoạch tháng. "Hôm nay" quay về tháng hiện tại và ngày hôm nay. *@
+@{
+    var req = Context.Request;
+    var ms = Nav.Month(req, Scope.Date);
+    var thisM = Fmt.MonthStart(Scope.Today);
+}
+<div class="daybar">
+    <a class="icon-btn" href="@Ui.Here(req, ("m", Fmt.Key(ms.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
+    <span class="date">Tháng @ms.ToString("MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)</span>
+    @if (ms != thisM)
+    {
+        <a class="icon-btn" href="@Ui.Here(req, ("m", null), ("d", null))">Hôm nay</a>
+    }
+    <a class="icon-btn" href="@Ui.Here(req, ("m", Fmt.Key(ms.AddMonths(1))))" aria-label="Tháng sau">›</a>
+</div>

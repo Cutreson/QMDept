@@ -1,0 +1,6 @@
+@* window.QM_ITEMS = { projectId: [[itemId, title], ...] } cho select[data-items-for] (đổi dự án → nạp lại đầu mục). Nhúng 1 lần/trang. *@
+@{
+    var map = D.Items.GroupBy(i => i.ProjectId).ToDictionary(g => g.Key.ToString(),
+        g => g.OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).Select(i => new object[] { i.Id, i.Title }).ToArray());
+}
+<script>window.QM_ITEMS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(map));</script>

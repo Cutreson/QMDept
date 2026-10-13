@@ -1,50 +1,93 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@inject QMDept.Services.ChromeBuilder CB
+@{
+    var chrome = await CB.BuildAsync();
+    var toast = TempData["toast"] as string;
+}
+<!DOCTYPE html>
+<html lang="vi" style="--accent:@(chrome?.Accent ?? "var(--brand)")">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - QMDept</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>@(ViewData["Title"] is string t ? t + " · " : "")Quản lý công việc phòng QLCL&amp;BD</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/QMDept.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">QMDept</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
+<header class="top">
+    <div class="shell">
+        <div class="top-row">
+            <a class="logo" href="/" style="text-decoration:none">SORA<small>Phòng QLCL&amp;BD</small></a>
+            <div class="me" id="me">
+                @if (chrome is not null)
+                {
+                    <div class="acc"><b>@chrome.Account.Name @Ui.LvPill(chrome.Account)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
+                    @Ui.Av(chrome.Account.Name, chrome.Account.Role == Role.Tp)
+                    <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
+                }
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - QMDept - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+        @if (chrome is not null && chrome.Roles.Count > 1)
+        {
+            <div class="roles" role="group" aria-label="Chọn giao diện" style="grid-template-columns:repeat(@chrome.Roles.Count,1fr)">
+                @foreach (var r in chrome.Roles)
+                {
+                    <a href="@r.Href" style="--rc:@r.Color" aria-pressed="@(r.Active ? "true" : "false")">@r.Label</a>
+                }
+            </div>
+        }
+        @if (chrome is not null && chrome.ShowViewAs)
+        {
+            <div class="row" style="flex-wrap:wrap;gap:6px 12px">
+                <form method="get" action="@Context.Request.Path" class="row va">
+                    @foreach (var kv in Context.Request.Query.Where(k => k.Key != "as"))
+                    {
+                        <input type="hidden" name="@kv.Key" value="@kv.Value">
+                    }
+                    <span class="note" style="white-space:nowrap">Xem @chrome.ViewAsLabel:</span>
+                    <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem">
+                        @foreach (var (v, l, sel) in chrome.ViewAsOptions)
+                        {
+                            <option value="@v" selected="@sel">@l</option>
+                        }
+                    </select>
+                </form>
+                @if (chrome.ViewAsInfoHtml is not null) { @Html.Raw(chrome.ViewAsInfoHtml) }
+            </div>
+        }
+        else if (chrome is not null && chrome.EmptyTeamNote)
+        {
+            <p class="note" style="margin:0">Nhóm của bạn chưa có nhân viên. Trưởng phòng xếp nhóm ở Nhân sự.</p>
+        }
+    </div>
+</header>
+<main class="shell" id="app">
+    @if (chrome is not null && Scope.IsReadOnly)
+    {
+        <div class="notice ro-note" style="--nbg:var(--brand-soft);--nfg:var(--brand);margin-top:12px"><span class="ic">i</span><div>
+            <b>Chế độ xem: @(Scope.AllNv ? "Tất cả nhân viên" : Scope.Me?.Name ?? "—")</b>
+            <div class="note">@(Scope.AllNv ? "Bấm một ngày để xem việc cả nhóm và giao thêm việc." : "Chỉ xem, không sửa. Chọn \"Tất cả nhân viên\" để giao thêm việc.") Đổi người ở ô "Xem nhân viên" phía trên.</div>
+        </div></div>
+    }
+    @RenderBody()
+</main>
+@if (chrome is not null && chrome.Tabs.Count > 0)
+{
+    <nav class="tabbar" aria-label="Màn hình"><div class="shell">
+        @foreach (var t in chrome.Tabs)
+        {
+            <a href="@t.Href" aria-current="@(t.Active ? "page" : null)">@Ui.Icon(t.Icon)@t.Label@if (t.Badge > 0) {<span class="badge">@t.Badge</span>}</a>
+        }
+    </div></nav>
+}
+else
+{
+    <style>main{padding-bottom:24px}</style>
+}
+<div id="toast" class="toast" hidden role="status" data-msg="@toast"></div>
+<div id="dlg" class="dlg" hidden></div>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

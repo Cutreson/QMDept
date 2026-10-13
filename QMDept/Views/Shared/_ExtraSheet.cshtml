@@ -1,0 +1,37 @@
+@model ExtraSheetVm
+@* openExtra(byLeader): <template> chứa form đề xuất / thêm phát sinh. Mở bằng <button type="button" data-sheet="@Model.TemplateId">.
+   Trang phải EnsureAsync(Scope.Date, Scope.Date). POST tới Model.Action, bind ExtraInput. *@
+@{
+    var staff = Model.ByLeader ? D.Staff() : [];
+    var emp = Model.EmployeeId ?? staff.FirstOrDefault()?.Id;
+    var pid = D.MainProject(emp, Scope.Date);
+    var now = VnTime.NowHm;
+    var start0 = now[..3] + (string.CompareOrdinal(now[3..], "30") < 0 ? "00" : "30");
+}
+<template id="@Model.TemplateId">
+    <form method="post" action="@Model.Action" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(Context.Request)
+        <h3>@(Model.ByLeader ? "Thêm công việc phát sinh" : "Đề xuất công việc phát sinh")</h3>
+        @if (Model.ByLeader)
+        {
+            <label class="f" for="xE">Nhân viên thực hiện</label>
+            @Ui.Select("employeeId", staff.Select(p => (p.Id.ToString(), p.Name)), emp?.ToString(), id: "xE")
+        }
+        <label class="f" for="xP">Dự án</label>
+        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: "xP")
+        <label class="f" for="xT">Tên công việc phát sinh</label>
+        <input class="in" id="xT" name="title" required placeholder="VD: Kiểm tra cảm biến khu vực Z">
+        <label class="f" for="xD">Mô tả / lý do</label>
+        <textarea class="in" id="xD" name="desc" placeholder="VD: Sensor chưa nhận tín hiệu, cần mua mới."></textarea>
+        <div class="grid2">
+            <div><label class="f" for="xS">Bắt đầu</label>@Ui.TimeSelect("start", start0, id: "xS")</div>
+            <div><label class="f" for="xF">Kết thúc (dự kiến)</label>@Ui.TimeSelect("end", "", end: true, blank: "— Chưa rõ —", id: "xF")</div>
+        </div>
+        <label class="f" for="phF">Ảnh hiện trường (tùy chọn)</label>
+        <input class="in" type="file" id="phF" name="photos" accept="image/*" multiple data-shrink>
+        <p class="note">@(Model.ByLeader ? "Phát sinh do Leader thêm được duyệt ngay và đưa vào việc trong ngày của nhân viên." : "Leader duyệt xong, việc sẽ tự vào danh sách hôm nay của bạn.")</p>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
+            <button class="btn btn-primary">@(Model.ByLeader ? "Thêm phát sinh" : "Gửi đề xuất")</button></div>
+    </form>
+</template>
