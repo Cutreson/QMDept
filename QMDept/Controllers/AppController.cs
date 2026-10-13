@@ -60,7 +60,17 @@ public abstract class AppController : Controller
         }
         if (res == ScopeResult.Forbidden)
         {
+            if (HttpMethods.IsPost(Request.Method)) Toast("Màn hình đang chọn không có thao tác này — vui lòng mở lại trang và thử lại");
             ctx.Result = Redirect(ScopeResolver.HomeOf(Scope.Role));
+            return;
+        }
+        // Lịch cả nhóm (?as=all): chỉ form "Giao thêm việc" được ghi.
+        if (HttpMethods.IsPost(Request.Method) && Scope.AllStaff
+            && !(ctx.RouteData.Values["controller"] is string c && c.Equals("Staff", StringComparison.OrdinalIgnoreCase)
+                 && ctx.RouteData.Values["action"] is string a && a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)))
+        {
+            Toast("Lịch nhóm chỉ xem — mở màn hình của bạn để thao tác");
+            ctx.Result = Redirect(BackUrl());
             return;
         }
         if (HttpMethods.IsPost(Request.Method) && Scope.IsViewingOther)

@@ -235,6 +235,8 @@ Form gồm:
 | Báo nghỉ | Leader / TP ghi nghỉ, bỏ nghỉ | NV |
 | Đăng ký làm thêm cần duyệt | NV đăng ký (→ Leader nhóm), Leader đăng ký (→ mọi TP) | Leader / TP |
 | Kết quả làm thêm | duyệt / từ chối / hoàn tác | người đăng ký |
+| Hủy đăng ký làm thêm | NV / Leader hủy đăng ký (kể cả đã duyệt) | Leader nhóm / mọi TP |
+| Đề xuất chuyển tiếp mới | NV đề xuất / sửa việc chuyển tiếp khi báo cáo cuối ngày đã được duyệt | Leader nhóm |
 | Báo cáo ngày của Leader | Leader gửi / gửi lại báo cáo ngày | mọi TP |
 
 Người tự thao tác không nhận thông báo của chính mình. Link trong thông báo kèm `as=me` để luôn mở màn hình của chính người nhận.

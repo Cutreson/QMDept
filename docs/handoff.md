@@ -4,6 +4,46 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
+## Phiên 2 — 2026-10-13 khuya (Claude Code trên claude.ai, môi trường cloud) — rà soát code + sửa lỗi
+
+> Chủ dự án yêu cầu tự chủ hoàn toàn (agents.md §1 mục 17), làm trực tiếp trên `master`.
+
+### Bối cảnh
+- Máy cloud của phiên này **không kết nối được DB thật** (không phân giải được `db73331.public.databaseasp.net`, không có TCP 3306
+  ra ngoài) → theo quy tắc 2 chỉ build, không chạy app / smoke / E2E. Đã cài .NET SDK 10.0.112 (apt) — build sạch 0 lỗi 0 cảnh báo.
+- Việc 1–4 của phiên trước (chờ DB mở, xóa dữ liệu test, smoke/perf, E2E) **vẫn chưa làm** — phải chạy từ máy có DB.
+
+### Đã làm: việc 5 (rà soát code 3 mảng, đọc code — 3 agent) và sửa mọi lỗi xác nhận được
+- Chuyển tiếp: duyệt / duyệt tất cả / sửa và duyệt / duyệt báo cáo khi NV **đã gửi kế hoạch** ngày chuyển sang → việc được chọn
+  sẵn + gắn vào kế hoạch (`WorkflowService.SyncCarryToPlanAsync`). Trước đây kế hoạch đã duyệt thì NV không cập nhật / báo cáo được
+  việc chuyển tiếp duyệt muộn. Hoàn tác / NV sửa đề xuất / đổi ngày → gỡ khỏi kế hoạch cũ. ApproveCarry / UndoCarry bỏ qua nếu đã ở trạng thái đích.
+- Xóa tài khoản Leader (TP Nhân sự + Quản trị) → NV trong nhóm thành "Chưa xếp nhóm" (`AccountRules.ClearTeamAsync`, ghi cùng
+  SaveChanges — cũng dùng cho đổi vai trò Leader, nay nguyên tử).
+- Duyệt phát sinh: chặn dự án đã bàn giao; giành quyền bằng UPDATE có điều kiện trong transaction (2 người duyệt cùng lúc chỉ tạo 1 việc);
+  kết thúc "Chưa rõ" + bắt đầu ≥ 17:00 → bắt đầu + 30'.
+- Thông báo mới (quy tắc 10): hoàn tác quyết định kế hoạch / báo cáo → NV; hủy đăng ký làm thêm → người duyệt (`OvertimeCancelled`);
+  NV đề xuất / sửa chuyển tiếp khi báo cáo đã duyệt → Leader (`CarryProposed`). Hai loại mới tự hiện ở trang Cài đặt.
+- Xem màn hình: Quản trị đang xem TP bấm tab TP không còn bị đưa về màn hình của mình (`ScopeResolver` giữ người trong cookie nếu cùng
+  giao diện); form "Giao thêm việc" ở lịch nhóm ghi `as=all`; form Làm thêm luôn ghi `as=`; server chặn mọi POST ở lịch nhóm trừ
+  `Staff/AssignTask`; POST bị Forbidden có toast.
+- `SetNeed` chỉ nhận dự án đang triển khai. `DataCache`: chờ đủ truy vấn (`Task.WhenAll`), lần nạp cũ không ghi đè ảnh chụp mới hơn.
+- Quy tắc 14: bỏ phụ đề "biết trước việc cần làm…" (Kế hoạch tháng), các dòng "Bấm vào một ngày…", "Bấm để mở màn hình phê duyệt ›".
+- Tài liệu: nghiep-vu.md §9 (khác biệt mới) + §10 (bảng thông báo), kien-truc.md (Xem màn hình).
+
+### Chưa làm / việc tiếp theo
+1. Việc 1–4 của phiên trước (cần DB). Khi E2E nhớ test thêm: chuyển tiếp duyệt sau khi kế hoạch đã duyệt (NV cập nhật được việc),
+   xóa Leader → NV "Chưa xếp nhóm", 2 loại thông báo mới, Quản trị xem TP chuyển tab.
+2. **Khoảng trống nghiệp vụ còn để ngỏ**: NV chưa xếp nhóm không có ai duyệt kế hoạch / báo cáo / phát sinh / chuyển tiếp (artifact cho TP
+   thao tác trong giao diện Leader; bản này không). Hiện cách xử lý là TP xếp lại nhóm. Nếu chủ dự án muốn TP duyệt thay → làm sau.
+3. Còn vài chú thích ranh giới quy tắc 14 giữ lại vì mang luật nghiệp vụ: "Nghỉ phép tối thiểu theo buổi", "Nghỉ không lương tối thiểu
+   1 giờ" (StaffReports.cs, staff.js), "Tăng ca từ 3 giờ bắt buộc dùng suất cơm." (Overtime.cs).
+
+### Quyết định tự đưa ra
+- Việc chuyển tiếp được duyệt vào ngày NV đã gửi kế hoạch thì tự gắn vào kế hoạch (giống việc được giao / phát sinh).
+- Không cho TP duyệt thay NV chưa xếp nhóm trong phiên này (thay đổi mô hình giao diện lớn, chưa test được vì không có DB).
+
+---
+
 ## Phiên 1 (tiếp) — 2026-10-13 tối (Claude Code, Opus 5.5) — DỪNG THEO YÊU CẦU CHỦ DỰ ÁN LÚC ~23:15
 
 > Phiên sau: đọc `agents.md` (quy tắc §1 mục 1–16) → mục này → `docs/kien-truc.md` ("Hiệu năng", "Bảo mật đăng nhập", "Xem màn hình").

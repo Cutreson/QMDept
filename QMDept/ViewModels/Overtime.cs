@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Html;
@@ -61,7 +62,9 @@ public static class OvertimeUi
     public static string PostUrl(HttpRequest req, string action, DateOnly d)
     {
         var q = new Dictionary<string, string?> { ["d"] = Fmt.Key(d) };
-        if (req.Query.TryGetValue("as", out var v) && !string.IsNullOrEmpty(v.ToString())) q["as"] = v.ToString();
+        // Luôn ghi rõ người đang xem: đổi combobox ở tab khác (cookie) không làm form này bị chặn / đổi người.
+        var scope = req.HttpContext.RequestServices.GetRequiredService<ViewScope>();
+        q["as"] = scope.AllStaff ? "all" : scope.IsViewingOther ? scope.MeId!.Value.ToString() : "me";
         return QueryHelpers.AddQueryString("/Overtime/" + action, q);
     }
 

@@ -16,7 +16,7 @@
 @if (pend > 0 || xp > 0 || rp > 0)
 {
     @* goLdApprove → Kế hoạch & duyệt / Kế hoạch, lọc "Chờ duyệt" *@
-    <a class="notice" href="@Ui.To(req, "/Planning/Approvals", ("ap", "pending"))" style="--nbg:var(--warn-soft);--nfg:var(--warn);border:0;width:100%;text-align:left"><span class="ic">!</span><div><b>@pend kế hoạch ngày · @rp báo cáo cuối ngày · @xp phát sinh đang chờ bạn duyệt</b><div class="note">Bấm để mở màn hình phê duyệt ›</div></div></a>
+    <a class="notice" href="@Ui.To(req, "/Planning/Approvals", ("ap", "pending"))" style="--nbg:var(--warn-soft);--nfg:var(--warn);border:0;width:100%;text-align:left"><span class="ic">!</span><div><b>@pend kế hoạch ngày · @rp báo cáo cuối ngày · @xp phát sinh đang chờ bạn duyệt</b></div></a>
 }
 <section class="card sec"><h2>Tình hình dự án</h2>@D.PjTable(d)</section>
 <section class="card sec"><h2>Công việc hôm nay</h2>@Blocks.Donut(k.C)</section>

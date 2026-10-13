@@ -194,4 +194,6 @@ public enum NotifyType
     OvertimeSubmitted,   // đăng ký làm thêm cần duyệt → Leader (của NV) / TP (của Leader)
     OvertimeDecided,     // đăng ký làm thêm được duyệt / từ chối / hoàn tác → người đăng ký
     LeaderReportSent,    // Leader gửi báo cáo ngày → TP
+    OvertimeCancelled,   // người đăng ký hủy đăng ký làm thêm → Leader (của NV) / TP (của Leader)
+    CarryProposed,       // NV đề xuất / sửa việc chuyển tiếp sau khi báo cáo cuối ngày đã được duyệt → Leader nhóm
 }

@@ -43,6 +43,8 @@ public static class NotifyCatalog
         new(NotifyType.SupportNeedsManager, "Yêu cầu hỗ trợ nhân sự", "Kế hoạch cần Trưởng phòng duyệt hỗ trợ nhân sự nhóm khác / phòng ban khác", [Role.Manager]),
         new(NotifyType.LeaderReportSent, "Báo cáo ngày của Leader", "Leader gửi báo cáo ngày cho Trưởng phòng", [Role.Manager]),
         new(NotifyType.OvertimeSubmitted, "Đăng ký làm thêm cần duyệt", "Nhân viên (với Leader) hoặc Leader (với TP) đăng ký làm thêm", [Role.Leader, Role.Manager]),
+        new(NotifyType.OvertimeCancelled, "Hủy đăng ký làm thêm", "Nhân viên (với Leader) hoặc Leader (với TP) hủy đăng ký làm thêm", [Role.Leader, Role.Manager]),
+        new(NotifyType.CarryProposed, "Đề xuất chuyển tiếp mới", "Nhân viên đề xuất / sửa việc chuyển tiếp sau khi báo cáo cuối ngày đã được duyệt", [Role.Leader]),
         new(NotifyType.PlanDecided, "Kết quả duyệt kế hoạch", "Kế hoạch đầu ngày của bạn được duyệt / từ chối / góp ý", [Role.Staff, Role.Leader]),
         new(NotifyType.ReportDecided, "Kết quả duyệt báo cáo", "Báo cáo cuối ngày của bạn được duyệt / yêu cầu bổ sung", [Role.Staff]),
         new(NotifyType.ExtraDecided, "Kết quả phát sinh", "Phát sinh của bạn được duyệt / từ chối, Leader thêm phát sinh cho bạn", [Role.Staff]),
@@ -162,6 +164,20 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
         await SendAsync(to, NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)}", $"{start}–{end}", Q("/Overtime?tab=approve", d));
     }
+
+    /// <summary>Hủy đăng ký làm thêm (kể cả đã duyệt) → người duyệt (Leader nhóm / mọi TP).</summary>
+    public async Task OvertimeCancelledAsync(int person, Role role, DateOnly d, string start, string end, bool wasApproved)
+    {
+        if (role == Role.Manager) return;
+        var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
+        await SendAsync(to, NotifyType.OvertimeCancelled, $"{await Name(person)} hủy đăng ký làm thêm {Fmt.Dm(d)}",
+            $"{start}–{end}{(wasApproved ? " · đã duyệt trước đó" : "")}", Q("/Overtime?tab=approve", d));
+    }
+
+    /// <summary>NV đề xuất / sửa việc chuyển tiếp khi báo cáo cuối ngày đã được duyệt → Leader nhóm.</summary>
+    public async Task CarryProposedAsync(int emp, DateOnly from, string title, DateOnly to) =>
+        await SendAsync([await LeaderOf(emp)], NotifyType.CarryProposed, $"{await Name(emp)} đề xuất chuyển tiếp từ {Fmt.Dm(from)}",
+            $"{title} · {Fmt.Short(to)}", Q("/Planning/Reports", from));
 
     /// <summary>Kết quả làm thêm (what: "đã duyệt", "từ chối", "được hoàn tác") → người đăng ký.</summary>
     public async Task OvertimeDecidedAsync(int person, DateOnly d, string what, string? note = null) =>

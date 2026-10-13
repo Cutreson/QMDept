@@ -71,8 +71,13 @@ public sealed class DataCache(IDbContextFactory<AppDbContext> factory)
             var items = Q(db => db.PlanItems.AsNoTracking().ToListAsync());
             var assigns = Q(db => db.Assignments.AsNoTracking().ToListAsync());
             var notify = Q(db => db.NotifySettings.AsNoTracking().ToListAsync());
+            // Chờ đủ mọi truy vấn (một truy vấn lỗi không để các truy vấn còn lại chạy không ai chờ).
+            await Task.WhenAll(people, projects, items, assigns, notify);
             var snap = new BaseSnap(v, at, await people, await projects, await items, await assigns, (await notify).ToDictionary(x => x.PersonId));
-            _base = snap;
+            // Không để lần nạp cũ hơn (xong muộn) ghi đè ảnh chụp mới hơn.
+            BaseSnap? cur;
+            do { cur = _base; if (cur is not null && cur.Version > v) break; }
+            while (Interlocked.CompareExchange(ref _base, snap, cur) != cur);
             return snap;
         });
     }
@@ -103,11 +108,12 @@ public sealed class DataCache(IDbContextFactory<AppDbContext> factory)
             var needs = Q(db => db.ProjectNeeds.AsNoTracking().Where(p => p.Date >= from && p.Date <= to).ToListAsync());
             var extras = Q(db => db.Extras.AsNoTracking().Where(p => p.Date >= from && p.Date <= to).ToListAsync());
             var ots = Q(db => db.Overtimes.AsNoTracking().Include(o => o.Items).Where(p => p.Date >= from && p.Date <= to).ToListAsync());
+            await Task.WhenAll(tasksT, plans, reports, leaves, needs, extras, ots);
             var snap = new RangeSnap(v, at, await tasksT, await plans, await reports, await leaves, await needs, await extras, await ots);
             // Bỏ các khoảng đã cũ / giới hạn số khoảng giữ lại.
             foreach (var kv in _ranges) if (!Fresh(kv.Value.Version, kv.Value.At)) _ranges.TryRemove(kv.Key, out _);
             if (_ranges.Count >= MaxRanges) _ranges.Clear();
-            _ranges[(from, to)] = snap;
+            _ranges.AddOrUpdate((from, to), snap, (_, old) => old.Version > v ? old : snap);
             return snap;
         });
     }

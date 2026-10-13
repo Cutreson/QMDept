@@ -161,6 +161,7 @@ public class OvertimeController : AppController
             if (x is null) return;
             Db.Overtimes.Remove(x);
             await Db.SaveChangesAsync();
+            await Notify.OvertimeCancelledAsync(x.PersonId, x.Role, x.Date, x.Start, x.End, x.Status == OtStatus.Approved);
         }, "Đã hủy đăng ký", OvertimeUi.WithoutParam(BackUrl(), "edit"));
 
     /// <summary>Kiểm quyền duyệt: Leader duyệt NV trong nhóm; TP duyệt Leader. Trả về đăng ký (tracked).</summary>

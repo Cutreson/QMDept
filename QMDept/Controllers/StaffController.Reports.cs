@@ -162,6 +162,7 @@ public partial class StaffController
 
         DateOnly nd = default;
         string ns = "", ne = "", nt = "";
+        var proposed = false;   // có đề xuất chuyển tiếp mới / vừa sửa (chờ Leader duyệt)
         if (s != TaskState.Done)
         {
             nt = StaffReports.Clip(input.NextTitle, 300) ?? throw new BizException("Nhập nội dung kế hoạch tiếp theo");
@@ -182,6 +183,7 @@ public partial class StaffController
                         cur.Date = nd; cur.Start = ns; cur.End = ne; cur.Title = nt;
                         cur.CarryOk = false; cur.EditedBy = null;
                         await Flow.SyncCarryToPlanAsync(cur);
+                        proposed = true;
                     }
                     t.CarriedToId = cur.Id; t.CarryDate = nd;
                 }
@@ -196,6 +198,7 @@ public partial class StaffController
                     Db.WorkTasks.Add(n);
                     await Db.SaveChangesAsync();
                     t.CarriedToId = n.Id; t.CarryDate = nd;
+                    proposed = true;
                 }
             }
             else if (cur is not null)
@@ -221,6 +224,9 @@ public partial class StaffController
             await Db.SaveChangesAsync();
             await tx.CommitAsync();
         }
+        // Báo cáo cuối ngày đã được duyệt thì Leader không nhận thông báo gửi báo cáo nữa → báo riêng đề xuất chuyển tiếp.
+        if (proposed && await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == me.Id && r.LeaderDecision == Decision.Ok))
+            await Notify.CarryProposedAsync(me.Id, t.Date, nt, nd);
     }, "Đã cập nhật");
 
     /// <summary>openExtra(false): NV đề xuất phát sinh (chờ Leader duyệt).</summary>

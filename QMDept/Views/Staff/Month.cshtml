@@ -19,7 +19,7 @@
 }
 else
 {
-    <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1><div class="sub">@(me?.Name ?? "—") @Ui.LevelPill(me) · biết trước việc cần làm để chủ động thời gian</div></div></div>
+    <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1><div class="sub">@(me?.Name ?? "—") @Ui.LevelPill(me)</div></div></div>
 }
 <partial name="_MonthBar" />
 
@@ -60,7 +60,7 @@ else
             @* calAssignForm(d, ''): Giao thêm việc ngay trên lịch (form .ro-ok: dùng được ở chế độ xem) *@
             var pj0 = StaffCalendar.DefaultProject(D, sel);
             <partial name="_ItemsJson" />
-            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}")" asp-antiforgery="true">
+            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" asp-antiforgery="true">
                 @Ui.ReturnField(req)
                 <h2>Giao thêm việc · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h2>
                 <div class="grid2"><div><label class="f" for="calP" style="margin-top:0">Dự án</label>
@@ -84,10 +84,6 @@ else
                 <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc cho người đã chọn</button>
             </form>
         }
-    }
-    else
-    {
-        <div class="empty">Bấm vào một ngày để xem công việc của cả nhóm.</div>
     }
 }
 else if (me is null)
@@ -114,9 +110,5 @@ else
             @if (t.Count > 0) { foreach (var x in t) { @D.TaskRow(x) } }
             else { <p class="note" style="padding:8px 12px;margin:0">Ngày này chưa có công việc.</p> }
         </section>
-    }
-    else
-    {
-        <div class="empty">Bấm vào một ngày trong tháng để xem công việc của ngày đó.</div>
     }
 }

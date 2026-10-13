@@ -67,7 +67,9 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         var explicitSel = !string.IsNullOrEmpty(sel);
         if (!explicitSel) sel = http.Request.Cookies[ViewCookie];
         // Mở trang thuộc giao diện của chính mình mà không chỉ định ?as= → về màn hình của mình (vd. bấm link thông báo).
-        if (!explicitSel && allowed.Count == 1 && (allowed.Contains(acc.Role) || allowed.Contains(UiRoleOf(acc.Role)))) sel = "me";
+        // Ngoại lệ: người trong cookie dùng cùng giao diện với trang (Quản trị đang xem TP rồi bấm tab TP) → giữ người đó.
+        if (!explicitSel && allowed.Count == 1 && (allowed.Contains(acc.Role) || allowed.Contains(UiRoleOf(acc.Role)))
+            && !(int.TryParse(sel, out var cid) && subs.Find(p => p.Id == cid) is { } cp && allowed.Contains(UiRoleOf(cp.Role)))) sel = "me";
 
         Person? viewed = null;
         var allStaff = false;

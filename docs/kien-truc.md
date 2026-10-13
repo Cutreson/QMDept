@@ -107,11 +107,15 @@ GlobalUsings.cs            global using MySql.EntityFrameworkCore.Extensions (mi
   `Scope.IsAdmin` và không xem người khác; trang `[UiRole(Admin)]` chỉ mở ở màn hình của chính tài khoản Quản trị.
 - Combobox trên header (`ChromeBuilder.ViewOptions`) chỉ gồm "Màn hình của tôi" + cấp dưới, gửi GET `?as=<id>|me` tới trang hiện
   tại. Lịch tháng cả nhóm là **nút "Lịch nhóm"** cạnh combobox (`ChromeModel.TeamHref` = `/Staff/Month?as=all`). Lựa chọn nhớ trong cookie
-  `qm_view`. Mở trang thuộc giao diện của chính mình mà không có `?as=` ⇒ tự quay về màn hình của mình. Link thông báo kèm `as=me`.
+  `qm_view`. Mở trang thuộc giao diện của chính mình mà không có `?as=` ⇒ tự quay về màn hình của mình, **trừ khi** người trong
+  cookie dùng cùng giao diện với trang (Quản trị đang xem TP rồi bấm tab TP → vẫn xem TP). Link thông báo kèm `as=me`.
+  Form POST của trang dùng chung (Làm thêm: `OvertimeUi.PostUrl`) và form "Giao thêm việc" ở lịch nhóm luôn ghi rõ `as=`
+  trong `action` (`as=me` / `as=all`) để đổi combobox ở tab khác không làm form bị chặn.
 - Mỗi trang khai báo giao diện: `[UiRole(Role.X)]`, không khai báo (dùng chung NV/Leader/TP — Làm thêm), `[AnyUiRole]` (Cài đặt);
   `PlanningController` override `UiRoles` để Nhân sự + tài khoản + báo nghỉ dùng chung Leader/TP.
 - Khi `IsViewingOther`: `<body class="readonly">` — CSS ẩn nút trong form POST, nút `data-sheet`, `button[form]`; site.js khóa ô nhập.
-  Server vẫn chặn mọi POST khi IsViewingOther.
+  Server vẫn chặn mọi POST khi IsViewingOther. Ở lịch nhóm (`Scope.AllStaff`) server chặn mọi POST trừ `Staff/AssignTask`.
+  POST bị `Forbidden` (trang không hợp giao diện) có toast báo lỗi thay vì chuyển trang im lặng.
 
 ## Hiệu năng (DB ở xa)
 
