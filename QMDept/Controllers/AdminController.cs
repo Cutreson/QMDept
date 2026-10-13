@@ -93,8 +93,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         var wasLeader = p.Role == Role.Leader;
         await ApplyAsync(p, x);
         // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm".
-        if (wasLeader && p.Role != Role.Leader)
-            await Db.People.Where(m => m.LeaderId == p.Id).ExecuteUpdateAsync(s => s.SetProperty(m => m.LeaderId, (int?)null));
+        if (wasLeader && p.Role != Role.Leader) await AccountRules.ClearTeamAsync(Db, p.Id);
         await Db.SaveChangesAsync();
     }, "Đã lưu tài khoản");
 
@@ -130,6 +129,8 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         p.IsDeleted = true;
         p.SecurityStamp = AccountRules.NewStamp();
         Db.Assignments.RemoveRange(Db.Assignments.Where(a => a.EmployeeId == id));
+        // Leader bị xóa → NV trong nhóm thành "Chưa xếp nhóm" (không còn gắn với người đã xóa — quy tắc 15).
+        if (p.Role == Role.Leader) await AccountRules.ClearTeamAsync(Db, p.Id);
         await Db.SaveChangesAsync();
     }, "Đã xóa");
 

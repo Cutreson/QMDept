@@ -181,6 +181,7 @@ public partial class StaffController
                     {
                         cur.Date = nd; cur.Start = ns; cur.End = ne; cur.Title = nt;
                         cur.CarryOk = false; cur.EditedBy = null;
+                        await Flow.SyncCarryToPlanAsync(cur);
                     }
                     t.CarriedToId = cur.Id; t.CarryDate = nd;
                 }

@@ -29,6 +29,15 @@ public static class AccountRules
         if (dup == false) throw new BizException("Mã nhân viên đã tồn tại");
     }
 
+    /// <summary>
+    /// Leader thôi làm Leader (đổi vai trò / bị xóa) → NV trong nhóm thành "Chưa xếp nhóm" (ghi khi SaveChanges của caller).
+    /// TP cần xếp lại nhóm cho các NV này (NV chưa xếp nhóm không có Leader duyệt — xem docs/handoff.md).
+    /// </summary>
+    public static async Task ClearTeamAsync(AppDbContext db, int leaderId)
+    {
+        foreach (var m in await db.People.Where(m => m.LeaderId == leaderId && m.Id != leaderId).ToListAsync()) m.LeaderId = null;
+    }
+
     public static void ValidatePassword(string? password)
     {
         if ((password ?? "").Length < MinPassword) throw new BizException($"Mật khẩu tối thiểu {MinPassword} ký tự");

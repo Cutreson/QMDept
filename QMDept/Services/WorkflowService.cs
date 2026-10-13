@@ -18,10 +18,19 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     {
         var x = await db.Extras.FirstOrDefaultAsync(e => e.Id == extraId) ?? throw new BizException("Không tìm thấy phát sinh");
         if (x.TaskId is not null || x.Status != ExtraStatus.Pending) return;
+        if (!await db.Projects.AnyAsync(p => p.Id == x.ProjectId && !p.Closed)) throw new BizException("Dự án đã bàn giao, không duyệt phát sinh được");
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
+        // Giành quyền duyệt bằng một câu UPDATE có điều kiện: hai người duyệt cùng lúc chỉ một người tạo việc.
+        var claimed = await db.Extras.Where(e => e.Id == extraId && e.Status == ExtraStatus.Pending && e.TaskId == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.Status, ExtraStatus.Approved));
+        if (claimed == 0) return;
+        var start = x.Start ?? "08:00";
+        // Giờ kết thúc "Chưa rõ" → 17:00; nếu bắt đầu từ 17:00 trở đi thì +30 phút (không để kết thúc trước bắt đầu).
+        var end = x.End ?? ("17:00".Le(start) ? Fmt.Hhmm(Math.Min(Fmt.Min(start) + 30, 24 * 60)) : "17:00");
         var t = new WorkTask
         {
             Date = x.Date, EmployeeId = x.EmployeeId, ProjectId = x.ProjectId, Title = x.Title,
-            Start = x.Start ?? "08:00", End = x.End ?? "17:00", Status = TaskState.NotStarted, Source = TaskSource.Extra,
+            Start = start, End = end, Status = TaskState.NotStarted, Source = TaskSource.Extra,
             ExtraId = x.Id, Selected = true, CreatedAt = VnTime.UtcNow,
         };
         db.WorkTasks.Add(t);
@@ -30,6 +39,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         var plan = await db.DayPlans.FirstOrDefaultAsync(p => p.Date == x.Date && p.EmployeeId == x.EmployeeId);
         if (plan is not null) db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = t.Id });
         await db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
         if (sendNotify) await notify.ExtraDecidedAsync(x.EmployeeId, x.Date, x.Title, "đã được duyệt");
     }
 
@@ -114,6 +124,23 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         var a = await db.Assignments.FirstOrDefaultAsync(x => x.ProjectId == projectId && x.EmployeeId == employeeId);
         if (a is null) db.Assignments.Add(new Assignment { ProjectId = projectId, EmployeeId = employeeId, Role = role, By = actor, At = VnTime.UtcNow });
         else if (a.Role != role) { a.Role = role; a.By = actor; a.At = VnTime.UtcNow; if (!keepNote) a.Note = null; }
+    }
+
+    /// <summary>
+    /// Đồng bộ việc chuyển tiếp với kế hoạch ngày (gọi trước SaveChangesAsync, sau khi đã đổi CarryOk / Date):
+    /// đã duyệt + NV đã gửi kế hoạch ngày đó → chọn sẵn và gắn vào kế hoạch (như việc được giao / phát sinh đã duyệt),
+    /// để NV vẫn cập nhật / báo cáo được khi kế hoạch đã được duyệt trước khi Leader duyệt chuyển tiếp.
+    /// Bỏ duyệt hoặc đổi ngày → gỡ khỏi kế hoạch cũ.
+    /// </summary>
+    public async Task SyncCarryToPlanAsync(WorkTask n)
+    {
+        var links = await db.DayPlanTasks.Where(x => x.WorkTaskId == n.Id).Include(x => x.DayPlan).ToListAsync();
+        foreach (var l in links.Where(l => !n.CarryOk || l.DayPlan!.Date != n.Date)) db.DayPlanTasks.Remove(l);
+        if (!n.CarryOk) { n.Selected = false; return; }
+        var plan = await db.DayPlans.FirstOrDefaultAsync(p => p.Date == n.Date && p.EmployeeId == n.EmployeeId);
+        if (plan is null) { n.Selected = false; return; }
+        n.Selected = true;
+        if (!links.Any(l => l.DayPlanId == plan.Id)) db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = n.Id });
     }
 
     /// <summary>delTask: xóa việc khỏi lịch, dọn tham chiếu chuyển tiếp.</summary>

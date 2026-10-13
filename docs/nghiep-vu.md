@@ -204,6 +204,15 @@ Form gồm:
 - Làm thêm: server bắt buộc giờ theo bước 30 phút (artifact chỉ giới hạn qua danh sách chọn) và báo lỗi khi khoảng giờ nằm trọn
   trong nghỉ trưa (artifact chấp nhận 0 giờ). Giờ phải đúng dạng HH:mm. Hai lần gửi cùng lúc trùng khóa → thông báo "Dữ liệu vừa được
   cập nhật ở nơi khác" thay vì lỗi.
+- Việc chuyển tiếp được duyệt (duyệt / duyệt tất cả / sửa và duyệt / duyệt báo cáo) khi NV **đã gửi kế hoạch** ngày chuyển sang →
+  việc được chọn sẵn và gắn vào kế hoạch ngày đó (như việc được giao / phát sinh đã duyệt), để NV vẫn cập nhật / báo cáo được kể cả
+  khi kế hoạch đã được duyệt (artifact: việc hiện trong lịch nhưng NV không thao tác được). Hoàn tác / NV sửa đề xuất / đổi ngày →
+  gỡ khỏi kế hoạch cũ.
+- Duyệt phát sinh: dự án đã bàn giao → báo lỗi; hai người duyệt cùng lúc chỉ tạo một việc; giờ kết thúc "Chưa rõ" → 17:00, nếu bắt
+  đầu từ 17:00 trở đi thì kết thúc = bắt đầu + 30 phút (artifact luôn 17:00, có thể kết thúc trước bắt đầu).
+- Xóa tài khoản Leader → NV trong nhóm thành "Chưa xếp nhóm" (như khi Leader đổi vai trò). NV chưa xếp nhóm không có Leader
+  duyệt kế hoạch / báo cáo — TP cần xếp lại nhóm.
+- Nhu cầu nhân sự (Leader → Kế hoạch ngày mai) chỉ nhận dự án đang triển khai.
 
 ## 10. Thông báo đẩy (bổ sung — yêu cầu 2026-10-13)
 
@@ -215,10 +224,10 @@ Form gồm:
 | Loại | Khi nào | Người nhận |
 |---|---|---|
 | Kế hoạch đầu ngày mới | NV gửi / gửi lại kế hoạch | Leader nhóm |
-| Kết quả duyệt kế hoạch | Leader duyệt / từ chối / góp ý; TP duyệt / từ chối hỗ trợ | NV (+ Leader khi TP quyết định) |
+| Kết quả duyệt kế hoạch | Leader duyệt / từ chối / góp ý / hoàn tác; TP duyệt / từ chối hỗ trợ | NV (+ Leader khi TP quyết định) |
 | Yêu cầu hỗ trợ nhân sự | Leader duyệt kế hoạch cần hỗ trợ nhóm khác / phòng ban khác | mọi TP |
 | Báo cáo cuối ngày mới | NV gửi báo cáo cuối ngày | Leader nhóm |
-| Kết quả duyệt báo cáo | Leader duyệt / yêu cầu bổ sung | NV |
+| Kết quả duyệt báo cáo | Leader duyệt / yêu cầu bổ sung / hoàn tác | NV |
 | Đề xuất phát sinh mới | NV đề xuất phát sinh | Leader nhóm |
 | Kết quả phát sinh | phát sinh được duyệt / từ chối; Leader thêm phát sinh cho NV | NV |
 | Kế hoạch chuyển tiếp | duyệt / duyệt tất cả / sửa / hoàn tác chuyển tiếp (kể cả khi duyệt báo cáo) | NV |

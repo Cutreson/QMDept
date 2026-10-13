@@ -113,7 +113,7 @@ public partial class LeaderController : AppController
     {
         RequireLead();
         if (Fmt.ParseKey(date) is not DateOnly d) throw new BizException("Ngày không hợp lệ");
-        if (!await Db.Projects.AnyAsync(p => p.Id == projectId)) throw new BizException("Không tìm thấy dự án");
+        if (!await Db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Không tìm thấy dự án đang triển khai");
         // Math.max(0, Math.round(+value || 0))
         var v = double.TryParse(need, NumberStyles.Float, CultureInfo.InvariantCulture, out var x) && double.IsFinite(x) ? x : 0;
         var n = (int)Math.Clamp(Math.Floor(v + 0.5), 0, int.MaxValue);

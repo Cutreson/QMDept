@@ -65,9 +65,11 @@ public partial class PlanningController
         var p = await Db.DayPlans.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy kế hoạch");
         await RequireInScopeAsync(p.EmployeeId);
         if (p.ManagerDecision is not null) throw new BizException("Trưởng phòng đã quyết định, không hoàn tác được");
+        if (p.LeaderDecision is null) return;
         p.LeaderDecision = null;
         p.LeaderAt = null;
         await Db.SaveChangesAsync();
+        await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, "Leader hoàn tác quyết định, chờ duyệt lại");
     }, "Đã hoàn tác");
 
     /// <summary>ldNote: góp ý cho kế hoạch (không bắt buộc nội dung; rỗng = xóa góp ý).</summary>
@@ -131,7 +133,7 @@ public partial class PlanningController
             var carries = await Db.WorkTasks
                 .Where(t => t.Source == TaskSource.CarryOver && t.FromDate == r.Date && t.EmployeeId == r.EmployeeId && !t.CarryOk)
                 .ToListAsync();
-            foreach (var t in carries) { t.CarryOk = true; t.CarryBy = actor; t.CarryAt = now; }
+            foreach (var t in carries) { t.CarryOk = true; t.CarryBy = actor; t.CarryAt = now; await Flow.SyncCarryToPlanAsync(t); }
             await Db.SaveChangesAsync();
             await Notify.ReportDecidedAsync(r.EmployeeId, r.Date, true);
             foreach (var t in carries) await Notify.CarryOverAsync(t.EmployeeId, t.Date, t.Title, "đã được duyệt, đã vào lịch");
@@ -157,9 +159,11 @@ public partial class PlanningController
         RequireLead();
         var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy báo cáo");
         await RequireInScopeAsync(r.EmployeeId);
+        if (r.LeaderDecision is null) return;
         r.LeaderDecision = null;
         r.LeaderAt = null;
         await Db.SaveChangesAsync();
+        await Notify.ReportUndoneAsync(r.EmployeeId, r.Date);
     }, "Đã hoàn tác");
 
     // ======================= Đề xuất chuyển kế hoạch (carryOk / carryAll / carryUndo / eodCarry) =======================
@@ -179,9 +183,11 @@ public partial class PlanningController
     public async Task<IActionResult> ApproveCarry(int id) => await Do(async () =>
     {
         var n = await LoadCarryTaskAsync(id);
+        if (n.CarryOk) return;
         n.CarryOk = true;
         n.CarryBy = Scope.ActorName;
         n.CarryAt = VnTime.UtcNow;
+        await Flow.SyncCarryToPlanAsync(n);
         await Db.SaveChangesAsync();
         await Notify.CarryOverAsync(n.EmployeeId, n.Date, n.Title, "đã được duyệt, đã vào lịch");
     }, "Đã duyệt, việc đã vào lịch nhân viên");
@@ -201,6 +207,7 @@ public partial class PlanningController
             n.CarryOk = true;
             n.CarryBy = Scope.ActorName;
             n.CarryAt = now;
+            await Flow.SyncCarryToPlanAsync(n);
         }
         await Db.SaveChangesAsync();
         foreach (var n in done) await Notify.CarryOverAsync(n.EmployeeId, n.Date, n.Title, "đã được duyệt, đã vào lịch");
@@ -211,7 +218,9 @@ public partial class PlanningController
     public async Task<IActionResult> UndoCarry(int id) => await Do(async () =>
     {
         var n = await LoadCarryTaskAsync(id);
+        if (!n.CarryOk) return;
         n.CarryOk = false;
+        await Flow.SyncCarryToPlanAsync(n);
         await Db.SaveChangesAsync();
         await Notify.CarryOverAsync(n.EmployeeId, n.Date, n.Title, "bị hoàn tác, chưa vào lịch");
     }, "Đã hoàn tác, việc rời khỏi lịch");
@@ -240,6 +249,7 @@ public partial class PlanningController
         n.CarryBy = actor;
         n.CarryAt = now;
         if (n.CarriedFromId is int oid && await Db.WorkTasks.FirstOrDefaultAsync(t => t.Id == oid) is { } o) o.CarryDate = day;
+        await Flow.SyncCarryToPlanAsync(n);
         await Db.SaveChangesAsync();
         await Notify.CarryOverAsync(n.EmployeeId, n.Date, n.Title, "được Leader chỉnh và duyệt");
     }, "Đã chỉnh và duyệt, việc đã vào lịch nhân viên");

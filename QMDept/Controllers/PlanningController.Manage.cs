@@ -257,11 +257,10 @@ public partial class PlanningController
         if (resetPassword || codeChanged) p.PasswordHash = null;
         if (resetPassword || codeChanged || roleChanged) p.SecurityStamp = AccountRules.NewStamp();
         p.Name = n; p.Code = c; p.Role = r; p.LeaderId = lid; p.Level = lvl;
+        // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm" (như AdminController.Edit).
+        if (wasLeader && r != Role.Leader) await AccountRules.ClearTeamAsync(Db, id);
         try { await Db.SaveChangesAsync(); }
         catch (DbUpdateException) { throw new BizException("Mã nhân viên đã tồn tại"); }
-        // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm" (như AdminController.Edit).
-        if (wasLeader && r != Role.Leader)
-            await Db.People.Where(m => m.LeaderId == id).ExecuteUpdateAsync(s => s.SetProperty(m => m.LeaderId, (int?)null));
     }, "Đã lưu tài khoản");
 
     /// <summary>POST delPerson (chỉ TP): xóa mềm tài khoản (lịch sử giữ nguyên), bỏ các phân công dự án.</summary>
@@ -274,6 +273,8 @@ public partial class PlanningController
         p.IsDeleted = true;
         p.SecurityStamp = AccountRules.NewStamp();
         Db.Assignments.RemoveRange(await Db.Assignments.Where(a => a.EmployeeId == id).ToListAsync());
+        // Leader bị xóa → NV trong nhóm thành "Chưa xếp nhóm" (không còn gắn với người đã xóa — quy tắc 15).
+        if (p.Role == Role.Leader) await AccountRules.ClearTeamAsync(Db, p.Id);
         await Db.SaveChangesAsync();
     }, "Đã xóa");
 

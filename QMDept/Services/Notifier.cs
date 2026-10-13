@@ -131,6 +131,10 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     public async Task ReportDecidedAsync(int emp, DateOnly d, bool ok, string? note = null) =>
         await SendAsync([emp], NotifyType.ReportDecided, $"Báo cáo cuối ngày {Fmt.Dm(d)}: {(ok ? "đã duyệt" : "yêu cầu bổ sung")}", Body(note), Q("/Staff/Evening", d));
 
+    /// <summary>Leader hoàn tác quyết định báo cáo cuối ngày → NV.</summary>
+    public async Task ReportUndoneAsync(int emp, DateOnly d) =>
+        await SendAsync([emp], NotifyType.ReportDecided, $"Báo cáo cuối ngày {Fmt.Dm(d)}: Leader hoàn tác quyết định, chờ duyệt lại", null, Q("/Staff/Evening", d));
+
     /// <summary>NV đề xuất phát sinh → Leader nhóm.</summary>
     public async Task ExtraProposedAsync(int emp, DateOnly d, string title) =>
         await SendAsync([await LeaderOf(emp)], NotifyType.ExtraProposed, $"{await Name(emp)} đề xuất phát sinh", title, Q("/Planning/Approvals", d));
