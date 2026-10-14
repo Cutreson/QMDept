@@ -4,6 +4,15 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
+## Phiên 4 — 2026-10-14 (Claude Code, Sonnet 5.5) — hướng dẫn cho người mới
+
+- Chủ dự án xác nhận lại: commit + push thẳng `master`, không tự publish (chủ dự án chạy Publish trong Visual Studio), không dùng `fable` → đã ghi vào agents.md (quy tắc 4, 18, 20).
+- Tạo tài liệu hướng dẫn người không rành kỹ thuật làm tiếp dự án bằng Claude + Publish bằng Visual Studio:
+  https://claude.ai/artifact/M28pntTwxHCwQQxZq4kygv (riêng tư, chủ dự án tự chia sẻ nếu cần).
+- Build + chạy thử trên http://localhost:5125 đạt; DB `db73445` chỉ có tài khoản admin.
+
+---
+
 ## Phiên 3 — 2026-10-14 (Claude Code, Sonnet 5.5) — dựng lại DB mới + sửa lỗi khởi động
 
 ### Đã làm
