@@ -67,6 +67,7 @@ builder.Services.AddRateLimiter(o =>
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<IPasswordHasher<Person>, PasswordHasher<Person>>();
+builder.Services.AddScoped<DevSwitch>();
 builder.Services.AddScoped<ViewScope>();
 builder.Services.AddScoped<ScopeResolver>();
 builder.Services.AddScoped<Dept>();

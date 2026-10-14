@@ -17,7 +17,7 @@ namespace QMDept.Controllers;
 /// - Quên mật khẩu: TP đặt lại (xóa PasswordHash) ở Kế hoạch &amp; duyệt → Nhân sự.
 /// Mật khẩu băm bằng PasswordHasher (PBKDF2) của ASP.NET Core Identity.
 /// </summary>
-public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) : Controller
+public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher, DevSwitch dev) : Controller
 {
     public const int MinPassword = AccountRules.MinPassword;
     /// <summary>Chính sách giới hạn số lần đăng nhập (Program.cs): 10 lần / phút / địa chỉ IP.</summary>
@@ -44,6 +44,8 @@ public class AccountController(AppDbContext db, IPasswordHasher<Person> hasher) 
             if (ok) return Redirect("/");
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // phiên cũ đã bị thu hồi
         }
+        // Chạy thử trên máy (Development + DevSwitch:Enabled): bỏ màn hình đăng nhập — vào luôn bằng tài khoản TP, đổi bằng thanh DEV.
+        if (dev.Enabled && await DevController.AutoSignInAsync(HttpContext, db)) return Redirect("/");
         return View(new LoginVm { NeedBootstrap = await NeedBootstrapAsync() });
     }
 

@@ -67,6 +67,10 @@
 20. **Publish web do chủ dự án làm** (yêu cầu 2026-10-14): AI không tự publish / deploy. Khi cần đưa bản mới lên web
     (qlcl.runasp.net), nhắc chủ dự án tự chạy Publish trong Visual Studio. Quy tắc 18 (không dùng `fable`) và 4 (commit + push thẳng `master`)
     được chủ dự án xác nhận lại ở phiên này.
+21. **Thanh DEV chọn giao diện (chỉ chạy thử trên máy)** (yêu cầu 2026-10-14): khi `ASPNETCORE_ENVIRONMENT=Development` và `DevSwitch:Enabled=true`
+    (`appsettings.Development.json`) app bỏ màn hình đăng nhập (vào luôn bằng TP) và hiện thanh vàng chọn tài khoản Nhân viên / Leader / Trưởng phòng /
+    Quản trị (`Services/DevSwitch.cs`, `Controllers/DevController.cs`, đầu `_Layout.cshtml`). Production không bao giờ bật (`/Dev/*` trả 404) — **không
+    được bật cờ này trên web thật**.
 
 ## 2. Tổng quan kỹ thuật
 

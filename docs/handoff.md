@@ -19,6 +19,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   ở dòng của người được chọn làm Leader dự án (`TaskRow(leadOnly: true)`).
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
+  Thanh DEV chọn giao diện + bỏ màn hình đăng nhập khi chạy thử trên máy (quy tắc 21; không bật trên web thật).
   Cập nhật nhân sự chuẩn (`docs/nhan-su.md`): 10 người, mã tài khoản = mã nhân viên, mật khẩu `1` (MinPassword hạ còn 1); đã sửa trên DB thật qua trang Quản trị + SQL.
   NV → Thông tin dự án chỉ hiện dự án mình là Leader dự án (`StaffController.Calendar.cs`, `Projects`).
   Quyết định tự đưa ra: việc không có phân công vẫn báo cáo đầy đủ; việc hỗ trợ chưa xong không tự chuyển tiếp (Leader dự án quyết định).

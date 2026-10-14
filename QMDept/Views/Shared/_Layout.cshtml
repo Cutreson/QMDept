@@ -1,3 +1,4 @@
+@inject QMDept.Services.DevSwitch Dev
 @inject QMDept.Services.ChromeBuilder CB
 @{
     var chrome = await CB.BuildAsync();
@@ -30,6 +31,29 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="@(hasSide ? "has-side" : "no-side")@(Scope.Resolved && Scope.IsViewingOther ? " readonly" : "")" data-notify="@(chrome?.NotifyEnabled == true ? "1" : "0")">
+@if (Dev.Enabled && chrome is not null)
+{
+    @* THANH DEV — chỉ hiện khi chạy thử trên máy (Development), không có trên web thật. Xem Services/DevSwitch.cs. *@
+    var devPeople = await Dev.PeopleAsync();
+    <div style="background:#fde68a;color:#1f2937;padding:6px 10px;font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;position:sticky;top:0;z-index:60;border-bottom:1px solid #d97706">
+        <b>DEV · chọn giao diện:</b>
+        @foreach (var (role, label) in new[] { (Role.Staff, "Nhân viên"), (Role.Leader, "Leader"), (Role.Manager, "Trưởng phòng"), (Role.Admin, "Quản trị") })
+        {
+            var opts = devPeople.Where(p => p.Role == role).ToList();
+            if (opts.Count == 0) { continue; }
+            <form method="get" action="/Dev/As" style="display:flex;align-items:center;gap:4px;margin:0">
+                <span>@label</span>
+                <select class="in" name="id" data-autosubmit aria-label="Giao diện @label" style="padding:3px 22px 3px 6px;width:auto;font-size:12.5px;min-height:0">
+                    @if (chrome.Account.Role != role) { <option value="" selected disabled hidden>— chọn —</option> }
+                    @foreach (var p in opts)
+                    {
+                        <option value="@p.Id" selected="@(p.Id == chrome.Account.Id)">@p.Name · @p.Code</option>
+                    }
+                </select>
+            </form>
+        }
+    </div>
+}
 @* Thanh trên. Điện thoại: logo + tài khoản / chọn giao diện / xem người (3 hàng). Máy tính: một hàng (site.css .top-grid). *@
 <header class="top">
     <div class="shell top-grid">
