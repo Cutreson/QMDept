@@ -19,6 +19,8 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   (Blocks.cs, Week/Assign.cshtml); CSS 375px (nhãn "Xem màn hình", "Trạng thái", nhãn phụ lịch nhóm).
 - Ghi khác biệt chủ ý vào nghiep-vu.md §9 (việc ngoài KH khi sửa kế hoạch; tài khoản TP chỉ Quản trị sửa).
 - TP / Quản trị tạo + sửa dự án và đầu mục: nút "＋ Dự án mới" / "Sửa dự án & đầu mục" ở `/Manager/Projects` → `/Planning/Projects` (dùng chung với Leader).
+- **Trạng thái DB cuối phiên 3**: chủ dự án yêu cầu "coi như dựng lại DB, chỉ còn admin" → DB `db73445` chỉ có tài khoản `admin` (Admin@123); mọi tài khoản test đã xóa hẳn.
+  Tạo TP / Leader / NV ở Quản trị → Tài khoản (mã theo quy tắc `hue.nv`, mật khẩu mặc định `Test@123`).
 - Mật khẩu test: `admin` = Admin@123, tp / tp.leader1 / nv1 / nv2 = Test@123 (chủ dự án chọn; ghi ở `docs/tai-khoan.local.md`).
 - Thêm `tools/e2e-lib.mjs`; quy tắc 18 (không dùng model fable); ghi cách chạy app trên máy dev Windows vào AGENTS.md §3.
 
