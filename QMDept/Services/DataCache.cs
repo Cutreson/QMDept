@@ -119,13 +119,20 @@ public sealed class DataCache(IDbContextFactory<AppDbContext> factory)
     }
 }
 
-/// <summary>Tăng phiên bản <see cref="DataCache"/> sau mỗi lệnh ghi (không phải SELECT) và sau mỗi COMMIT.</summary>
-public sealed class DataCacheInterceptor(DataCache cache) : DbCommandInterceptor, IDbTransactionInterceptor
+/// <summary>
+/// Tăng phiên bản <see cref="DataCache"/> sau mỗi lệnh ghi (không phải SELECT) và sau mỗi COMMIT.
+/// Lấy <see cref="DataCache"/> chậm (lần dùng đầu): DataCache cần IDbContextFactory ⇐ cấu hình DbContext cần interceptor này —
+/// inject trực tiếp sẽ thành vòng phụ thuộc và DI bị deadlock lúc khởi động.
+/// </summary>
+public sealed class DataCacheInterceptor(IServiceProvider services) : DbCommandInterceptor, IDbTransactionInterceptor
 {
+    DataCache? _cache;
+    DataCache Cache => _cache ??= services.GetRequiredService<DataCache>();
+
     void After(DbCommand cmd)
     {
         var t = cmd.CommandText.AsSpan().TrimStart();
-        if (!t.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)) cache.Invalidate();
+        if (!t.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)) Cache.Invalidate();
     }
 
     public override int NonQueryExecuted(DbCommand c, CommandExecutedEventData e, int r) { After(c); return r; }
@@ -135,11 +142,11 @@ public sealed class DataCacheInterceptor(DataCache cache) : DbCommandInterceptor
     public override object? ScalarExecuted(DbCommand c, CommandExecutedEventData e, object? r) { After(c); return r; }
     public override ValueTask<object?> ScalarExecutedAsync(DbCommand c, CommandExecutedEventData e, object? r, CancellationToken ct = default) { After(c); return ValueTask.FromResult(r); }
 
-    public void TransactionCommitted(DbTransaction t, TransactionEndEventData e) => cache.Invalidate();
-    public Task TransactionCommittedAsync(DbTransaction t, TransactionEndEventData e, CancellationToken ct = default) { cache.Invalidate(); return Task.CompletedTask; }
+    public void TransactionCommitted(DbTransaction t, TransactionEndEventData e) => Cache.Invalidate();
+    public Task TransactionCommittedAsync(DbTransaction t, TransactionEndEventData e, CancellationToken ct = default) { Cache.Invalidate(); return Task.CompletedTask; }
     // Rollback: ảnh chụp đọc trong giao dịch (thấy dữ liệu chưa commit) phải bị bỏ.
-    public void TransactionRolledBack(DbTransaction t, TransactionEndEventData e) => cache.Invalidate();
-    public Task TransactionRolledBackAsync(DbTransaction t, TransactionEndEventData e, CancellationToken ct = default) { cache.Invalidate(); return Task.CompletedTask; }
+    public void TransactionRolledBack(DbTransaction t, TransactionEndEventData e) => Cache.Invalidate();
+    public Task TransactionRolledBackAsync(DbTransaction t, TransactionEndEventData e, CancellationToken ct = default) { Cache.Invalidate(); return Task.CompletedTask; }
 }
 
 /// <summary>
