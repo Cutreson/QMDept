@@ -127,6 +127,10 @@ GlobalUsings.cs            global using MySql.EntityFrameworkCore.Extensions (mi
   của `Dept`. `ScopeResolver`, `ChromeBuilder`, `HomeController`, `Dept` đều đọc từ đây ⇒ trang xem lại không cần truy vấn DB.
   `DataCacheInterceptor` tăng phiên bản sau mọi lệnh không phải SELECT, sau COMMIT và ROLLBACK ⇒ cache cũ bị bỏ ngay. TTL 60 giây.
   Lúc thiếu cache: nạp song song trên nhiều DbContext (IDbContextFactory), tối đa 8 kết nối, mỗi khóa chỉ nạp một lần.
+- **Vòng phụ thuộc DI (đã gặp 2026-10-14, app treo lúc khởi động)**: `AddDbContextFactory` lấy `DataCacheInterceptor` trong lambda cấu hình,
+  mà `DataCache` cần `IDbContextFactory` ⇒ nếu interceptor inject `DataCache` trực tiếp thì DI deadlock (không log, không kết nối DB,
+  không nghe cổng). Vì vậy `DataCacheInterceptor` nhận `IServiceProvider` và lấy `DataCache` chậm ở lần dùng đầu. Thêm dịch vụ vào cấu
+  hình DbContext thì dịch vụ đó (trực tiếp / gián tiếp) không được phụ thuộc `IDbContextFactory` / `AppDbContext`.
 - Hệ quả: **mọi ghi phải qua EF** (SaveChanges / ExecuteUpdate / ExecuteDelete). Không sửa entity lấy từ `D` / `DataCache`.
   Truy vấn riêng của trang (`Db.…`) vẫn chạy trực tiếp trên DB — hạn chế thêm truy vấn mới trong GET, ưu tiên dữ liệu của `D`.
 

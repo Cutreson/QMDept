@@ -1,12 +1,15 @@
 # Cơ sở dữ liệu
 
-- **DB thật hiện tại: MariaDB 10.11** (host databaseasp.net, database `db73331`, `lower_case_table_names=1`, utf8mb4_general_ci).
+- **DB thật hiện tại: MariaDB 10.11.15** (host `db73445.public.databaseasp.net`, database `db73445`, `lower_case_table_names=1`, utf8mb4_general_ci).
+  **Đổi DB 2026-10-14**: chủ dự án tạo DB mới `db73445` (DB cũ `db73331` bỏ). DB mới được dựng lại bằng migration (app tự `Migrate()` khi khởi động) —
+  16 bảng + `__EFMigrationsHistory`, ban đầu trống; 5 tài khoản chính (tp, tp.leader1, tp.leader1.nv1, tp.leader1.nv2, admin) tạo lại
+  (`docs/tai-khoan.local.md`).
   Kết nối qua **MySql.EntityFrameworkCore 10.0.9** (provider chính thức của Oracle; Pomelo chưa hỗ trợ EF Core 10).
   API: `options.UseMySQL(conn)`; extension cấu hình ở namespace `MySql.EntityFrameworkCore.Extensions` (đã `global using`).
 - Provider Oracle lỗi khi lấy khóa migration trên MariaDB và lớp lịch sử của nó là internal → dùng
   `Data/MariaDbHistoryRepository.cs` (bảng `__EFMigrationsHistory` chuẩn + khóa `GET_LOCK` timeout 600s), đăng ký bằng
   `ReplaceService<IHistoryRepository, MariaDbHistoryRepository>()` trong `Program.cs`. Không hỗ trợ `migrations script --idempotent`.
-- Migration đã áp lên DB thật: `InitialCreate` (2026-10-13, DB trước đó trống) và `EnglishNames` (2026-10-13 21:12):
+- Migration đã áp lên DB thật hiện tại (`db73445`, 2026-10-14, DB trống): `InitialCreate` và `EnglishNames` (trên DB cũ `db73331` được áp 2026-10-13):
   xóa bảng `photos` (web chỉ dùng văn bản), tạo `notify_settings`, đổi tên cột sang tiếng Anh và đổi giá trị enum tiếng Việt
   trong dữ liệu sang tên tiếng Anh (SQL `UPDATE … CASE` trong migration — mục "Đổi tên sang tiếng Anh" bên dưới).
   (Migration `TextOnlyAndNotify` chưa từng áp đã được gộp vào `EnglishNames` rồi xóa.)

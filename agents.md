@@ -57,6 +57,8 @@
 17. **Tự chủ hoàn toàn** (yêu cầu 2026-10-13): tuân thủ tài liệu trong repo, tự quyết định cho phù hợp, tự động code → test →
     hoàn thiện liên tục cho đến khi thấy ổn; không dừng lại hỏi chủ dự án (trừ việc không thể tự làm, ví dụ mở IP DB).
     Ghi các quyết định đã tự đưa ra vào `docs/handoff.md`.
+18. **Không dùng model `fable`** (yêu cầu 2026-10-14): subagent / workflow chỉ dùng `sonnet` (hoặc model mặc định của phiên);
+    `opus` hiện không truy cập được. Tiết kiệm hạn mức: E2E chạy tuần tự, ưu tiên ít agent.
 
 ## 2. Tổng quan kỹ thuật
 
@@ -84,7 +86,14 @@ bash tools/smoke.sh                            # đăng nhập từng vai trò, 
 node tools/perf.mjs                            # đo thời gian tải trang
 dotnet run tools/dbquery.cs <file.sql>         # chạy SQL (mỗi câu một dòng) trên DB thật
 dotnet run tools/dblatency.cs                  # đo độ trễ DB / kiểm tra DB có kết nối được không
+# tools/e2e-lib.mjs: thư viện Node cho kịch bản E2E (Client.login/get/post, forms(), toast(), sql()) — xem chú thích đầu file
 ```
+
+**Máy dev Windows (2026-10-14)**: SDK .NET 10 trên máy này có thể **treo** khi chạy `dotnet run` / `dotnet ef` (nó kiểm tra / cài workload
+MAUI và chờ quyền admin; log không in gì). Đặt `DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1 DOTNET_NOLOGO=1 DOTNET_CLI_TELEMETRY_OPTOUT=1`
+trước mọi lệnh `dotnet`, và chạy app bằng DLL đã build, không qua SDK:
+`cd QMDept && ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5125 dotnet bin/Debug/net10.0/QMDept.dll`
+(app tự `Migrate()` khi khởi động nên không cần `dotnet ef database update`). Muốn build lại phải dừng app trước (DLL bị khóa).
 
 `tools/cleanup-test-data.sql` xóa toàn bộ dữ liệu test (giữ 5 tài khoản chính) — đọc chú thích đầu file trước khi chạy.
 **Không chạy nhiều tiến trình test song song tới DB** (2026-10-13 nhà cung cấp đã chặn IP máy dev sau đợt test 4 agent song song).

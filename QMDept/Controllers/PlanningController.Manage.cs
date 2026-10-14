@@ -235,6 +235,8 @@ public partial class PlanningController
     {
         RequireManager();
         var p = await Db.People.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted && x.Role != Role.Admin) ?? throw new BizException("Không tìm thấy tài khoản");
+        // TP không được sửa / hạ vai trò / đặt lại mật khẩu tài khoản TP khác (sẽ chiếm được tài khoản đó) — việc này của Quản trị (/Admin/Accounts).
+        if (p.Role == Role.Manager && id != Scope.Account.Id && !Scope.IsAdmin) throw new BizException("Tài khoản Trưởng phòng chỉ Quản trị sửa được");
         var n = PlanningManage.Text(name, 100, "Họ tên");
         var c = AccountRules.NormalizeCode(code);
         if (n is null || c.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
@@ -270,6 +272,7 @@ public partial class PlanningController
         RequireManager();
         if (id == Scope.Account.Id) throw new BizException("Không thể xóa tài khoản đang đăng nhập");
         var p = await Db.People.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted && x.Role != Role.Admin) ?? throw new BizException("Không tìm thấy tài khoản");
+        if (p.Role == Role.Manager && !Scope.IsAdmin) throw new BizException("Tài khoản Trưởng phòng chỉ Quản trị xóa được");
         p.IsDeleted = true;
         p.SecurityStamp = AccountRules.NewStamp();
         Db.Assignments.RemoveRange(await Db.Assignments.Where(a => a.EmployeeId == id).ToListAsync());
