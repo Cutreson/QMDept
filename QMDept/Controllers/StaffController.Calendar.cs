@@ -55,8 +55,14 @@ public partial class StaffController
     public async Task<IActionResult> Projects(int? pj, string? pt)
     {
         ViewData["Title"] = "Thông tin dự án";
+        await D.EnsureAsync(Date, Date);
+        // Nhân viên chỉ thấy dự án mà mình được chọn làm Leader dự án (yêu cầu 2026-10-14); dự án chỉ hỗ trợ / không tham gia thì ẩn.
+        var led = Scope.AllStaff || Scope.MeId is not int who
+            ? new HashSet<int>()
+            : D.Assigns.Where(a => a.EmployeeId == who && a.Role == ProjectRole.Lead).Select(a => a.ProjectId).ToHashSet();
         if (pj is int pid)
         {
+            if (!led.Contains(pid)) return Redirect(Ui.Here(Request, ("pj", null), ("tab", null)));
             var req = Request;
             var detail = await ProjectDetailVm.LoadAsync(D, Db, Date, pid, ProjectDetailVm.StaffView, req.Query["tab"].ToString(),
                 Ui.Here(req, ("pj", null), ("tab", null)), t => Ui.Here(req, ("tab", t)));
@@ -65,20 +71,13 @@ public partial class StaffController
 
         var m = Fmt.Monday(Date);
         await D.EnsureAsync(m, m.AddDays(6));
-        await D.EnsureAsync(Date, Date);
 
-        var all = D.AllPj();
+        var all = D.AllPj().Where(p => led.Contains(p.Id)).ToList();
         var active = all.Where(p => !p.Closed && D.PjStatus(p.Id, Date) != ProjectStatus.Completed).ToList();
         var done = all.Where(p => p.Closed || D.PjStatus(p.Id, Date) == ProjectStatus.Completed).ToList();
 
-        // mine: vai trò theo phân công (assignsOf), hoặc "Bạn đang tham gia" nếu có việc ở dự án trong tuần.
-        var mine = new Dictionary<int, string>();
-        if (!Scope.AllStaff && Scope.MeId is int me)
-        {
-            var weekPj = Enumerable.Range(0, 7).SelectMany(k => D.TasksOn(m.AddDays(k), me)).Select(t => t.ProjectId).ToHashSet();
-            foreach (var id in weekPj) mine[id] = "Bạn đang tham gia";
-            foreach (var a in D.AssignsOf(me)) mine[a.ProjectId] = Labels.Of(a.Role);
-        }
+        // mine: nhãn vai trò — danh sách chỉ còn dự án người này là Leader dự án.
+        var mine = led.ToDictionary(id => id, _ => Labels.Of(ProjectRole.Lead));
 
         return View(new StaffProjectsVm { Tab = pt == "done" ? "done" : "active", Active = active, Done = done, Mine = mine });
     }

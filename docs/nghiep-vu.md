@@ -61,8 +61,10 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
   dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia + vai trò (Hỗ trợ / Leader dự án).
 
 ### 3.2 Thông tin dự án (`nvProjects`, `projectDetail`)
+- **Chỉ hiện dự án mà NV được chọn làm Leader dự án** (yêu cầu 2026-10-14; artifact hiện mọi dự án). Dự án chỉ hỗ trợ / không tham gia
+  không có trong danh sách, mở thẳng `?pj=` cũng bị chuyển về danh sách.
 - 2 nhóm: Đang triển khai / Đã hoàn thành (đóng hoặc 100%). Thẻ dự án: màu, tên, trạng thái, nhà máy – địa điểm,
-  vai trò của NV (theo assign, hoặc "Bạn đang tham gia" nếu có việc trong tuần), thanh tiến độ, ngày.
+  nhãn "Leader dự án", thanh tiến độ, ngày.
 - Chi tiết: tab Tổng quan (KPI đầu mục, nhân sự TT/KH, phát sinh gần đây) · Kế hoạch (thông tin, danh sách đầu mục
   theo giai đoạn, biểu đồ tiến độ theo tuần) · Nhân sự (người có việc trong tuần).
 
