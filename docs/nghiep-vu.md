@@ -58,7 +58,7 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
   có việc Chậm = đỏ nhạt; hôm nay = xanh đậm; còn lại = xanh nhạt. Bấm ô → chọn ngày, hiện danh sách việc ngày đó.
 - Leader/TP xem một NV: chỉ xem. Chế độ "Tất cả nhân viên": ô = số NV có việc / tổng việc / số người nghỉ (N);
   ô đỏ nếu có việc Chậm; chọn ngày → danh sách việc từng người (`teamDayList`) + form **Giao thêm việc** (`calAssignForm`):
-  dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia (Leader dự án của dự án được tích sẵn, người khác là hỗ trợ).
+  dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia (để trắng, Leader tự tích; nhãn vai trò tự động theo dự án, bị khóa).
 
 ### 3.2 Thông tin dự án (`nvProjects`, `projectDetail`)
 - **Chỉ hiện dự án mà NV được chọn làm Leader dự án** (yêu cầu 2026-10-14; artifact hiện mọi dự án). Dự án chỉ hỗ trợ / không tham gia
@@ -107,8 +107,8 @@ Form gồm:
     chưa báo hết thì không gửi được báo cáo cuối ngày. Kết quả ghi lên chính việc của người hỗ trợ (kế hoạch tiếp theo tạo cho người đó).
   - Dự án **chưa chọn Leader dự án**: mọi người báo cáo đầy đủ như trước.
   - Mỗi dự án chỉ **một** Leader dự án: chọn người mới thì người cũ về "Hỗ trợ" (`WorkflowService.UpsertAssignmentAsync`).
-  - Giao việc (lịch nhóm "Giao thêm việc", Phân công): **không còn ô chọn vai trò** — chọn dự án thì Leader dự án được tích sẵn (nhãn "Leader dự án"),
-    những người khác nhãn "Hỗ trợ" (`WorkflowService.AssignTaskAsync`).
+  - Giao việc (lịch nhóm "Giao thêm việc", Phân công): **không còn ô chọn vai trò** — chọn dự án thì nhãn vai trò tự đổi và bị khóa (Leader dự án / "Hỗ trợ"), còn ô tích người tham gia để trắng — Leader tự tích người được giao;
+    server gán vai trò theo dự án (`WorkflowService.AssignTaskAsync`).
   - Mọi dòng việc (`Blocks.TaskRow`: lịch tháng của NV, Theo dõi, Báo cáo) và thẻ việc ở Báo cáo cuối ngày hiện **"Leader dự án: <tên>"** (hoặc "chưa chọn");
     ở lịch nhóm của Leader chỉ dòng của Leader dự án hiện nhãn này.
 - **＋ Đề xuất công việc phát sinh** (`openExtra`): dự án, tên, mô tả/lý do, giờ bắt đầu (mặc định giờ hiện tại làm tròn

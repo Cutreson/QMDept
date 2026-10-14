@@ -24,7 +24,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Cập nhật nhân sự chuẩn (`docs/nhan-su.md`): 10 người, mã tài khoản = mã nhân viên, mật khẩu `1` (MinPassword hạ còn 1); đã sửa trên DB thật qua trang Quản trị + SQL.
   NV → Thông tin dự án chỉ hiện dự án mình là Leader dự án (`StaffController.Calendar.cs`, `Projects`).
   **Cập nhật cùng ngày**: người hỗ trợ chỉ tích "Đã hỗ trợ" (cột mới `work_tasks.Supported`, migration `TaskSupported`, đã áp lên DB thật); Leader dự án báo cáo
-  cả việc của người hỗ trợ; giao việc không còn chọn vai trò (Leader dự án tích sẵn khi chọn dự án).
+  cả việc của người hỗ trợ; giao việc không còn chọn vai trò (nhãn tự động theo dự án; ô tích người tham gia để trắng).
   Quyết định tự đưa ra: dự án chưa có Leader dự án thì mọi người báo cáo đầy đủ như trước.
 
 ---

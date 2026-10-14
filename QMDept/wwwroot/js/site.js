@@ -174,7 +174,7 @@
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
     if (t.matches && t.matches('select.in')) t.classList.toggle('ph', !t.value);
   });
-  // Giao việc ở lịch nhóm: chọn dự án → Leader dự án của dự án được tích sẵn, người còn lại ghi "Hỗ trợ" (form[data-leads] = {projectId: leaderId}).
+  // Giao việc ở lịch nhóm: chọn dự án → nhãn vai trò tự đổi (Leader dự án / Hỗ trợ, bị khóa); ô tích người tham gia để trắng, Leader tự tích (form[data-leads] = {projectId: leaderId}).
   function applyLead(sel) {
     const f = sel.form; if (!f || !f.dataset.leads) return;
     let m = {}; try { m = JSON.parse(f.dataset.leads) || {}; } catch (e) { return; }
@@ -184,7 +184,6 @@
       s.textContent = on ? 'Leader dự án' : 'Hỗ trợ';
       s.classList.toggle('p-mgr', on); s.classList.toggle('p-info', !on);
     });
-    if (lead != null) { const cb = f.querySelector('input[name=emp][value="' + lead + '"]'); if (cb) cb.checked = true; }
   }
   function fillItems(sel) {
     const target = document.getElementById(sel.dataset.itemsFor); if (!target) return;
