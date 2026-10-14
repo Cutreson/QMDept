@@ -18,11 +18,12 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   (`PlanningController.Manage.cs`); `Dept.InScope` loại tài khoản đã xóa với mọi vai trò (quy tắc 15); bỏ câu hướng dẫn trái quy tắc 14
   (Blocks.cs, Week/Assign.cshtml); CSS 375px (nhãn "Xem màn hình", "Trạng thái", nhãn phụ lịch nhóm).
 - Ghi khác biệt chủ ý vào nghiep-vu.md §9 (việc ngoài KH khi sửa kế hoạch; tài khoản TP chỉ Quản trị sửa).
+- TP / Quản trị tạo + sửa dự án và đầu mục: nút "＋ Dự án mới" / "Sửa dự án & đầu mục" ở `/Manager/Projects` → `/Planning/Projects` (dùng chung với Leader).
+- Mật khẩu test: `admin` = Admin@123, tp / tp.leader1 / nv1 / nv2 = Test@123 (chủ dự án chọn; ghi ở `docs/tai-khoan.local.md`).
 - Thêm `tools/e2e-lib.mjs`; quy tắc 18 (không dùng model fable); ghi cách chạy app trên máy dev Windows vào AGENTS.md §3.
 
 ### Chưa làm / việc tiếp theo
-1. **Dọn dữ liệu test** trên DB mới: còn dự án `[E2E3-carry] …` (id 1–2), tài khoản `zz.e2e3.carry.l2` (id 6) và vài việc / kế hoạch / báo cáo / 1 phát sinh.
-   Lệnh `dotnet run tools/dbquery.cs tools/cleanup-test-data.sql` bị công cụ chặn trong phiên này — chủ dự án chạy tay hoặc cho phép.
+1. ~~Dọn dữ liệu test~~ — **đã xong** (chủ dự án chạy `tools/cleanup-test-data.sql`): DB còn đúng 5 tài khoản chính, 0 dự án / việc.
 2. E2E 9 khu vực (carry, extras, pages, staff, overtime, access, notify, perf, ui) **chưa chạy** (chủ dự án chỉ cần test đơn giản).
 3. Phát hiện chưa xử lý: chuyển tiếp trên dự án đã bàn giao (verifier chia ý kiến); `DeleteTaskAsync` không giao dịch (không gây lỗi người dùng);
    Bootstrap TOCTOU (mức thấp, giống artifact).
