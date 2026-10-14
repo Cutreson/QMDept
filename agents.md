@@ -17,7 +17,7 @@
    Bản sao mã nguồn artifact (để đọc khi không truy cập được claude.ai): `docs/artifact/qlcl-artifact.html`.
    Artifact thay đổi trên claude.ai → đọc lại bằng công cụ Artifact `read`, cập nhật bản sao + `docs/nghiep-vu.md`.
 4. **Git**: chỉ làm việc trên nhánh `master` duy nhất (không tạo nhánh khác, không worktree, không PR).
-   **Cuối mỗi phiên tự động `git commit` và `git push origin master`.**
+   **Mỗi khi code xong (và cuối mỗi phiên) tự động `git commit` và `git push origin master`** (xác nhận lại 2026-10-14).
 5. **Quy tắc phải ghi vào file**: mọi quy tắc / yêu cầu làm việc chủ dự án đưa ra phải được ghi vào `agents.md`
    (hoặc file `docs/` tương ứng), không chỉ lưu trong bộ nhớ riêng của AI — phiên / AI khác chỉ đọc được file.
 6. **Giao diện dùng tốt cả trên máy tính và điện thoại** (yêu cầu 2026-10-13): mọi màn hình mới/sửa phải kiểm tra ở
@@ -62,6 +62,9 @@
 19. **Tài khoản & mật khẩu** (yêu cầu 2026-10-14): mã tài khoản theo quy tắc **tên + chữ cái đầu họ và đệm, không dấu, chữ thường**:
     Nguyễn Văn Huề → `hue.nv` (đ → d; chỉ một từ → chỉ tên). **Mật khẩu mặc định của tài khoản mới / sau khi đặt lại: `Test@123`**.
     Người dùng **tự đổi được mật khẩu** của mình (trang Cài đặt). Tài khoản thử hiện có: `admin` / `Admin@123`, các tài khoản còn lại `Test@123`.
+20. **Publish web do chủ dự án làm** (yêu cầu 2026-10-14): AI không tự publish / deploy. Khi cần đưa bản mới lên web
+    (qlcl.runasp.net), nhắc chủ dự án tự chạy Publish trong Visual Studio. Quy tắc 18 (không dùng `fable`) và 4 (commit + push thẳng `master`)
+    được chủ dự án xác nhận lại ở phiên này.
 
 ## 2. Tổng quan kỹ thuật
 
