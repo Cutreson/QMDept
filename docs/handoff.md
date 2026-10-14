@@ -22,7 +22,9 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Thanh DEV chọn giao diện + bỏ màn hình đăng nhập khi chạy thử trên máy (quy tắc 21; không bật trên web thật).
   Cập nhật nhân sự chuẩn (`docs/nhan-su.md`): 10 người, mã tài khoản = mã nhân viên, mật khẩu `1` (MinPassword hạ còn 1); đã sửa trên DB thật qua trang Quản trị + SQL.
   NV → Thông tin dự án chỉ hiện dự án mình là Leader dự án (`StaffController.Calendar.cs`, `Projects`).
-  Quyết định tự đưa ra: việc không có phân công vẫn báo cáo đầy đủ; việc hỗ trợ chưa xong không tự chuyển tiếp (Leader dự án quyết định).
+  **Cập nhật cùng ngày**: người hỗ trợ chỉ tích "Đã hỗ trợ" (cột mới `work_tasks.Supported`, migration `TaskSupported`, đã áp lên DB thật); Leader dự án báo cáo
+  cả việc của người hỗ trợ; giao việc không còn chọn vai trò (Leader dự án tích sẵn khi chọn dự án).
+  Quyết định tự đưa ra: dự án chưa có Leader dự án thì mọi người báo cáo đầy đủ như trước.
 
 ---
 

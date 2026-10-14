@@ -37,8 +37,6 @@
         </select></div></div>
     <label class="f" for="asgT">Nội dung công việc</label><input class="in" id="asgT" name="title" maxlength="300">
     <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "asgE")</div></div>
-    <label class="f">Vai trò trong dự án</label>
-    <div class="segr two" role="radiogroup" aria-label="Vai trò trong dự án"><label><input type="radio" name="role" value="@ProjectRole.Lead"><span>Leader dự án</span></label><label><input type="radio" name="role" value="@ProjectRole.Support" checked><span>Hỗ trợ dự án</span></label></div>
     <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc</button>
     
 </form>

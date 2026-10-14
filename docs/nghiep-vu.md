@@ -58,7 +58,7 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
   có việc Chậm = đỏ nhạt; hôm nay = xanh đậm; còn lại = xanh nhạt. Bấm ô → chọn ngày, hiện danh sách việc ngày đó.
 - Leader/TP xem một NV: chỉ xem. Chế độ "Tất cả nhân viên": ô = số NV có việc / tổng việc / số người nghỉ (N);
   ô đỏ nếu có việc Chậm; chọn ngày → danh sách việc từng người (`teamDayList`) + form **Giao thêm việc** (`calAssignForm`):
-  dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia + vai trò (Hỗ trợ / Leader dự án).
+  dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia (Leader dự án của dự án được tích sẵn, người khác là hỗ trợ).
 
 ### 3.2 Thông tin dự án (`nvProjects`, `projectDetail`)
 - **Chỉ hiện dự án mà NV được chọn làm Leader dự án** (yêu cầu 2026-10-14; artifact hiện mọi dự án). Dự án chỉ hỗ trợ / không tham gia
@@ -99,14 +99,18 @@ Form gồm:
   nếu nó còn "Chưa làm".
   Đầu mục: tích "đã xong" + Hoàn thành → đầu mục Hoàn thành (ngày xong, người xong); ngược lại nếu việc
   Đang làm/Hoàn thành/Chậm mà đầu mục đang Chưa làm → đầu mục Đang làm.
-- **Vai trò trong dự án (yêu cầu 2026-10-14)** — theo `assignments` của (dự án, NV):
-  - **Hỗ trợ dự án** (`Support`): sheet "Báo cáo hỗ trợ" chỉ có **Hoàn thành / Chưa hoàn thành** + ô "Có vấn đề gì cần chú ý không?"
-    (bắt buộc khi chưa hoàn thành). Không có "Kế hoạch tiếp theo", không đụng đầu mục; hiện "Bạn hỗ trợ: <Leader dự án>". Chưa hoàn thành
-    lưu trạng thái Đang làm, nhãn hiển thị "Chưa hoàn thành". Gửi báo cáo cuối ngày bị chặn nếu còn việc hỗ trợ chưa báo (`UpdatedAt` rỗng).
-  - **Leader dự án** (`Lead`) và việc chưa có phân công: báo cáo đầy đủ như trên (trạng thái, tích đầu mục xong, kế hoạch tiếp theo = đổi kế hoạch).
+- **Vai trò trong dự án (yêu cầu 2026-10-14)** — Leader dự án do Leader / TP chọn ở tab "Leader dự án"; mọi người còn lại có việc ở dự án đó là **người hỗ trợ**:
+  - **Người hỗ trợ** (dự án đã có Leader dự án, người làm không phải Leader dự án): ở Báo cáo cuối ngày chỉ **tích "Đã hỗ trợ"** cho từng việc
+    (`work_tasks.Supported`, POST `/Staff/TickSupport`); không có Cập nhật / kế hoạch tiếp theo. Gửi báo cáo bị chặn nếu còn việc chưa tích.
+  - **Leader dự án** chịu trách nhiệm mọi vấn đề / nội dung của dự án: báo cáo đầy đủ (hoàn thành / chưa / đổi kế hoạch = kế hoạch tiếp theo, tích đầu mục
+    xong) cho việc của mình **và** cho việc của người hỗ trợ trong dự án mình phụ trách (mục "Việc của người hỗ trợ trong dự án bạn phụ trách");
+    chưa báo hết thì không gửi được báo cáo cuối ngày. Kết quả ghi lên chính việc của người hỗ trợ (kế hoạch tiếp theo tạo cho người đó).
+  - Dự án **chưa chọn Leader dự án**: mọi người báo cáo đầy đủ như trước.
   - Mỗi dự án chỉ **một** Leader dự án: chọn người mới thì người cũ về "Hỗ trợ" (`WorkflowService.UpsertAssignmentAsync`).
-  - Mọi dòng việc (`Blocks.TaskRow`: lịch tháng của NV, lịch nhóm của Leader, Theo dõi, Báo cáo) và thẻ việc ở Báo cáo cuối ngày hiện
-    **"Leader dự án: <tên>"** (hoặc "chưa chọn").
+  - Giao việc (lịch nhóm "Giao thêm việc", Phân công): **không còn ô chọn vai trò** — chọn dự án thì Leader dự án được tích sẵn (nhãn "Leader dự án"),
+    những người khác nhãn "Hỗ trợ" (`WorkflowService.AssignTaskAsync`).
+  - Mọi dòng việc (`Blocks.TaskRow`: lịch tháng của NV, Theo dõi, Báo cáo) và thẻ việc ở Báo cáo cuối ngày hiện **"Leader dự án: <tên>"** (hoặc "chưa chọn");
+    ở lịch nhóm của Leader chỉ dòng của Leader dự án hiện nhãn này.
 - **＋ Đề xuất công việc phát sinh** (`openExtra`): dự án, tên, mô tả/lý do, giờ bắt đầu (mặc định giờ hiện tại làm tròn
   30'), kết thúc (có thể "Chưa rõ"). Leader duyệt → tự vào danh sách việc hôm nay.
 - Danh sách phát sinh trong ngày. Cảnh báo "Còn N việc chưa hoàn thành chưa có kế hoạch tiếp theo".

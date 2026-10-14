@@ -145,8 +145,14 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// <summary>Leader dự án (vai trò Lead trong assign; mỗi dự án một người — xem WorkflowService.UpsertAssignmentAsync). Tài khoản đã xóa không tính.</summary>
     public Person? ProjectLead(int pid) => Assigns.Where(a => a.ProjectId == pid && a.Role == ProjectRole.Lead)
         .Select(a => P(a.EmployeeId)).OfType<Person>().FirstOrDefault(p => !p.IsDeleted);
-    /// <summary>Việc mà người làm chỉ HỖ TRỢ dự án (vai trò Support): báo cáo cuối ngày chỉ cần hoàn thành / chưa + vấn đề cần chú ý.</summary>
-    public bool IsSupportTask(WorkTask t) => AssignOf(t.ProjectId, t.EmployeeId) is { Role: ProjectRole.Support };
+    /// <summary>
+    /// Việc của NGƯỜI HỖ TRỢ: dự án đã có Leader dự án và người làm không phải Leader dự án đó (yêu cầu 2026-10-14). Mọi vấn đề / nội dung của
+    /// dự án do Leader dự án báo cáo cuối ngày; người hỗ trợ chỉ tích "đã hỗ trợ". Dự án chưa chọn Leader dự án → báo cáo đầy đủ như trước.
+    /// </summary>
+    public bool IsSupportTask(WorkTask t) => ProjectLead(t.ProjectId) is { } l && l.Id != t.EmployeeId;
+    /// <summary>Việc của người khác (đã chọn trong ngày) ở các dự án mà <paramref name="lead"/> là Leader dự án — Leader dự án phải báo cáo kết quả.</summary>
+    public List<WorkTask> TeamTasksOf(int lead, DateOnly date) =>
+        TasksOn(date).Where(t => t.Selected && t.EmployeeId != lead && ProjectLead(t.ProjectId)?.Id == lead).ToList();
     /// <summary>teamProjects(): dự án (chưa đóng) có NV trong phạm vi được phân công.</summary>
     public List<int> TeamProjects() => Assigns.Where(a => P(a.EmployeeId)?.Role == Role.Staff && InScope(a.EmployeeId)).Select(a => a.ProjectId)
         .Distinct().Where(id => PJ(id) is { Closed: false }).ToList();

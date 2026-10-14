@@ -223,11 +223,10 @@
     if (!f.matches || !f.matches('form[data-upd]')) return;
     const end = f.dataset.end || '';
     const stateOf = () => (f.querySelector('input[name=state]:checked') || {}).value || f.dataset.state;
-    const sup = f.hasAttribute('data-sup');   // người hỗ trợ: không có "Kế hoạch tiếp theo"
     const nxShow = () => {
       const v = stateOf(), reason = v !== 'Done';
       const nx = $('#nxWrap', f); if (nx) nx.hidden = !reason;
-      $('#uNL', f).textContent = reason ? 'Lý do chưa hoàn thành (bắt buộc)' : sup ? 'Có vấn đề gì cần chú ý không?' : 'Kết quả / ghi chú';
+      $('#uNL', f).textContent = reason ? 'Lý do chưa hoàn thành (bắt buộc)' : 'Kết quả / ghi chú';
     };
     $$('input[name=state]', f).forEach(r => r.addEventListener('change', () => {
       const c = $('#itDone', f); if (c) c.checked = r.value === 'Done' && r.checked && end >= '15:00';
@@ -258,9 +257,10 @@
       const xs = $('#xS', f), xf = $('#xF', f);
       if (xs && xf && xf.value && xf.value <= xs.value) return stop('Giờ kết thúc phải sau giờ bắt đầu');
     } else if (f.id === 'eodForm') {
-      const n = +(f.dataset.miss || 0), ns = +(f.dataset.missSup || 0);
+      const n = +(f.dataset.miss || 0), nt = +(f.dataset.missTeam || 0), ns = +(f.dataset.missSup || 0);
       if (n > 0) return stop(`Còn ${n} việc chưa hoàn thành chưa có kế hoạch tiếp theo`);
-      if (ns > 0) return stop(`Còn ${ns} việc hỗ trợ chưa báo hoàn thành hay chưa hoàn thành`);
+      if (nt > 0) return stop(`Còn ${nt} việc của dự án bạn phụ trách chưa báo hoàn thành hay kế hoạch tiếp theo`);
+      if (ns > 0) return stop(`Còn ${ns} việc hỗ trợ chưa tích “Đã hỗ trợ”`);
     }
   }, true);
 

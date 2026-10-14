@@ -87,7 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Nếu NV đã gửi kế hoạch ngày đó → việc được chọn sẵn và thêm vào kế hoạch. Cập nhật vai trò trong dự án.
     /// </summary>
     public async Task<int> AssignTaskAsync(DateOnly date, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyList<(int EmployeeId, ProjectRole Role)> people, string actor)
+        IReadOnlyList<int> people, string actor)
     {
         if (people.Count == 0) throw new BizException("Tích chọn ít nhất 1 người tham gia");
         var item = itemId is int iid ? await db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
@@ -97,9 +97,12 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
         if (pj.Closed) throw new BizException("Dự án đã bàn giao, không giao thêm việc được");
+        // Vai trò do dự án quyết định: Leader dự án đã chọn = Leader dự án, những người còn lại = hỗ trợ (yêu cầu 2026-10-14).
+        var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead)
+            .Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
         // Giao cho nhiều người: tất cả hoặc không (tự mở transaction nếu caller chưa mở).
         await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
-        foreach (var (emp, role) in people)
+        foreach (var emp in people)
         {
             var plan = await db.DayPlans.FirstOrDefaultAsync(p => p.Date == date && p.EmployeeId == emp);
             var t = new WorkTask
@@ -110,11 +113,11 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             db.WorkTasks.Add(t);
             await db.SaveChangesAsync();
             if (plan is not null) db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = t.Id });
-            await UpsertAssignmentAsync(projectId, emp, role, actor, keepNote: true);
+            await UpsertAssignmentAsync(projectId, emp, leadId == emp ? ProjectRole.Lead : ProjectRole.Support, actor, keepNote: true);
             await db.SaveChangesAsync();
         }
         if (tx is not null) await tx.CommitAsync();
-        await notify.TaskAssignedAsync(people.Select(p => p.EmployeeId), date, t0);
+        await notify.TaskAssignedAsync(people, date, t0);
         return people.Count;
     }
 

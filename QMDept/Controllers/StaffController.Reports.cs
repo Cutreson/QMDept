@@ -153,15 +153,18 @@ public partial class StaffController
     {
         RequireSelfStaff();
         var me = Scope.Me!;
-        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == input.TaskId && x.EmployeeId == me.Id && x.Selected)
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == input.TaskId && x.Selected)
             ?? throw new BizException("Không tìm thấy công việc");
-        // Người chỉ HỖ TRỢ dự án (vai trò Support): chỉ báo hoàn thành / chưa hoàn thành + vấn đề cần chú ý; không lập kế hoạch tiếp,
-        // không đụng tới đầu mục (Leader dự án quyết định). Leader dự án / việc chưa có phân công: báo cáo đầy đủ như trước.
-        var support = await Db.Assignments.AsNoTracking().AnyAsync(a => a.ProjectId == t.ProjectId && a.EmployeeId == me.Id && a.Role == ProjectRole.Support);
-        var parsed = StaffReports.ParseEnum<TaskState>(input.State);
-        var s = support
-            ? (parsed == TaskState.Done ? TaskState.Done : t.Status is TaskState.Done or TaskState.NotStarted ? TaskState.InProgress : t.Status)
-            : parsed ?? t.Status;
+        // Dự án đã có Leader dự án: mọi vấn đề / nội dung của dự án do Leader dự án báo cáo cuối ngày (kể cả việc người hỗ trợ làm một mình);
+        // người hỗ trợ chỉ tích "đã hỗ trợ" (TickSupport). Việc của chính mình ở dự án chưa có Leader dự án: báo cáo đầy đủ như trước.
+        var leadId = await Db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead)
+            .Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
+        if (t.EmployeeId == me.Id)
+        {
+            if (leadId is int l0 && l0 != me.Id) throw new BizException("Việc hỗ trợ: chỉ cần tích “Đã hỗ trợ”, Leader dự án báo cáo kết quả");
+        }
+        else if (leadId != me.Id) throw new BizException("Không tìm thấy công việc");
+        var s = StaffReports.ParseEnum<TaskState>(input.State) ?? t.Status;
         var note = StaffReports.Clip(input.Note, 2000);
         if (s != TaskState.Done && note is null) throw new BizException("Nhập lý do chưa hoàn thành");
         var cur = t.CarriedToId is int cid ? await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == cid) : null;
@@ -169,7 +172,7 @@ public partial class StaffController
         DateOnly nd = default;
         string ns = "", ne = "", nt = "";
         var proposed = false;   // có đề xuất chuyển tiếp mới / vừa sửa (chờ Leader duyệt)
-        if (s != TaskState.Done && !support)
+        if (s != TaskState.Done)
         {
             nt = StaffReports.Clip(input.NextTitle, 300) ?? throw new BizException("Nhập nội dung kế hoạch tiếp theo");
             ns = input.NextStart ?? ""; ne = input.NextEnd ?? "";
@@ -180,8 +183,7 @@ public partial class StaffController
         }
         {
             await using var tx = await Db.Database.BeginTransactionAsync();
-            if (s != TaskState.Done && support) { /* người hỗ trợ: không tạo / sửa kế hoạch tiếp */ }
-            else if (s != TaskState.Done)
+            if (s != TaskState.Done)
             {
                 if (cur is not null)
                 {
@@ -219,7 +221,7 @@ public partial class StaffController
             t.Note = note;
             t.UpdatedAt = VnTime.UtcNow;
 
-            if (!support && t.PlanItemId is int iid && await Db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid) is { } it)
+            if (t.PlanItemId is int iid && await Db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid) is { } it)
             {
                 if (s == TaskState.Done && input.ItemDone && it.Status != TaskState.Done)
                 {
@@ -232,9 +234,25 @@ public partial class StaffController
             await tx.CommitAsync();
         }
         // Báo cáo cuối ngày đã được duyệt thì Leader không nhận thông báo gửi báo cáo nữa → báo riêng đề xuất chuyển tiếp.
-        if (proposed && await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == me.Id && r.LeaderDecision == Decision.Ok))
-            await Notify.CarryProposedAsync(me.Id, t.Date, nt, nd);
+        if (proposed && await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == t.EmployeeId && r.LeaderDecision == Decision.Ok))
+            await Notify.CarryProposedAsync(t.EmployeeId, t.Date, nt, nd);
     }, "Đã cập nhật");
+
+    /// <summary>Người hỗ trợ tích / bỏ tích "Đã hỗ trợ" cho việc của mình ở dự án đã có Leader dự án (Leader dự án báo cáo kết quả).</summary>
+    [HttpPost]
+    public async Task<IActionResult> TickSupport(int taskId, bool on) => await Do(async () =>
+    {
+        RequireSelfStaff();
+        var me = Scope.Me!;
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == taskId && x.EmployeeId == me.Id && x.Selected)
+            ?? throw new BizException("Không tìm thấy công việc");
+        var leadId = await Db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead)
+            .Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
+        if (leadId is null || leadId == me.Id) throw new BizException("Việc này báo cáo đầy đủ ở nút Cập nhật");
+        t.Supported = on;
+        t.UpdatedAt = VnTime.UtcNow;
+        await Db.SaveChangesAsync();
+    }, null);
 
     /// <summary>openExtra(false): NV đề xuất phát sinh (chờ Leader duyệt).</summary>
     [HttpPost]
@@ -255,14 +273,19 @@ public partial class StaffController
     {
         RequireSelfStaff();
         var me = Scope.Me!.Id;
-        // Việc hỗ trợ dự án: chỉ cần đã báo hoàn thành / chưa (UpdatedAt) — không cần kế hoạch tiếp theo.
-        var supportPj = await Db.Assignments.Where(a => a.EmployeeId == me && a.Role == ProjectRole.Support).Select(a => a.ProjectId).ToListAsync();
+        // Dự án đã có Leader dự án (yêu cầu 2026-10-14): người hỗ trợ chỉ cần tích "đã hỗ trợ" mọi việc của mình; Leader dự án báo cáo kết quả
+        // (hoàn thành / chưa + kế hoạch tiếp) cho cả việc của mình lẫn việc của người hỗ trợ trong dự án mình phụ trách.
+        var leads = await Db.Assignments.AsNoTracking().Where(a => a.Role == ProjectRole.Lead).Select(a => new { a.ProjectId, a.EmployeeId }).ToListAsync();
+        var supportPj = leads.Where(l => l.EmployeeId != me).Select(l => l.ProjectId).ToList();
+        var ledPj = leads.Where(l => l.EmployeeId == me).Select(l => l.ProjectId).ToList();
         var miss = await Db.WorkTasks.CountAsync(t => t.Date == Date && t.EmployeeId == me && t.Selected
             && t.Status != TaskState.Done && t.CarriedToId == null && !supportPj.Contains(t.ProjectId));
         if (miss > 0) throw new BizException($"Còn {miss} việc chưa hoàn thành chưa có kế hoạch tiếp theo");
-        var missSup = await Db.WorkTasks.CountAsync(t => t.Date == Date && t.EmployeeId == me && t.Selected
-            && t.Status != TaskState.Done && t.UpdatedAt == null && supportPj.Contains(t.ProjectId));
-        if (missSup > 0) throw new BizException($"Còn {missSup} việc hỗ trợ chưa báo hoàn thành hay chưa hoàn thành");
+        var missTeam = await Db.WorkTasks.CountAsync(t => t.Date == Date && t.EmployeeId != me && t.Selected && ledPj.Contains(t.ProjectId)
+            && t.Status != TaskState.Done && t.CarriedToId == null);
+        if (missTeam > 0) throw new BizException($"Còn {missTeam} việc của dự án bạn phụ trách chưa báo hoàn thành hay kế hoạch tiếp theo");
+        var missSup = await Db.WorkTasks.CountAsync(t => t.Date == Date && t.EmployeeId == me && t.Selected && !t.Supported && supportPj.Contains(t.ProjectId));
+        if (missSup > 0) throw new BizException($"Còn {missSup} việc hỗ trợ chưa tích “Đã hỗ trợ”");
         var note = StaffReports.Clip(input.Note, 2000);
         var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me);
         if (r is null)

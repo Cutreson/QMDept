@@ -170,10 +170,22 @@
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.matches && t.matches('[data-autosubmit]')) { const f = t.form; if (f) { if (f.requestSubmit) f.requestSubmit(); else f.submit(); } }
-    if (t.matches && t.matches('select[data-items-for]')) fillItems(t);
+    if (t.matches && t.matches('select[data-items-for]')) { fillItems(t); applyLead(t); }
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
     if (t.matches && t.matches('select.in')) t.classList.toggle('ph', !t.value);
   });
+  // Giao việc ở lịch nhóm: chọn dự án → Leader dự án của dự án được tích sẵn, người còn lại ghi "Hỗ trợ" (form[data-leads] = {projectId: leaderId}).
+  function applyLead(sel) {
+    const f = sel.form; if (!f || !f.dataset.leads) return;
+    let m = {}; try { m = JSON.parse(f.dataset.leads) || {}; } catch (e) { return; }
+    const lead = m[sel.value];
+    f.querySelectorAll('[data-role-tag]').forEach(s => {
+      const on = lead != null && String(lead) === s.dataset.roleTag;
+      s.textContent = on ? 'Leader dự án' : 'Hỗ trợ';
+      s.classList.toggle('p-mgr', on); s.classList.toggle('p-info', !on);
+    });
+    if (lead != null) { const cb = f.querySelector('input[name=emp][value="' + lead + '"]'); if (cb) cb.checked = true; }
+  }
   function fillItems(sel) {
     const target = document.getElementById(sel.dataset.itemsFor); if (!target) return;
     const items = (window.QM_ITEMS || {})[sel.value] || [];

@@ -91,6 +91,7 @@ public class WorkTask
     public TaskState Status { get; set; } = TaskState.NotStarted;
     public TaskSource Source { get; set; } = TaskSource.Planned;
     public bool Selected { get; set; }                               // NV đã chọn làm trong ngày (báo cáo đầu ngày)
+    public bool Supported { get; set; }                              // người hỗ trợ đã tích "đã hỗ trợ" (kết quả do Leader dự án báo cáo)
     [MaxLength(2000)] public string? Note { get; set; }              // Kết quả / lý do chưa hoàn thành
 
     // Chuyển tiếp (việc chưa xong → kế hoạch tiếp theo)

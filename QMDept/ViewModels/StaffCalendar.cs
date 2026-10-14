@@ -73,20 +73,18 @@ public static class StaffCalendar
     }
 
     /// <summary>
-    /// Đọc người tham gia của form Giao thêm việc: checkbox "emp" (id) + select "role_{id}" (Support | Lead).
-    /// Mọi người phải thuộc nhóm NV của tài khoản (poolFor('nv')).
+    /// Đọc người tham gia của form Giao thêm việc: checkbox "emp" (id). Vai trò do dự án quyết định (Leader dự án đã chọn = Leader dự án,
+    /// còn lại = hỗ trợ — WorkflowService.AssignTaskAsync). Mọi người phải thuộc nhóm NV của tài khoản (poolFor('nv')).
     /// </summary>
-    public static List<(int EmployeeId, ProjectRole Role)> ReadPeople(IFormCollection form, IReadOnlyCollection<Person> pool)
+    public static List<int> ReadPeople(IFormCollection form, IReadOnlyCollection<Person> pool)
     {
-        var list = new List<(int, ProjectRole)>();
+        var list = new List<int>();
         foreach (var raw in form["emp"])
         {
             if (!int.TryParse(raw, out var id)) throw new BizException("Không tìm thấy nhân viên");
-            if (list.Any(x => x.Item1 == id)) continue;
+            if (list.Contains(id)) continue;
             if (!pool.Any(p => p.Id == id)) throw new BizException("Nhân viên không thuộc nhóm bạn quản lý");
-            StringValues rv = form["role_" + id];
-            var role = Enum.TryParse<ProjectRole>(rv.ToString(), out var r) && Enum.IsDefined(r) ? r : ProjectRole.Support;
-            list.Add((id, role));
+            list.Add(id);
         }
         return list;
     }

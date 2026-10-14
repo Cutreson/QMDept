@@ -345,9 +345,9 @@ public partial class PlanningController
         return View(new PlanningAssignVm { Staff = staff, Given = given });
     }
 
-    /// <summary>POST assignForm: giao một việc cho một NV vào ngày chọn + đặt vai trò trong dự án.</summary>
+    /// <summary>POST assignForm: giao một việc cho một NV vào ngày chọn (vai trò theo dự án: Leader dự án đã chọn hoặc hỗ trợ).</summary>
     [HttpPost]
-    public Task<IActionResult> AssignTask(int? emp, string? date, int? projectId, int? itemId, string? title, string? start, string? end, string? role) => Do(async () =>
+    public Task<IActionResult> AssignTask(int? emp, string? date, int? projectId, int? itemId, string? title, string? start, string? end) => Do(async () =>
     {
         RequireLead();
         var d = PlanningManage.Date(date);
@@ -355,9 +355,8 @@ public partial class PlanningController
         await RequireInScopeAsync(e);
         var who = PlanningManage.RequireStaff(D, e);
         PlanningManage.Text(title, 300, "Nội dung công việc");
-        var r = PlanningManage.ParseEnum<ProjectRole>(role) ?? ProjectRole.Support;
-        await Flow.AssignTaskAsync(day, pid, itemId, title, start ?? "", end ?? "", [(e, r)], Scope.ActorName);
-        Toast($"Đã giao việc cho {who.Name} ngày {Fmt.Dm(day)} · {Labels.Of(r)}");
+        await Flow.AssignTaskAsync(day, pid, itemId, title, start ?? "", end ?? "", [e], Scope.ActorName);
+        Toast($"Đã giao việc cho {who.Name} ngày {Fmt.Dm(day)}");
     });
 
     /// <summary>POST unassign: bỏ phân công NV khỏi dự án.</summary>

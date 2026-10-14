@@ -59,8 +59,11 @@ else
         {
             @* calAssignForm(d, ''): Giao thêm việc ngay trên lịch (form .ro-ok: dùng được ở chế độ xem) *@
             var pj0 = StaffCalendar.DefaultProject(D, sel);
+            // Leader dự án của từng dự án: chọn dự án → Leader dự án được tích sẵn, người còn lại là hỗ trợ (data-leads + site.js).
+            var leadMap = D.ActivePj().Select(x => (x.Id, Lead: D.ProjectLead(x.Id)?.Id)).Where(x => x.Lead is not null).ToDictionary(x => x.Id.ToString(), x => x.Lead!.Value);
+            var leadDefault = pj0 is int pl ? D.ProjectLead(pl)?.Id : null;
             <partial name="_ItemsJson" />
-            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" asp-antiforgery="true">
+            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" asp-antiforgery="true" data-leads="@System.Text.Json.JsonSerializer.Serialize(leadMap)">
                 @Ui.ReturnField(req)
                 <h2>Giao thêm việc · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h2>
                 <div class="grid2"><div><label class="f" for="calP" style="margin-top:0">Dự án</label>
@@ -76,9 +79,8 @@ else
                     {
                         var n = D.TasksOn(sel, p.Id).Count(D.OkCal);
                         var leave = D.OnLeave(sel, p.Id);
-                        var cur = pj0 is int pa ? D.AssignOf(pa, p.Id)?.Role : null;
-                        <div class="trow"><input type="checkbox" id="calW_@p.Id" name="emp" value="@p.Id"><label for="calW_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LevelPill(p)</div><div class="s">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
-                            <select class="in" id="calR_@p.Id" name="role_@p.Id" style="padding:5px 26px 5px 8px;width:auto;font-size:12.5px" aria-label="Vai trò của @p.Name"><option value="@ProjectRole.Support">Hỗ trợ</option><option value="@ProjectRole.Lead" selected="@(cur == ProjectRole.Lead)">Leader dự án</option></select></div>
+                        <div class="trow"><input type="checkbox" id="calW_@p.Id" name="emp" value="@p.Id" checked="@(leadDefault == p.Id)"><label for="calW_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LevelPill(p)</div><div class="s">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
+                            <span class="pill @(leadDefault == p.Id ? "p-mgr" : "p-info")" data-role-tag="@p.Id">@(leadDefault == p.Id ? "Leader dự án" : "Hỗ trợ")</span></div>
                     }
                 </div>
                 <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc cho người đã chọn</button>
