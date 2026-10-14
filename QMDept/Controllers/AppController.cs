@@ -78,7 +78,7 @@ public abstract class AppController : Controller
             && !(ctx.RouteData.Values["controller"] is string c && c.Equals("Staff", StringComparison.OrdinalIgnoreCase)
                  && ctx.RouteData.Values["action"] is string a && a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)))
         {
-            Toast("Lịch nhóm chỉ xem — mở màn hình của bạn để thao tác");
+            Toast("Lịch chỉ xem — mở màn hình của bạn để thao tác");
             ctx.Result = Redirect(BackUrl());
             return;
         }

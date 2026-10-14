@@ -15,7 +15,7 @@
 }
 @if (Model.AllMode)
 {
-    @Ui.Head(0, "Kế hoạch tháng · Tất cả nhân viên", $"{ppl.Count} nhân viên")
+    @Ui.Head(0, (Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm") + " · Tất cả nhân viên", $"{ppl.Count} nhân viên")
 }
 else
 {

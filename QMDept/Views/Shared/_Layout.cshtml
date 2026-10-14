@@ -74,21 +74,18 @@
                 @if (!string.IsNullOrEmpty(Context.Request.Query["d"])) { <input type="hidden" name="d" value="@Context.Request.Query["d"]"> }
                 <span class="note" style="white-space:nowrap">Xem màn hình:</span>
                 <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
-                    @if (chrome.TeamActive) { <option value="" selected disabled hidden>Lịch nhóm</option> }
-                    @foreach (var o in chrome.ViewOptions.Where(o => o.Group is null))
+                    @if (!chrome.ViewOptions.Any(o => o.Selected)) { <option value="" selected disabled hidden>Chọn người</option> }
+                    @foreach (var g in chrome.ViewOptions.GroupBy(o => o.Group))
                     {
-                        <option value="@o.Value" selected="@o.Selected">@o.Label</option>
-                    }
-                    @foreach (var g in chrome.ViewOptions.Where(o => o.Group is not null).GroupBy(o => o.Group))
-                    {
-                        <optgroup label="@g.Key">
+                        <optgroup label="@(g.Key ?? "Nhân sự")">
                             @foreach (var o in g) { <option value="@o.Value" selected="@o.Selected">@o.Label</option> }
                         </optgroup>
                     }
                 </select>
+                <a class="btn btn-sm@(chrome.MineActive ? " btn-primary" : "")" href="@chrome.HomeHref" style="white-space:nowrap" aria-current="@(chrome.MineActive ? "page" : null)">Màn hình của tôi</a>
                 @if (chrome.TeamHref is not null)
                 {
-                    <a class="btn btn-sm@(chrome.TeamActive ? " btn-primary" : "")" href="@chrome.TeamHref" style="white-space:nowrap" aria-current="@(chrome.TeamActive ? "page" : null)">Lịch nhóm</a>
+                    <a class="btn btn-sm@(chrome.TeamActive ? " btn-primary" : "")" href="@chrome.TeamHref" style="white-space:nowrap" aria-current="@(chrome.TeamActive ? "page" : null)">@chrome.TeamLabel</a>
                 }
             </form>
         }

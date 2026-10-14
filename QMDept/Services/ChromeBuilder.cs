@@ -30,6 +30,10 @@ public sealed class ChromeModel
     public string? TeamHref { get; init; }
     /// <summary>Đang ở lịch nhóm.</summary>
     public bool TeamActive { get; init; }
+    /// <summary>Tên nút lịch cả nhóm: "Lịch của phòng" với Trưởng phòng / Quản trị, "Lịch nhóm" với Leader.</summary>
+    public string TeamLabel { get; init; } = "Lịch nhóm";
+    /// <summary>Đang ở màn hình của chính mình (nút "Màn hình của tôi" sáng).</summary>
+    public bool MineActive { get; init; }
 }
 
 /// <summary>Dựng phần khung (thanh trên + combobox xem màn hình + thanh tab + badge) cho _Layout (renderChrome của artifact).</summary>
@@ -107,11 +111,10 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 scope.AllStaff ? 0 : Badge(t.Id))).ToList()
             : [];
 
-        // Combobox "Xem màn hình": chính mình rồi cấp dưới theo nhóm vai trò. Lịch cả nhóm là nút riêng "Lịch nhóm" (TeamHref).
+        // Combobox "Xem màn hình": chỉ cấp dưới theo nhóm vai trò. "Màn hình của tôi" (HomeHref) và lịch cả nhóm (TeamHref) là hai nút riêng cạnh combobox.
         var opts = new List<ViewOption>();
         if (scope.Subordinates.Count > 0)
         {
-            opts.Add(new("me", $"Màn hình của tôi ({Labels.Of(acc.Role)})", !scope.AllStaff && !scope.IsViewingOther, null));
             foreach (var p in scope.Subordinates)
             {
                 var label = p.Role == Role.Staff && acc.Role != Role.Leader ? $"{p.Name} · {d.GroupText(p)}" : p.Name;
@@ -141,6 +144,8 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             HomeHref = WithQ(ScopeResolver.HomeOf(acc.Role), "me"),
             TeamHref = acc.Role != Role.Staff && scope.Pool.Count > 0 ? WithQ("/Staff/Month", "all") : null,
             TeamActive = scope.AllStaff,
+            TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
+            MineActive = !scope.AllStaff && !scope.IsViewingOther,
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
