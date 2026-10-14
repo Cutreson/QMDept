@@ -118,9 +118,15 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         return people.Count;
     }
 
-    /// <summary>Đặt vai trò NV trong dự án (chỉ ghi khi khác vai trò hiện tại).</summary>
+    /// <summary>
+    /// Đặt vai trò NV trong dự án (chỉ ghi khi khác vai trò hiện tại). Mỗi dự án chỉ có MỘT Leader dự án (yêu cầu 2026-10-14):
+    /// chọn người mới làm Leader dự án thì người đang là Leader dự án chuyển về "Hỗ trợ".
+    /// </summary>
     public async Task UpsertAssignmentAsync(int projectId, int employeeId, ProjectRole role, string actor, bool keepNote)
     {
+        if (role == ProjectRole.Lead)
+            foreach (var o in await db.Assignments.Where(x => x.ProjectId == projectId && x.EmployeeId != employeeId && x.Role == ProjectRole.Lead).ToListAsync())
+            { o.Role = ProjectRole.Support; o.By = actor; o.At = VnTime.UtcNow; }
         var a = await db.Assignments.FirstOrDefaultAsync(x => x.ProjectId == projectId && x.EmployeeId == employeeId);
         if (a is null) db.Assignments.Add(new Assignment { ProjectId = projectId, EmployeeId = employeeId, Role = role, By = actor, At = VnTime.UtcNow });
         else if (a.Role != role) { a.Role = role; a.By = actor; a.At = VnTime.UtcNow; if (!keepNote) a.Note = null; }

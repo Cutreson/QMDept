@@ -94,6 +94,14 @@ Form gồm:
   nếu nó còn "Chưa làm".
   Đầu mục: tích "đã xong" + Hoàn thành → đầu mục Hoàn thành (ngày xong, người xong); ngược lại nếu việc
   Đang làm/Hoàn thành/Chậm mà đầu mục đang Chưa làm → đầu mục Đang làm.
+- **Vai trò trong dự án (yêu cầu 2026-10-14)** — theo `assignments` của (dự án, NV):
+  - **Hỗ trợ dự án** (`Support`): sheet "Báo cáo hỗ trợ" chỉ có **Hoàn thành / Chưa hoàn thành** + ô "Có vấn đề gì cần chú ý không?"
+    (bắt buộc khi chưa hoàn thành). Không có "Kế hoạch tiếp theo", không đụng đầu mục; hiện "Bạn hỗ trợ: <Leader dự án>". Chưa hoàn thành
+    lưu trạng thái Đang làm, nhãn hiển thị "Chưa hoàn thành". Gửi báo cáo cuối ngày bị chặn nếu còn việc hỗ trợ chưa báo (`UpdatedAt` rỗng).
+  - **Leader dự án** (`Lead`) và việc chưa có phân công: báo cáo đầy đủ như trên (trạng thái, tích đầu mục xong, kế hoạch tiếp theo = đổi kế hoạch).
+  - Mỗi dự án chỉ **một** Leader dự án: chọn người mới thì người cũ về "Hỗ trợ" (`WorkflowService.UpsertAssignmentAsync`).
+  - Mọi dòng việc (`Blocks.TaskRow`: lịch tháng của NV, lịch nhóm của Leader, Theo dõi, Báo cáo) và thẻ việc ở Báo cáo cuối ngày hiện
+    **"Leader dự án: <tên>"** (hoặc "chưa chọn").
 - **＋ Đề xuất công việc phát sinh** (`openExtra`): dự án, tên, mô tả/lý do, giờ bắt đầu (mặc định giờ hiện tại làm tròn
   30'), kết thúc (có thể "Chưa rõ"). Leader duyệt → tự vào danh sách việc hôm nay.
 - Danh sách phát sinh trong ngày. Cảnh báo "Còn N việc chưa hoàn thành chưa có kế hoạch tiếp theo".

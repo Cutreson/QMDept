@@ -142,6 +142,11 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// <summary>assignsOf(emp): phân công còn hiệu lực (dự án chưa đóng).</summary>
     public List<Assignment> AssignsOf(int emp) => Assigns.Where(a => a.EmployeeId == emp && PJ(a.ProjectId) is { Closed: false }).ToList();
     public Assignment? AssignOf(int pid, int emp) => Assigns.Find(a => a.ProjectId == pid && a.EmployeeId == emp);
+    /// <summary>Leader dự án (vai trò Lead trong assign; mỗi dự án một người — xem WorkflowService.UpsertAssignmentAsync). Tài khoản đã xóa không tính.</summary>
+    public Person? ProjectLead(int pid) => Assigns.Where(a => a.ProjectId == pid && a.Role == ProjectRole.Lead)
+        .Select(a => P(a.EmployeeId)).OfType<Person>().FirstOrDefault(p => !p.IsDeleted);
+    /// <summary>Việc mà người làm chỉ HỖ TRỢ dự án (vai trò Support): báo cáo cuối ngày chỉ cần hoàn thành / chưa + vấn đề cần chú ý.</summary>
+    public bool IsSupportTask(WorkTask t) => AssignOf(t.ProjectId, t.EmployeeId) is { Role: ProjectRole.Support };
     /// <summary>teamProjects(): dự án (chưa đóng) có NV trong phạm vi được phân công.</summary>
     public List<int> TeamProjects() => Assigns.Where(a => P(a.EmployeeId)?.Role == Role.Staff && InScope(a.EmployeeId)).Select(a => a.ProjectId)
         .Distinct().Where(id => PJ(id) is { Closed: false }).ToList();

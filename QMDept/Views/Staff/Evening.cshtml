@@ -24,7 +24,9 @@
     var list = D.Chosen(d, me.Id);
     var xs = D.ExtrasOn(d).Where(x => x.EmployeeId == me.Id).ToList();
     var rep = D.ReportOf(d, me.Id);
-    var openCnt = list.Count(t => t.Status != TaskState.Done && t.CarriedToId is null);
+    // Việc chỉ HỖ TRỢ dự án: không cần kế hoạch tiếp theo, chỉ cần báo hoàn thành / chưa (UpdatedAt) — xem StaffController.UpdateTask.
+    var openCnt = list.Count(t => !D.IsSupportTask(t) && t.Status != TaskState.Done && t.CarriedToId is null);
+    var supCnt = list.Count(t => D.IsSupportTask(t) && t.Status != TaskState.Done && t.UpdatedAt is null);
 }
 @if (plan is null)
 {
@@ -44,12 +46,22 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
             var src = Labels.Of(t.Source);
             var open = Model.Open.Contains(t.Id);
             var n = st != TaskState.Done ? D.Task(t.CarriedToId) : null;
+            var sup = D.IsSupportTask(t);
+            var lead = D.ProjectLead(t.ProjectId);
             <li id="t@(t.Id)"><span class="dot" style="--nc:@Labels.Color(st)">@(st == TaskState.Done ? "✓" : "")</span><div class="card task">
                 <div class="h"><div><div class="t">@t.Title</div>@if (src.Length > 0)
                     {
                         <div class="src">@src</div>
-                    }</div>@Ui.Pill(st)</div>
+                    }</div>@if (sup && st != TaskState.Done && t.UpdatedAt is not null)
+                    {
+                        <span class="pill p-warn">Chưa hoàn thành</span>
+                    }
+                    else
+                    {
+                        @Ui.Pill(st)
+                    }</div>
                 <div class="tm">@t.Start – @t.End</div>
+                <div class="note" style="margin:0 0 6px">@(sup ? "Bạn hỗ trợ" : "Leader dự án"): <b>@(lead is null ? "chưa chọn Leader dự án" : lead.Id == me.Id ? "Bạn" : lead.Name)</b></div>
                 @if (n is not null)
                 {
                     <div class="nx-line">Kế hoạch tiếp: <b>@Fmt.Short(n.Date)</b> <span class="mono">@(n.Start)–@(n.End)</span> · @n.Title<div class="note">@(D.OkCal(n) ? "Leader đã duyệt, đã vào lịch" : "Đề xuất, chờ Leader duyệt")@(string.IsNullOrEmpty(n.EditedBy) ? "" : " · " + n.EditedBy + " đã chỉnh")</div></div>
@@ -104,6 +116,10 @@ else if (plan is not null)
 {
     <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">!</span><div><b>Còn @openCnt việc chưa hoàn thành chưa có kế hoạch tiếp theo</b></div></div>
 }
+@if (supCnt > 0)
+{
+    <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">!</span><div><b>Còn @supCnt việc hỗ trợ chưa báo hoàn thành hay chưa hoàn thành</b></div></div>
+}
 @if (rep is not null)
 {
     var es = Dept.EodSt(rep);
@@ -124,7 +140,7 @@ else if (plan is not null)
         <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Hm(rep.SentAt) · chờ Leader duyệt</b></div></div>
     }
 }
-<form id="eodForm" class="card sec" method="post" action="@Ui.To(req, "/Staff/SubmitReport", ("d", dkey))" asp-antiforgery="true" data-miss="@openCnt">
+<form id="eodForm" class="card sec" method="post" action="@Ui.To(req, "/Staff/SubmitReport", ("d", dkey))" asp-antiforgery="true" data-miss="@openCnt" data-miss-sup="@supCnt">
     @Ui.ReturnField(req)
     <h2>Tình hình chung</h2>
     <label class="f" for="eB" style="margin-top:0">Có vướng mắc không?</label>
@@ -152,6 +168,28 @@ else if (plan is not null)
         var nds = StaffReports.NextDateOptions(t.Date, cur?.Date);
         var ndDef = cur?.Date ?? nds.First(x => x.DayOfWeek != DayOfWeek.Sunday);
         var done = t.Status == TaskState.Done;
+        if (D.IsSupportTask(t))
+        {
+            @* Người hỗ trợ: hoàn thành / chưa hoàn thành + vấn đề cần chú ý, không lập kế hoạch tiếp *@
+            var ld = D.ProjectLead(t.ProjectId);
+            <template id="upd@(t.Id)">
+                <form method="post" action="@Ui.To(req, "/Staff/UpdateTask", ("d", dkey))" data-upd data-sup data-state="@(done ? "Done" : "InProgress")" data-end="@t.End">
+                    @Html.AntiForgeryToken()
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="taskId" value="@t.Id">
+                    <h3>Báo cáo hỗ trợ</h3>
+                    <p class="note" style="margin:0 0 4px">@t.Title · <span class="mono">@(t.Start)–@(t.End)</span></p>
+                    <p class="note" style="margin:0 0 8px">Hỗ trợ: <b>@(ld?.Name ?? "chưa chọn Leader dự án")</b></p>
+                    <div class="choices" role="radiogroup" aria-label="Kết quả">
+                        <label class="choice" style="--cc:@Labels.Color(TaskState.Done)"><input type="radio" name="state" value="Done" checked="@done">Hoàn thành</label>
+                        <label class="choice" style="--cc:@Labels.Color(TaskState.InProgress)"><input type="radio" name="state" value="InProgress" checked="@(!done)">Chưa hoàn thành</label>
+                    </div>
+                    <label class="f" for="uN" id="uNL">@(done ? "Có vấn đề gì cần chú ý không?" : "Lý do chưa hoàn thành (bắt buộc)")</label><textarea class="in" id="uN" name="note" maxlength="2000">@t.Note</textarea>
+                    <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+                </form>
+            </template>
+            continue;
+        }
         <template id="upd@(t.Id)">
             <form method="post" action="@Ui.To(req, "/Staff/UpdateTask", ("d", dkey))" data-upd data-state="@t.Status" data-end="@t.End">
                 @Html.AntiForgeryToken()

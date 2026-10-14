@@ -16,14 +16,17 @@ public static class Blocks
     static HtmlString H(string s) => new(s);
     static string Src(TaskSource s) => Labels.Of(s);
 
-    /// <summary>taskRow(t). showEmployee: thêm tên NV ở dòng phụ (dùng ở Theo dõi → theo dự án). tail: HTML thêm vào cột giờ (vd nút xóa).</summary>
+    /// <summary>taskRow(t). showEmployee: thêm tên NV ở dòng phụ (dùng ở Theo dõi → theo dự án). tail: HTML thêm vào cột giờ (vd nút xóa).
+    /// Luôn có dòng "Leader dự án: …" (yêu cầu 2026-10-14) — hiện ở lịch của NV, lịch nhóm của Leader, Theo dõi, Báo cáo.</summary>
     public static IHtmlContent TaskRow(this Dept d, WorkTask t, bool showEmployee = false, string? tail = null)
     {
         var st = t.Status;
         var ck = st == TaskState.Done ? "on" : st == TaskState.InProgress ? "half" : st == TaskState.Late ? "bad" : "";
         var src = Src(t.Source);
+        var lead = d.ProjectLead(t.ProjectId);
+        var leadLine = lead is null ? "<div class=\"s\">Leader dự án: chưa chọn</div>" : $"<div class=\"s\">Leader dự án: <b>{E(lead.Name)}</b></div>";
         return H($"<div class=\"trow\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
-            + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")} · {Labels.Of(st)}</div></div>"
+            + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")} · {Labels.Of(st)}</div>{leadLine}</div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span></div>");
     }
 

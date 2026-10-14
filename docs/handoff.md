@@ -9,7 +9,13 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - Chủ dự án xác nhận lại: commit + push thẳng `master`, không tự publish (chủ dự án chạy Publish trong Visual Studio), không dùng `fable` → đã ghi vào agents.md (quy tắc 4, 18, 20).
 - Tạo tài liệu hướng dẫn người không rành kỹ thuật làm tiếp dự án bằng Claude + Publish bằng Visual Studio:
   https://claude.ai/artifact/M28pntTwxHCwQQxZq4kygv (riêng tư, chủ dự án tự chia sẻ nếu cần).
-- Build + chạy thử trên http://localhost:5125 đạt; DB `db73445` chỉ có tài khoản admin.
+- Build + chạy thử trên http://localhost:5125 đạt.
+- Thêm 5 dự án vào DB thật (Dây truyền dây/Musashi, Máy kiểm tra tấm/Rozer, Băng tải 1/Kefico, Chiller/Chiyoda, Máy ép vòng bi/Valqua) —
+  "khách hàng" = ô Nhà máy của dự án.
+- **Nhân sự hỗ trợ / Leader dự án** (yêu cầu chủ dự án 2026-10-14): báo cáo cuối ngày của người chỉ Hỗ trợ dự án = Hoàn thành / Chưa hoàn thành +
+  vấn đề cần chú ý (không kế hoạch tiếp); Leader dự án báo cáo đầy đủ; mỗi dự án một Leader dự án; mọi dòng việc hiện "Leader dự án: …".
+  Chi tiết: `docs/nghiep-vu.md` §3.4. Đã thử trên DB thật bằng dữ liệu tạm (tài khoản `zz.*`, đã xóa sạch).
+  Quyết định tự đưa ra: việc không có phân công vẫn báo cáo đầy đủ; việc hỗ trợ chưa xong không tự chuyển tiếp (Leader dự án quyết định).
 
 ---
 
