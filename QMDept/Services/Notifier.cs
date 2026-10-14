@@ -49,6 +49,7 @@ public static class NotifyCatalog
         new(NotifyType.ReportDecided, "Kết quả duyệt báo cáo", "Báo cáo cuối ngày của bạn được duyệt / yêu cầu bổ sung", [Role.Staff]),
         new(NotifyType.ExtraDecided, "Kết quả phát sinh", "Phát sinh của bạn được duyệt / từ chối, Leader thêm phát sinh cho bạn", [Role.Staff]),
         new(NotifyType.CarryOver, "Kế hoạch chuyển tiếp", "Việc chuyển tiếp của bạn được duyệt / chỉnh / hoàn tác", [Role.Staff]),
+        new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
         new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff]),
         new(NotifyType.LeaveMarked, "Báo nghỉ", "Leader ghi nghỉ / bỏ nghỉ cho bạn", [Role.Staff]),
         new(NotifyType.OvertimeDecided, "Kết quả làm thêm", "Đăng ký làm thêm của bạn được duyệt / từ chối / hoàn tác", [Role.Staff, Role.Leader]),
@@ -152,6 +153,11 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     /// <summary>Giao việc / thêm / xóa việc trong lịch (what: "Bạn được giao việc", "Việc mới trong lịch", "Việc bị xóa khỏi lịch") → NV.</summary>
     public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc") =>
         await SendAsync(emps.Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", $"{title} · bởi {Actor}", Q("/Staff/Month", d));
+
+    /// <summary>Được chọn / không còn là Leader dự án → NV (người nhận thấy dự án ở "Thông tin dự án").</summary>
+    public async Task ProjectLeadAsync(int emp, string project, bool chosen) =>
+        await SendAsync([emp], NotifyType.ProjectLead, chosen ? $"Bạn được chọn làm Leader dự án {project}" : $"Bạn không còn là Leader dự án {project}",
+            $"bởi {Actor}", "/Staff/Projects?as=me");
 
     /// <summary>Leader ghi nghỉ / bỏ nghỉ → NV.</summary>
     public async Task LeaveMarkedAsync(int emp, DateOnly d, bool on, string? reason = null) =>

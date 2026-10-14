@@ -196,4 +196,5 @@ public enum NotifyType
     LeaderReportSent,    // Leader gửi báo cáo ngày → TP
     OvertimeCancelled,   // người đăng ký hủy đăng ký làm thêm → Leader (của NV) / TP (của Leader)
     CarryProposed,       // NV đề xuất / sửa việc chuyển tiếp sau khi báo cáo cuối ngày đã được duyệt → Leader nhóm
+    ProjectLead,         // được chọn / không còn là Leader dự án → NV
 }

@@ -17,6 +17,8 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Chi tiết: `docs/nghiep-vu.md` §3.4. Đã thử trên DB thật bằng dữ liệu tạm (tài khoản `zz.*`, đã xóa sạch).
   Bổ sung cùng ngày: Leader xem NV chỉ thấy lịch tháng của NV (các trang khác chuyển về `/Staff/Month?as=`); lịch nhóm chỉ hiện "Leader dự án"
   ở dòng của người được chọn làm Leader dự án (`TaskRow(leadOnly: true)`).
+  Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
+  có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   NV → Thông tin dự án chỉ hiện dự án mình là Leader dự án (`StaffController.Calendar.cs`, `Projects`).
   Quyết định tự đưa ra: việc không có phân công vẫn báo cáo đầy đủ; việc hỗ trợ chưa xong không tự chuyển tiếp (Leader dự án quyết định).
 

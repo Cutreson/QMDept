@@ -287,6 +287,46 @@ public partial class PlanningController
         await Db.SaveChangesAsync();
     }, "Đã xóa");
 
+    // ======================= Leader dự án (yêu cầu 2026-10-14) =======================
+
+    /// <summary>GET /Planning/ProjectLeads — chọn người làm Leader dự án cho từng dự án đang triển khai (NV chỉ thấy dự án mình là Leader dự án).</summary>
+    [HttpGet]
+    public async Task<IActionResult> ProjectLeads()
+    {
+        await D.EnsureAsync(Date, Date);
+        ViewData["Title"] = "Leader dự án";
+        return View(new PlanningLeadsVm { Projects = D.ActivePj(), Staff = D.Staff() });
+    }
+
+    /// <summary>POST: chọn (hoặc bỏ chọn khi emp trống) Leader dự án của một dự án. Mỗi dự án một Leader dự án; người cũ về "Hỗ trợ".</summary>
+    [HttpPost]
+    public Task<IActionResult> SetProjectLead(int projectId, int? emp) => Do(async () =>
+    {
+        RequireLead();
+        await D.EnsureAsync(Date, Date);
+        var pj = await Db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
+        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không đổi Leader dự án được");
+        var olds = await Db.Assignments.Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead).ToListAsync();
+        if (emp is int e)
+        {
+            await RequireInScopeAsync(e);
+            var who = PlanningManage.RequireStaff(D, e);
+            if (olds.Any(a => a.EmployeeId == e)) { Toast($"{who.Name} đang là Leader dự án {pj.Name}"); return; }
+            await Flow.UpsertAssignmentAsync(projectId, e, ProjectRole.Lead, Scope.ActorName, keepNote: true);
+            await Db.SaveChangesAsync();
+            await Notify.ProjectLeadAsync(e, pj.Name, chosen: true);
+            foreach (var o in olds) await Notify.ProjectLeadAsync(o.EmployeeId, pj.Name, chosen: false);
+            Toast($"Đã chọn {who.Name} làm Leader dự án {pj.Name}");
+        }
+        else
+        {
+            foreach (var o in olds) { o.Role = ProjectRole.Support; o.By = Scope.ActorName; o.At = VnTime.UtcNow; }
+            await Db.SaveChangesAsync();
+            foreach (var o in olds) await Notify.ProjectLeadAsync(o.EmployeeId, pj.Name, chosen: false);
+            Toast($"Đã bỏ chọn Leader dự án {pj.Name}");
+        }
+    });
+
     // ======================= Phân công (ldAssign) =======================
 
     /// <summary>GET /Planning/Assign — giao việc 1 NV, việc đã giao gần đây, phân công theo NV / theo dự án.</summary>

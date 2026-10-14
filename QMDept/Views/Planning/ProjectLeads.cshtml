@@ -1,0 +1,48 @@
+@model PlanningLeadsVm
+@* Chọn Leader dự án cho từng dự án đang triển khai. Dự án đã có Leader dự án mới hiện ở "Thông tin dự án" của người đó. *@
+@{
+    var req = Context.Request;
+}
+@if (Scope.Role == Role.Manager)
+{
+    @Ui.Head(0, "Leader dự án")
+}
+else
+{
+    <partial name="_PlanningTabs" model="@("leads")" />
+}
+@if (Model.Projects.Count == 0)
+{
+    <div class="empty">Chưa có dự án đang triển khai.</div>
+    return;
+}
+@if (Model.Staff.Count == 0)
+{
+    <div class="empty">Chưa có nhân viên để chọn.</div>
+    return;
+}
+@foreach (var p in Model.Projects)
+{
+    var lead = D.ProjectLead(p.Id);
+    <form class="card sec" method="post" action="/Planning/SetProjectLead" asp-antiforgery="true">
+        @Ui.ReturnField(req)
+        <input type="hidden" name="projectId" value="@p.Id">
+        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.Place(p)</div></div>
+            <span class="note" style="margin-left:auto">@(lead is null ? "Chưa chọn Leader dự án" : "Leader dự án: " + lead.Name)</span></div>
+        <label class="f" for="pl@(p.Id)">Leader dự án</label>
+        <div class="row" style="gap:8px">
+            <select class="in" id="pl@(p.Id)" name="emp" style="flex:1;min-width:0">
+                <option value="" selected="@(lead is null)">— Chưa chọn —</option>
+                @foreach (var s in Model.Staff)
+                {
+                    <option value="@s.Id" selected="@(lead?.Id == s.Id)">@s.Name@(s.Level is Level lv ? " · " + Labels.Of(lv) : "")</option>
+                }
+                @if (lead is not null && Model.Staff.All(s => s.Id != lead.Id))
+                {
+                    <option value="" disabled>Hiện tại: @lead.Name (ngoài nhóm)</option>
+                }
+            </select>
+            <button class="btn btn-primary">Lưu</button>
+        </div>
+    </form>
+}

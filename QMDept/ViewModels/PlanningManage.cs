@@ -40,6 +40,13 @@ public sealed class PlanningPeopleVm
     public Person? Leader { get; init; }
 }
 
+/// <summary>Chọn Leader dự án: dự án đang triển khai + NV trong phạm vi (nhóm của Leader / mọi NV với TP).</summary>
+public sealed class PlanningLeadsVm
+{
+    public required List<Project> Projects { get; init; }
+    public required List<Person> Staff { get; init; }
+}
+
 /// <summary>ldAssign: phân công.</summary>
 public sealed class PlanningAssignVm
 {

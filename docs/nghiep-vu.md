@@ -147,6 +147,9 @@ Form gồm:
      thêm đầu mục (tên, bắt đầu, kết thúc).
    - *Nhân sự* (`ldPeople`): Leader → nhóm mình, nút Báo nghỉ/Bỏ nghỉ (lý do) theo ngày, bấm tên NV → xem lịch tháng;
      TP → mọi tài khoản + **Sửa** (họ tên, mã, vai trò, nhóm, cấp bậc, đặt lại mật khẩu, xóa) + **Tạo tài khoản**.
+   - *Leader dự án* (`/Planning/ProjectLeads` — bổ sung 2026-10-14): mỗi dự án đang triển khai có một ô chọn NV trong nhóm làm Leader
+     dự án (hoặc "Chưa chọn"). Dự án có Leader dự án mới hiện ở "Thông tin dự án" của người đó (NV chỉ thấy dự án mình làm Leader dự án);
+     người cũ về "Hỗ trợ"; cả hai nhận thông báo. TP / Quản trị: nút "Chọn Leader dự án" ở trang Dự án (chọn trong mọi NV).
    - *Phân công* (`ldAssign` — trong artifact không có tab, bản này thêm tab con): giao việc 1 NV, việc đã giao 7 ngày
      qua (xóa), phân công theo NV (bỏ giao), theo dự án.
 3. **Theo dõi** (`ldTrack`): theo nhân viên (lọc dự án; tiến độ x/y; trạng thái kế hoạch; vướng mắc; mở xem việc) /
@@ -258,6 +261,7 @@ Form gồm:
 | Kết quả làm thêm | duyệt / từ chối / hoàn tác | người đăng ký |
 | Hủy đăng ký làm thêm | NV / Leader hủy đăng ký (kể cả đã duyệt) | Leader nhóm / mọi TP |
 | Đề xuất chuyển tiếp mới | NV đề xuất / sửa việc chuyển tiếp khi báo cáo cuối ngày đã được duyệt | Leader nhóm |
+| Leader dự án | được chọn / không còn là Leader dự án | NV |
 | Báo cáo ngày của Leader | Leader gửi / gửi lại báo cáo ngày | mọi TP |
 
 Người tự thao tác không nhận thông báo của chính mình. Link trong thông báo kèm `as=me` để luôn mở màn hình của chính người nhận.
