@@ -33,6 +33,14 @@
     <button class="btn btn-primary btn-block" style="margin-top:14px">Lưu cài đặt</button>
 </form>
 
+<form method="post" action="/Settings/ChangePassword?as=me" asp-antiforgery="true" class="card sec">
+    <h2>Đổi mật khẩu</h2>
+    <label class="f" for="cpCur" style="margin-top:0">Mật khẩu hiện tại</label><input class="in" type="password" id="cpCur" name="current" autocomplete="current-password" required>
+    <label class="f" for="cpNew">Mật khẩu mới</label><input class="in" type="password" id="cpNew" name="password" autocomplete="new-password" minlength="4" required>
+    <label class="f" for="cpCfm">Nhập lại mật khẩu mới</label><input class="in" type="password" id="cpCfm" name="confirm" autocomplete="new-password" minlength="4" required>
+    <button class="btn btn-primary btn-block" style="margin-top:12px">Đổi mật khẩu</button>
+</form>
+
 <section class="card sec">
     <h2>Thông báo của hệ điều hành</h2>
     <div class="row" style="flex-wrap:wrap">

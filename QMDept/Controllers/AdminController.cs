@@ -45,6 +45,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
     {
         var name = (x.Name ?? "").Trim();
         var code = AccountRules.NormalizeCode(x.Code);
+        if (code.Length == 0 && p.Id == 0) code = AccountRules.SuggestCode(name); // tạo mới để trống mã → theo quy tắc tên + chữ cái đầu họ đệm
         if (name.Length == 0 || code.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
         if (name.Length > 100) throw new BizException("Họ tên tối đa 100 ký tự");
         if (!Enum.IsDefined(x.Role)) throw new BizException("Chọn vai trò");
@@ -76,6 +77,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         var p = new Person { CreatedAt = VnTime.UtcNow, SortOrder = await Db.People.CountAsync() + 1 };
         await ApplyAsync(p, x);
         if (!string.IsNullOrEmpty(x.Password)) { AccountRules.ValidatePassword(x.Password); AccountRules.SetPassword(p, x.Password, hasher); }
+        else AccountRules.SetPassword(p, AccountRules.DefaultPassword, hasher); // không nhập → mật khẩu mặc định
         Db.People.Add(p);
         await Db.SaveChangesAsync();
         Toast("Đã tạo tài khoản " + p.Code);
@@ -105,10 +107,8 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
         var p = await Db.People.FirstOrDefaultAsync(q => q.Id == id && !q.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
         if (clear)
         {
-            // Không để tài khoản có quyền cao ở trạng thái "chưa có mật khẩu" (ai đăng nhập trước sẽ đặt mật khẩu và chiếm quyền).
-            if (p.Id == Scope.Account.Id || p.Role is Role.Admin or Role.Manager)
-                throw new BizException("Không xóa mật khẩu của chính mình / Quản trị / Trưởng phòng — hãy đặt mật khẩu mới");
-            AccountRules.SetPassword(p, null, hasher);
+            if (p.Id == Scope.Account.Id) throw new BizException("Không đặt lại mật khẩu của chính mình ở đây — đổi ở trang Cài đặt");
+            AccountRules.SetPassword(p, AccountRules.DefaultPassword, hasher);
         }
         else
         {
@@ -117,7 +117,7 @@ public class AdminController(IPasswordHasher<Person> hasher) : AppController
             AccountRules.SetPassword(p, password, hasher);
         }
         await Db.SaveChangesAsync();
-        Toast(clear ? $"Đã xóa mật khẩu của {p.Code} — người dùng tự đặt ở lần đăng nhập tới" : "Đã đặt mật khẩu cho " + p.Code);
+        Toast(clear ? $"Đã đặt lại mật khẩu của {p.Code} về mặc định ({AccountRules.DefaultPassword})" : "Đã đặt mật khẩu cho " + p.Code);
     });
 
     [HttpPost]

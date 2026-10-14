@@ -16,7 +16,25 @@ public static class AccountRules
     public const int MinPassword = 4;
     public const int MaxCode = 20;
 
+    /// <summary>Mật khẩu mặc định của tài khoản mới / sau khi đặt lại (yêu cầu chủ dự án 2026-10-14). Người dùng tự đổi ở trang Cài đặt.</summary>
+    public const string DefaultPassword = "Test@123";
+
     public static string NormalizeCode(string? code) => (code ?? "").Trim().ToLowerInvariant();
+
+    /// <summary>Gợi ý mã theo quy tắc: tên + chữ cái đầu họ và đệm, không dấu, chữ thường — "Nguyễn Văn Huề" → "hue.nv" (một từ → chỉ tên).</summary>
+    public static string SuggestCode(string? fullName)
+    {
+        static string Plain(string w)
+        {
+            var d = w.Normalize(System.Text.NormalizationForm.FormD).Replace("đ", "d").Replace("Đ", "D");
+            return new string(d.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark
+                && char.IsAsciiLetterOrDigit(c)).ToArray()).ToLowerInvariant();
+        }
+        var words = (fullName ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Plain).Where(w => w.Length > 0).ToList();
+        if (words.Count == 0) return "";
+        var given = words[^1];
+        return words.Count == 1 ? given : given + "." + string.Concat(words.Take(words.Count - 1).Select(w => w[0]));
+    }
 
     /// <summary>Kiểm tra mã: bắt buộc, ≤ 20 ký tự, không trùng (kể cả tài khoản đã xóa — DB có unique index).</summary>
     public static async Task ValidateCodeAsync(AppDbContext db, string code, int? exceptId = null)

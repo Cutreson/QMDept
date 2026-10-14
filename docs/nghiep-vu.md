@@ -217,6 +217,9 @@ Form gồm:
 - Nhu cầu nhân sự (Leader → Kế hoạch ngày mai) chỉ nhận dự án đang triển khai.
 - Việc ngoài kế hoạch thêm khi NV đang "Sửa kế hoạch và gửi lại" (kế hoạch đã gửi, chưa duyệt) chỉ được chọn khi NV gửi lại kế hoạch có tích việc đó
   (artifact: luôn chọn ngay) — để Leader duyệt đúng danh sách việc. Chưa gửi lại mà Leader đã duyệt thì việc đó không vào báo cáo cuối ngày.
+- Tài khoản & mật khẩu (yêu cầu 2026-10-14): mã = tên + chữ cái đầu họ và đệm, không dấu, chữ thường (Nguyễn Văn Huề → `hue.nv`);
+  mật khẩu mặc định của tài khoản mới / sau khi đặt lại = `Test@123` (artifact: để trống, đặt ở lần đăng nhập đầu); người dùng tự đổi mật khẩu ở
+  trang Cài đặt (artifact: chỉ TP đặt lại).
 - Tài khoản TP chỉ Quản trị sửa / hạ vai trò / đặt lại mật khẩu / xóa được (TP ở Nhân sự chỉ sửa tên chính mình) — chặn TP chiếm tài khoản TP khác.
 
 ## 10. Thông báo đẩy (bổ sung — yêu cầu 2026-10-13)

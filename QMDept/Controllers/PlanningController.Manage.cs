@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QMDept.Data;
@@ -198,7 +199,9 @@ public partial class PlanningController
         Toast("Đã ghi nghỉ");
     });
 
-    /// <summary>POST personForm (chỉ TP): tạo tài khoản mới (chưa có mật khẩu).</summary>
+    IPasswordHasher<Person> Hasher => HttpContext.RequestServices.GetRequiredService<IPasswordHasher<Person>>();
+
+    /// <summary>POST personForm (chỉ TP): tạo tài khoản mới (mật khẩu mặc định).</summary>
     [HttpPost]
     public Task<IActionResult> CreateAccount(string? name, string? code, string? role, int? leaderId, string? level) => Do(async () =>
     {
@@ -206,6 +209,7 @@ public partial class PlanningController
         // Mã lưu chữ thường theo quy tắc chủ dự án (AccountRules.NormalizeCode; artifact dùng chữ HOA) — docs/nghiep-vu.md §1.
         var n = PlanningManage.Text(name, 100, "Họ tên");
         var c = AccountRules.NormalizeCode(code);
+        if (c.Length == 0) c = AccountRules.SuggestCode(n); // để trống → theo quy tắc tên + chữ cái đầu họ đệm
         if (n is null || c.Length == 0) throw new BizException("Nhập họ tên và mã nhân viên");
         await AccountRules.ValidateCodeAsync(Db, c);
         var r = PlanningManage.ParseEnum(role, PlanningManage.Roles) ?? throw new BizException("Chọn vai trò");
@@ -219,14 +223,16 @@ public partial class PlanningController
                 throw new BizException("Không tìm thấy Leader của nhóm");
             lid = leaderId; lvl = PlanningManage.ParseEnum<Level>(level);
         }
-        Db.People.Add(new Person
+        var np = new Person
         {
             Name = n, Code = c, Role = r, LeaderId = lid, Level = lvl, SortOrder = await Db.People.CountAsync() + 1,
             CreatedAt = VnTime.UtcNow,
-        });
+        };
+        AccountRules.SetPassword(np, AccountRules.DefaultPassword, Hasher);
+        Db.People.Add(np);
         try { await Db.SaveChangesAsync(); }
         catch (DbUpdateException) { throw new BizException("Mã nhân viên đã tồn tại"); }
-        Toast("Đã tạo tài khoản " + c);
+        Toast($"Đã tạo tài khoản {c} — mật khẩu mặc định {AccountRules.DefaultPassword}");
     });
 
     /// <summary>POST openPerson (chỉ TP): sửa họ tên, mã, vai trò, nhóm, cấp bậc; đặt lại mật khẩu.</summary>
@@ -256,7 +262,7 @@ public partial class PlanningController
         if (r == Role.Manager && (resetPassword || codeChanged || p.PasswordHash is null))
             throw new BizException("Không xóa mật khẩu / đổi mã của tài khoản Trưởng phòng ở đây — nhờ Quản trị đặt mật khẩu");
         var wasLeader = p.Role == Role.Leader;
-        if (resetPassword || codeChanged) p.PasswordHash = null;
+        if (resetPassword || codeChanged) AccountRules.SetPassword(p, AccountRules.DefaultPassword, Hasher); // về mật khẩu mặc định
         if (resetPassword || codeChanged || roleChanged) p.SecurityStamp = AccountRules.NewStamp();
         p.Name = n; p.Code = c; p.Role = r; p.LeaderId = lid; p.Level = lvl;
         // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm" (như AdminController.Edit).

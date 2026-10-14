@@ -101,7 +101,7 @@ else
     @Ui.ReturnField(req)
     <div class="grid2">
         <div><label class="f" for="npN" style="margin-top:0">Họ tên</label><input class="in" id="npN" name="name" maxlength="100" required></div>
-        <div><label class="f" for="npC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="npC" name="code" maxlength="@AccountRules.MaxCode" autocapitalize="none" required></div>
+        <div><label class="f" for="npC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="npC" name="code" maxlength="@AccountRules.MaxCode" autocapitalize="none"></div>
         <div><label class="f" for="npR">Vai trò</label>@Ui.Select("role", PlanningManage.Roles.Select(r => (r.ToString(), Labels.Title(r))), Role.Staff.ToString(), id: "npR")</div>
         <div><label class="f" for="npL">Nhóm (với nhân viên)</label><select class="in" id="npL" name="leaderId"><option value="">— Chưa xếp nhóm —</option>
             @foreach (var x in leaders)

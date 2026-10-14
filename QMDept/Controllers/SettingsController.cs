@@ -1,3 +1,7 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QMDept.Data;
@@ -12,7 +16,7 @@ namespace QMDept.Controllers;
 /// Link luôn kèm ?as=me để trang luôn là của chính mình (không bị chặn khi đang xem màn hình cấp dưới).
 /// </summary>
 [AnyUiRole]
-public class SettingsController : AppController
+public class SettingsController(IPasswordHasher<Person> hasher) : AppController
 {
     public sealed class SettingsVm
     {
@@ -33,6 +37,26 @@ public class SettingsController : AppController
                 .Select(i => (i, s is null || !s.DisabledTypes.Split(',').Contains(i.Type.ToString()))).ToList(),
         });
     }
+
+    /// <summary>Tự đổi mật khẩu: kiểm tra mật khẩu hiện tại; đổi SecurityStamp (đăng xuất các phiên khác) rồi đăng nhập lại phiên này.</summary>
+    [HttpPost]
+    public Task<IActionResult> ChangePassword(string? current, string? password, string? confirm) => Do(async () =>
+    {
+        var p = await Db.People.FirstOrDefaultAsync(x => x.Id == Scope.Account.Id && !x.IsDeleted) ?? throw new BizException("Không tìm thấy tài khoản");
+        if (string.IsNullOrEmpty(p.PasswordHash) || hasher.VerifyHashedPassword(p, p.PasswordHash, current ?? "") == PasswordVerificationResult.Failed)
+            throw new BizException("Mật khẩu hiện tại không đúng");
+        AccountRules.ValidatePassword(password);
+        if (password != confirm) throw new BizException("Mật khẩu nhập lại không khớp");
+        AccountRules.SetPassword(p, password, hasher);
+        await Db.SaveChangesAsync();
+        var id = new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, p.Id.ToString()), new Claim(ClaimTypes.Name, p.Name),
+            new Claim(ClaimTypes.Role, p.Role.ToString()), new Claim(ScopeResolver.StampClaim, p.SecurityStamp),
+        ], CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(id),
+            new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30) });
+    }, "Đã đổi mật khẩu", "/Settings?as=me");
 
     /// <summary>Lưu: enabled + danh sách loại được chọn (types). Loại không hiện cho vai trò này giữ nguyên.</summary>
     [HttpPost]

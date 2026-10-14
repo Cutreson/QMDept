@@ -102,7 +102,7 @@
     <h2>Tạo tài khoản</h2>
     <div class="grid2">
         <div><label class="f" for="nN" style="margin-top:0">Họ tên</label><input class="in" id="nN" name="name" maxlength="100" required></div>
-        <div><label class="f" for="nC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="nC" name="code" autocapitalize="none" maxlength="@AccountRules.MaxCode" required></div>
+        <div><label class="f" for="nC" style="margin-top:0">Mã nhân viên</label><input class="in mono" id="nC" name="code" autocapitalize="none" maxlength="@AccountRules.MaxCode"></div>
         <div><label class="f" for="nR">Vai trò</label>@Ui.Select("role", RoleOpts(), Role.Staff.ToString(), id: "nR")</div>
         <div><label class="f" for="nL">Nhóm (với nhân viên)</label>@Ui.Select("leaderId", LeaderOpts(), "", id: "nL")</div>
         <div><label class="f" for="nV">Cấp bậc (với nhân viên)</label>@Ui.Select("level", LevelOpts(), "", id: "nV")</div>

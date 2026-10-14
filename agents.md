@@ -59,6 +59,9 @@
     Ghi các quyết định đã tự đưa ra vào `docs/handoff.md`.
 18. **Không dùng model `fable`** (yêu cầu 2026-10-14): subagent / workflow chỉ dùng `sonnet` (hoặc model mặc định của phiên);
     `opus` hiện không truy cập được. Tiết kiệm hạn mức: E2E chạy tuần tự, ưu tiên ít agent.
+19. **Tài khoản & mật khẩu** (yêu cầu 2026-10-14): mã tài khoản theo quy tắc **tên + chữ cái đầu họ và đệm, không dấu, chữ thường**:
+    Nguyễn Văn Huề → `hue.nv` (đ → d; chỉ một từ → chỉ tên). **Mật khẩu mặc định của tài khoản mới / sau khi đặt lại: `Test@123`**.
+    Người dùng **tự đổi được mật khẩu** của mình (trang Cài đặt). Tài khoản thử hiện có: `admin` / `Admin@123`, các tài khoản còn lại `Test@123`.
 
 ## 2. Tổng quan kỹ thuật
 
