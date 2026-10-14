@@ -90,7 +90,7 @@ public static class Blocks
     /// <summary>stepList(it): danh sách đầu mục theo giai đoạn.</summary>
     public static IHtmlContent StepList(this Dept d, List<PlanItem> it)
     {
-        if (it.Count == 0) return H("<p class=\"note\">Chưa có đầu mục công việc. Leader thêm ở Kế hoạch &amp; duyệt → Dự án &amp; đầu mục.</p>");
+        if (it.Count == 0) return H("<p class=\"note\">Chưa có đầu mục công việc.</p>");
         var today = d.Scope.Date;
         var sb = new StringBuilder("<ol class=\"steps\">");
         for (int k = 0; k < it.Count; k++)
@@ -135,7 +135,7 @@ public static class Blocks
     public static IHtmlContent PjTable(this Dept d, DateOnly date)
     {
         var ps = d.TableProjects();
-        if (ps.Count == 0) return H($"<p class=\"note\">{(d.Scope.Role == Role.Leader ? "Nhóm chưa được giao dự án nào. Giao ở Lịch nhân viên → Tất cả nhân viên." : "Chưa có dự án.")}</p>");
+        if (ps.Count == 0) return H($"<p class=\"note\">{(d.Scope.Role == Role.Leader ? "Nhóm chưa được giao dự án nào." : "Chưa có dự án.")}</p>");
         var sb = new StringBuilder("<div class=\"tbl-wrap\"><table><thead><tr><th>Dự án</th><th class=\"n\">Tiến độ</th><th class=\"n\">Nhân sự KH/TT</th><th>Trạng thái</th></tr></thead><tbody>");
         foreach (var p in ps)
         {

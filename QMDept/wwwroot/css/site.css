@@ -105,6 +105,7 @@ label.f{display:block;font-size:12.5px;font-weight:600;margin:10px 0 5px}
 textarea.in{min-height:64px;resize:vertical}
 .row{display:flex;gap:8px;align-items:center}
 .row>*{min-width:0}
+.row>.note{flex:none}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pick2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px}
 .pick2 select.in{min-height:42px;font-weight:600}
@@ -115,7 +116,7 @@ select.in option{color:var(--fg);background:var(--surface);font-weight:500}
 @media (max-width:360px){ .pick2{grid-template-columns:1fr} }
 .pick2.eq{grid-template-columns:1fr 1fr}
 .segr.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.mgrid .mg-sub{font-size:9.5px;color:var(--muted);line-height:1;white-space:nowrap}
+.mgrid .mg-sub{font-size:9.5px;color:var(--muted);line-height:1.15;white-space:normal;overflow-wrap:anywhere}
 .tm-wrap{overflow-x:auto;margin:0 -14px;padding:0 14px 4px}
 table.tm{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:12px}
 table.tm th,table.tm td{padding:0;border-top:1px solid var(--line);text-align:center;background:var(--surface)}
@@ -407,6 +408,8 @@ body.readonly #app button[form]{display:none!important}
 body.readonly #app form[method="post" i]:not(.ro-ok) .segr,
 body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none;opacity:.75}
 .top-grid>.viewas .in{max-width:min(340px,100%)}
+.top-grid>.viewas>.note,.top-grid>.viewas>.btn{flex:none}
+.top-grid>.viewas .in{flex:1 1 0;min-width:0;width:auto}
 
 /* ================= Thông báo đẩy (SignalR) ================= */
 .notifs{position:fixed;top:calc(var(--hdr-h,64px) + 8px);right:12px;z-index:70;display:grid;gap:8px;width:min(360px,calc(100% - 24px));pointer-events:none}

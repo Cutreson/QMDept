@@ -4,6 +4,35 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
+## Phiên 3 — 2026-10-14 (Claude Code, Sonnet 5.5) — dựng lại DB mới + sửa lỗi khởi động
+
+### Đã làm
+- Chủ dự án đổi sang DB mới **db73445** (MariaDB 10.11.15, trống). App tự `Migrate()` → 16 bảng + `__EFMigrationsHistory` (InitialCreate + EnglishNames).
+  Tạo lại 5 tài khoản chính (tp qua Bootstrap; tp.leader1, nv1, nv2, admin qua SQL + đặt mật khẩu ở lần đăng nhập đầu) — mật khẩu ở
+  `docs/tai-khoan.local.md` (local, gitignore).
+- **Lỗi khởi động đã sửa**: DI deadlock (`AddDbContextFactory` → `DataCacheInterceptor` → `DataCache` → `IDbContextFactory`): app treo, không log, không
+  kết nối DB. `DataCacheInterceptor` nay lấy `DataCache` chậm qua `IServiceProvider`. (Code DataCache của phiên 1 trước đó chưa từng chạy thật.)
+- Smoke test (`tools/smoke.sh`) 5 tài khoản × ~65 trang: đạt. Hiệu năng: trang đã cache ~5–20 ms, nạp mới ~0,7–1,7 s (trước ~10 s).
+  Còn 4 trang ~0,8–1 s ở lần lặp: Manager/Overview, Leader/Reports, Manager/Reports, Overtime?tab=summary — chưa tìm nguyên nhân.
+- Rà soát code bằng agent (5 reviewer + verifier) — đã sửa: TP không sửa / hạ vai trò / đặt lại mật khẩu / xóa tài khoản TP khác
+  (`PlanningController.Manage.cs`); `Dept.InScope` loại tài khoản đã xóa với mọi vai trò (quy tắc 15); bỏ câu hướng dẫn trái quy tắc 14
+  (Blocks.cs, Week/Assign.cshtml); CSS 375px (nhãn "Xem màn hình", "Trạng thái", nhãn phụ lịch nhóm).
+- Ghi khác biệt chủ ý vào nghiep-vu.md §9 (việc ngoài KH khi sửa kế hoạch; tài khoản TP chỉ Quản trị sửa).
+- Thêm `tools/e2e-lib.mjs`; quy tắc 18 (không dùng model fable); ghi cách chạy app trên máy dev Windows vào AGENTS.md §3.
+
+### Chưa làm / việc tiếp theo
+1. **Dọn dữ liệu test** trên DB mới: còn dự án `[E2E3-carry] …` (id 1–2), tài khoản `zz.e2e3.carry.l2` (id 6) và vài việc / kế hoạch / báo cáo / 1 phát sinh.
+   Lệnh `dotnet run tools/dbquery.cs tools/cleanup-test-data.sql` bị công cụ chặn trong phiên này — chủ dự án chạy tay hoặc cho phép.
+2. E2E 9 khu vực (carry, extras, pages, staff, overtime, access, notify, perf, ui) **chưa chạy** (chủ dự án chỉ cần test đơn giản).
+3. Phát hiện chưa xử lý: chuyển tiếp trên dự án đã bàn giao (verifier chia ý kiến); `DeleteTaskAsync` không giao dịch (không gây lỗi người dùng);
+   Bootstrap TOCTOU (mức thấp, giống artifact).
+4. Bản web trên qlcl.runasp.net cần publish lại với connection string mới.
+
+### Quyết định
+- Workflow chỉ dùng `sonnet` (`opus` 404; `fable` bị cấm). Test chỉ ở mức smoke theo yêu cầu chủ dự án.
+
+---
+
 ## Phiên 2 — 2026-10-13 khuya (Claude Code trên claude.ai, môi trường cloud) — rà soát code + sửa lỗi
 
 > Chủ dự án yêu cầu tự chủ hoàn toàn (agents.md §1 mục 17), làm trực tiếp trên `master`.

@@ -366,3 +366,4 @@ appsettings.Local.json
 **/App_Data/uploads/
 # Tài liệu chỉ để trên máy (mật khẩu thử…) — không commit
 *.local.md
+.playwright-mcp/

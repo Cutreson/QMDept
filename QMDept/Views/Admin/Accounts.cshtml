@@ -21,7 +21,7 @@
 <section class="card sec">
     <h2><span class="grow">Tài khoản (@shown.Count)</span></h2>
     <form method="get" class="row" style="margin-bottom:8px">
-        <label class="row" style="flex:1"><span class="note" style="white-space:nowrap">Trạng thái:</span>@Ui.Select("st", new[] { ("all", $"Tất cả ({all.Count})"), ("active", $"Đang hoạt động ({people.Count})"), ("deleted", $"Đã xóa ({all.Count - people.Count})") }, st, id: "accSt", extraAttrs: "data-autosubmit")</label>
+        <label class="row" style="flex:1"><span class="note" style="white-space:nowrap;flex:none">Trạng thái:</span>@Ui.Select("st", new[] { ("all", $"Tất cả ({all.Count})"), ("active", $"Đang hoạt động ({people.Count})"), ("deleted", $"Đã xóa ({all.Count - people.Count})") }, st, id: "accSt", extraAttrs: "data-autosubmit")</label>
     </form>
     @foreach (var p in shown)
     {

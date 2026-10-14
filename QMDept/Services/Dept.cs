@@ -114,8 +114,8 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// <summary>inScope(emp): ở giao diện Leader chỉ tính Leader đang xem và NV trong nhóm; giao diện khác: tất cả.</summary>
     /// Không có Leader nào đang được xem (MeId null) → không ai trong phạm vi; người đã xóa không còn trong phạm vi Leader
     /// (artifact: người bị xóa biến khỏi S.people nên inScope = false).
-    public bool InScope(int emp) => scope.Role != Role.Leader
-        || (scope.MeId is int id && (emp == id || (P(emp) is { IsDeleted: false } p && p.LeaderId == id)));
+    public bool InScope(int emp) => P(emp) is { IsDeleted: false } p0 && (scope.Role != Role.Leader
+        || (scope.MeId is int id && (emp == id || p0.LeaderId == id)));
     /// <summary>Leader (còn hoạt động, đúng vai trò Leader) của NV; null = "Chưa xếp nhóm".</summary>
     public Person? LeaderOf(Person a) => a.LeaderId is int l && P(l) is { IsDeleted: false, Role: Role.Leader } x ? x : null;
     /// <summary>"Nhóm X" / "Chưa xếp nhóm".</summary>
