@@ -29,6 +29,9 @@ Những điểm khác artifact được ghi rõ ở mục 9.
   thấy đúng các màn hình (đủ các tab) của người đó, **chỉ xem**, mọi thao tác bị chặn (cả phía server). Nút **"Lịch nhóm"**
   cạnh combobox (không nằm trong combobox) = lịch tháng cả nhóm của artifact (`nvMonth` all mode) với form **Giao thêm việc**
   (Leader / TP / Quản trị).
+  **Ngoại lệ (yêu cầu 2026-10-14): Leader chọn một NV chỉ thấy LỊCH THÁNG của NV đó** (không có báo cáo đầu / cuối ngày, thông tin dự án,
+  làm thêm; mở trang khác → chuyển về lịch tháng); Leader còn lại chỉ có lịch tháng cả nhóm. TP / Quản trị vẫn xem đủ màn hình.
+  Ở lịch tháng cả nhóm, việc nhiều người cùng làm chỉ hiện "Leader dự án: …" ở dòng của người được chọn làm Leader dự án (người hỗ trợ không hiện).
   Mỗi người chỉ thao tác trong giao diện của chính mình: TP không còn thao tác thay Leader trong giao diện Leader như artifact;
   TP có thêm tab **Nhân sự** (tài khoản, nhóm, cấp bậc, báo nghỉ — trước đây nằm trong giao diện Leader).
 - `inScope(emp)`: ở giao diện Leader chỉ tính Leader đang xem + NV trong nhóm; các giao diện khác: tất cả.

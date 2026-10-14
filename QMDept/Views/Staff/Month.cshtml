@@ -51,7 +51,7 @@ else
                 var leave = D.OnLeave(sel, p.Id);
                 var ot = D.OtOf(sel, p.Id) is { Status: not OtStatus.Rejected } o ? o : null;
                 <div class="tmd"><div class="tmd-h"><a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a> @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@t.Count việc@(ot is not null ? $" · Làm thêm {ot.Start}–{ot.End}" : "")</span></div>
-                    @foreach (var x in t) { @D.TaskRow(x) }
+                    @foreach (var x in t) { @D.TaskRow(x, leadOnly: true) }
                 </div>
             }
         </section>

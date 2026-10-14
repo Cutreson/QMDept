@@ -15,6 +15,8 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - **Nhân sự hỗ trợ / Leader dự án** (yêu cầu chủ dự án 2026-10-14): báo cáo cuối ngày của người chỉ Hỗ trợ dự án = Hoàn thành / Chưa hoàn thành +
   vấn đề cần chú ý (không kế hoạch tiếp); Leader dự án báo cáo đầy đủ; mỗi dự án một Leader dự án; mọi dòng việc hiện "Leader dự án: …".
   Chi tiết: `docs/nghiep-vu.md` §3.4. Đã thử trên DB thật bằng dữ liệu tạm (tài khoản `zz.*`, đã xóa sạch).
+  Bổ sung cùng ngày: Leader xem NV chỉ thấy lịch tháng của NV (các trang khác chuyển về `/Staff/Month?as=`); lịch nhóm chỉ hiện "Leader dự án"
+  ở dòng của người được chọn làm Leader dự án (`TaskRow(leadOnly: true)`).
   Quyết định tự đưa ra: việc không có phân công vẫn báo cáo đầy đủ; việc hỗ trợ chưa xong không tự chuyển tiếp (Leader dự án quyết định).
 
 ---

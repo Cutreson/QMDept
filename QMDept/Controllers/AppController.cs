@@ -64,6 +64,15 @@ public abstract class AppController : Controller
             ctx.Result = Redirect(ScopeResolver.HomeOf(Scope.Role));
             return;
         }
+        // Leader xem nhân viên trong nhóm: chỉ thấy LỊCH THÁNG của người đó (yêu cầu 2026-10-14), không thấy báo cáo / dự án / làm thêm.
+        // (TP / Quản trị xem cấp dưới vẫn thấy đủ màn hình — quy tắc 8.)
+        if (HttpMethods.IsGet(Request.Method) && Scope.IsViewingOther && Scope.Account.Role == Role.Leader
+            && !(ctx.RouteData.Values["controller"] is string sc && sc.Equals("Staff", StringComparison.OrdinalIgnoreCase)
+                 && ctx.RouteData.Values["action"] is string sa && sa.Equals("Month", StringComparison.OrdinalIgnoreCase)))
+        {
+            ctx.Result = Redirect($"/Staff/Month?as={Scope.MeId}" + (Date != Scope.Today ? "&d=" + Fmt.Key(Date) : ""));
+            return;
+        }
         // Lịch cả nhóm (?as=all): chỉ form "Giao thêm việc" được ghi.
         if (HttpMethods.IsPost(Request.Method) && Scope.AllStaff
             && !(ctx.RouteData.Values["controller"] is string c && c.Equals("Staff", StringComparison.OrdinalIgnoreCase)

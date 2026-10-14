@@ -27,6 +27,7 @@
 8. **Cấp trên xem màn hình cấp dưới — chỉ xem** (yêu cầu 2026-10-13): combobox "Xem màn hình" trên header cho phép
    Quản trị → TP/Leader/NV, TP → Leader/NV, Leader → NV trong nhóm xem đúng các màn hình của người đó, **không thao tác gì**
    (server chặn mọi POST — `AppController`). Mỗi người chỉ thao tác trong giao diện của chính mình. Xem `docs/kien-truc.md`.
+   **Riêng Leader xem NV chỉ thấy lịch tháng của NV đó** (yêu cầu 2026-10-14; `AppController` + `ChromeBuilder`).
    Combobox chỉ gồm "Màn hình của tôi" + cấp dưới; **lịch tháng cả nhóm không nằm trong combobox** mà là nút "Lịch nhóm" cạnh
    combobox (`?as=all`, `ChromeModel.TeamHref`) — yêu cầu 2026-10-13.
 9. **Quản trị (admin) cao hơn Trưởng phòng, bao trùm mọi chức năng TP** (yêu cầu 2026-10-13): Quản trị dùng toàn bộ giao diện
