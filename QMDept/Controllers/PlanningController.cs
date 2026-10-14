@@ -15,7 +15,9 @@ public partial class PlanningController : AppController
 {
     /// <summary>Nhân sự + thao tác tài khoản / báo nghỉ dùng chung cho giao diện Leader và TP (TP có tab "Nhân sự" riêng —
     /// mô hình xem màn hình cấp dưới không cho TP thao tác trong giao diện Leader như artifact).</summary>
-    static readonly HashSet<string> LeaderManagerActions = new(StringComparer.OrdinalIgnoreCase) { "People", "ToggleLeave", "CreateAccount", "EditAccount", "DeleteAccount" };
+    static readonly HashSet<string> LeaderManagerActions = new(StringComparer.OrdinalIgnoreCase) { "People", "ToggleLeave", "CreateAccount", "EditAccount", "DeleteAccount",
+        // TP / Quản trị tạo + sửa dự án và đầu mục (trang /Manager/Projects chỉ xem; nút "＋ Dự án mới" dẫn tới đây)
+        "Projects", "SaveProject", "AddItem", "SetItemStatus", "DeleteItem" };
 
     protected override Role[] UiRoles(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext ctx) =>
         LeaderManagerActions.Contains(ctx.RouteData.Values["action"]?.ToString() ?? "") ? [Role.Leader, Role.Manager] : [Role.Leader];

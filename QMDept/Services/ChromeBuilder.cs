@@ -99,7 +99,9 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         var tabs = defs.Any()
             ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : null),
-                !scope.AllStaff && string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)),
+                !scope.AllStaff && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+                    // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
+                    || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
                 scope.AllStaff ? 0 : Badge(t.Id))).ToList()
             : [];
 

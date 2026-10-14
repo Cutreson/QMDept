@@ -8,9 +8,20 @@
 {
     @Ui.Head(0, "Chi tiết dự án", "")
     <div class="empty">Chưa có dự án.</div>
+    @if (!Scope.IsViewingOther)
+    {
+        <a class="btn btn-primary btn-block" href="@Ui.To(req, "/Planning/Projects", ("pj", "new"))">＋ Dự án mới</a>
+    }
 }
 else
 {
+    @if (!Scope.IsViewingOther)
+    {
+        <div class="row" style="margin-top:14px;gap:8px">
+            <a class="btn btn-primary" href="@Ui.To(req, "/Planning/Projects", ("pj", "new"))">＋ Dự án mới</a>
+            <a class="btn" href="@Ui.To(req, "/Planning/Projects", ("pj", Model.Pid.ToString()))">Sửa dự án &amp; đầu mục</a>
+        </div>
+    }
     <div class="pchips" style="margin-top:14px">
         @foreach (var x in Model.Projects)
         {

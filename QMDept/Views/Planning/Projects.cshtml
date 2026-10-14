@@ -4,7 +4,14 @@
     var req = Context.Request;
     var p = Model.Project;
 }
-<partial name="_PlanningTabs" model="@("projects")" />
+@if (Scope.Role == Role.Manager)
+{
+    @Ui.Head(0, "Dự án & đầu mục")
+}
+else
+{
+    <partial name="_PlanningTabs" model="@("projects")" />
+}
 <div class="pchips">
     @foreach (var x in Model.Projects)
     {

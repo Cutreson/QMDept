@@ -28,7 +28,7 @@ Toàn bộ route, khóa query, giá trị query và tên field là tiếng Anh (
 | Leader | `/Leader/Reports` (`?tab=day\|week`) | `SetNeed`, `SubmitReport` | ldReport, weekReport | LeaderController | ✅ |
 | TP | `/Manager/Overview` | — | tpOverview | ManagerController, Views/Manager | ✅ |
 | TP | `/Manager/Approvals` (`?mode=plan\|extra`, `?f=pending\|approved\|rejected\|all`) | `Decide` | tpApprove | ManagerController | ✅ |
-| TP | `/Manager/Projects` (`?pj=&tab=overview\|plan\|people`) | — | tpProjects | ManagerController | ✅ |
+| TP | `/Manager/Projects` (`?pj=&tab=overview\|plan\|people`) + nút "＋ Dự án mới" / "Sửa dự án & đầu mục" → `/Planning/Projects` (`?pj=<id>|new`, dùng chung với Leader: POST `SaveProject`, `AddItem`, `SetItemStatus`, `DeleteItem`) | — | tpProjects | ManagerController | ✅ |
 | TP | `/Manager/Reports` (`?tab=day\|week`) | — | tpReports, weekReport | ManagerController | ✅ |
 
 Tab con của Leader → Kế hoạch & duyệt (partial `_PlanningTabs`, model = khóa tab): `approvals`, `reports`, `week`, `projects`,
