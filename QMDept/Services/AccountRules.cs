@@ -8,12 +8,12 @@ namespace QMDept.Services;
 /// Quy tắc tài khoản dùng chung (đăng nhập, TP quản lý nhân sự, Quản trị).
 /// - Mã nhân viên lưu chữ thường, bỏ khoảng trắng hai đầu (quy tắc đặt tên của chủ dự án: tp, tp.leader1, tp.leader1.nv1…);
 ///   so khớp không phân biệt hoa thường. (Artifact dùng chữ HOA — đã đổi theo yêu cầu chủ dự án.)
-/// - Mật khẩu tối thiểu 4 ký tự (như artifact). Băm PBKDF2 (PasswordHasher của ASP.NET Core Identity).
+/// - Mật khẩu tối thiểu 1 ký tự (chủ dự án yêu cầu 2026-10-14: tài khoản nhân viên dùng mật khẩu "1"; artifact: 4). Băm PBKDF2 (PasswordHasher của ASP.NET Core Identity).
 /// - Đổi mật khẩu / vai trò / mã ⇒ đổi SecurityStamp để đăng xuất các phiên cũ.
 /// </summary>
 public static class AccountRules
 {
-    public const int MinPassword = 4;
+    public const int MinPassword = 1;
     public const int MaxCode = 20;
 
     /// <summary>Mật khẩu mặc định của tài khoản mới / sau khi đặt lại (yêu cầu chủ dự án 2026-10-14). Người dùng tự đổi ở trang Cài đặt.</summary>

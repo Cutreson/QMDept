@@ -60,9 +60,10 @@
     Ghi các quyết định đã tự đưa ra vào `docs/handoff.md`.
 18. **Không dùng model `fable`** (yêu cầu 2026-10-14): subagent / workflow chỉ dùng `sonnet` (hoặc model mặc định của phiên);
     `opus` hiện không truy cập được. Tiết kiệm hạn mức: E2E chạy tuần tự, ưu tiên ít agent.
-19. **Tài khoản & mật khẩu** (yêu cầu 2026-10-14): mã tài khoản theo quy tắc **tên + chữ cái đầu họ và đệm, không dấu, chữ thường**:
-    Nguyễn Văn Huề → `hue.nv` (đ → d; chỉ một từ → chỉ tên). **Mật khẩu mặc định của tài khoản mới / sau khi đặt lại: `Test@123`**.
-    Người dùng **tự đổi được mật khẩu** của mình (trang Cài đặt). Tài khoản thử hiện có: `admin` / `Admin@123`, các tài khoản còn lại `Test@123`.
+19. **Tài khoản & mật khẩu** (yêu cầu 2026-10-14): **mã tài khoản nhân viên = mã nhân viên của phòng** (vd. `00171`, danh sách chuẩn ở `docs/nhan-su.md`);
+    mã gợi ý theo tên (Nguyễn Văn Huề → `hue.nv`) chỉ dùng khi chưa có mã nhân viên. **Mật khẩu của 10 tài khoản nhân sự chuẩn: `1`** (chủ dự án yêu cầu,
+    nên mật khẩu tối thiểu chỉ 1 ký tự — `AccountRules.MinPassword`); mật khẩu mặc định của tài khoản mới / sau khi đặt lại vẫn `Test@123`.
+    Người dùng **tự đổi được mật khẩu** của mình (trang Cài đặt). Tài khoản quản trị: `admin` / `Admin@123`.
 20. **Publish web do chủ dự án làm** (yêu cầu 2026-10-14): AI không tự publish / deploy. Khi cần đưa bản mới lên web
     (qlcl.runasp.net), nhắc chủ dự án tự chạy Publish trong Visual Studio. Quy tắc 18 (không dùng `fable`) và 4 (commit + push thẳng `master`)
     được chủ dự án xác nhận lại ở phiên này.
@@ -121,6 +122,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
 | `docs/man-hinh.md` | Bản đồ màn hình: route ↔ hàm artifact ↔ file code ↔ trạng thái |
 | `docs/kien-truc.md` | Cấu trúc thư mục, luồng request, quy ước Razor/JS/C#, cách dùng `Dept` |
 | `docs/database.md` | Bảng, quy ước kiểu dữ liệu, connection string, migration |
+| `docs/nhan-su.md` | Danh sách nhân sự chuẩn (mã nhân viên, vai trò, nhóm, cấp bậc) đã cập nhật lên DB thật |
 | `docs/artifact/qlcl-artifact.html` | Bản sao mã nguồn artifact gốc (đặc tả chuẩn) |
 
 ## 5. Lưu ý khi sửa code

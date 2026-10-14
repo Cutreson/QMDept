@@ -13,7 +13,7 @@ namespace QMDept.Controllers;
 /// <summary>
 /// Đăng nhập bằng mã nhân viên + mật khẩu (port loginForm / bootForm của artifact):
 /// - Chưa có TP nào → form "Thiết lập tài khoản Trưởng phòng" (bootstrap).
-/// - Lần đầu đăng nhập (chưa có mật khẩu): mật khẩu nhập vào trở thành mật khẩu mới (tối thiểu 4 ký tự).
+/// - Lần đầu đăng nhập (chưa có mật khẩu): mật khẩu nhập vào trở thành mật khẩu mới (tối thiểu AccountRules.MinPassword ký tự).
 /// - Quên mật khẩu: TP đặt lại (xóa PasswordHash) ở Kế hoạch &amp; duyệt → Nhân sự.
 /// Mật khẩu băm bằng PasswordHasher (PBKDF2) của ASP.NET Core Identity.
 /// </summary>
