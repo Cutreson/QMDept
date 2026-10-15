@@ -199,19 +199,45 @@
   function pickPerson(sel) {
     const box = document.getElementById(sel.dataset.pickInto); if (!box || !sel.value) return;
     const val = sel.value, text = sel.options[sel.selectedIndex].textContent;
+    if (/^q[dg]:/.test(val)) {
+      // Phòng ban / nhóm khác: xin theo số lượng — hiện ô số lượng + nút Thêm (addQty), xong lại chọn tiếp ở ô chọn.
+      const row = document.getElementById(sel.dataset.qtyRow);
+      if (row) {
+        row.hidden = false; row.dataset.pending = val;
+        row.querySelector('.qty-name').textContent = text;
+        const n = row.querySelector('input'); n.value = 1; n.focus();
+      }
+      sel.value = '';
+      return;
+    }
     // Xóa chữ đang lọc trước (danh sách được dựng lại), rồi mới ẩn người vừa chọn.
     const q = sel.previousElementSibling;
     if (q && q.classList.contains('sel-search') && q.value) { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); }
+    addChip(box, sel, val, esc(text), 'emp', val);
+    sel.value = '';
+  }
+  function addChip(box, sel, val, label, field, fieldVal) {
     const chip = document.createElement('span');
     chip.className = 'pick-chip';
     chip.dataset.value = val;
-    const isDept = val.startsWith("dept:");
-    chip.innerHTML = `${esc(text)}<input type="hidden" name="${isDept ? "dept" : "emp"}" value="${esc(isDept ? val.slice(5) : val)}"><button type="button" aria-label="Bỏ ${esc(text)}">✕</button>`;
+    chip.innerHTML = `${label}<input type="hidden" name="${esc(field)}" value="${esc(fieldVal)}"><button type="button" aria-label="Bỏ">✕</button>`;
     box.appendChild(chip);
     const opt = [...sel.options].find(x => x.value === val);
     if (opt) { opt.disabled = true; opt.hidden = true; }
-    sel.value = '';
   }
+  // Nút "Thêm" của hàng số lượng: tạo thẻ "Phòng Thiết kế cơ ×2" (input ẩn qd_<chỉ số> / qg_<Id Leader> = số lượng).
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-qty-add]'); if (!b) return;
+    const row = b.closest('[data-pending], .row') || b.parentNode;
+    const val = row.dataset.pending; if (!val) return;
+    const qty = parseInt(row.querySelector('input').value, 10);
+    if (!(qty > 0)) return;
+    const sel = document.querySelector('select[data-qty-row="' + row.id + '"]');
+    const box = sel && document.getElementById(sel.dataset.pickInto); if (!box) return;
+    const name = row.querySelector('.qty-name').textContent;
+    addChip(box, sel, val, `${esc(name)} ×${qty}`, (val.startsWith('qd:') ? 'qd_' : 'qg_') + val.slice(3), String(Math.min(qty, 50)));
+    row.hidden = true; row.dataset.pending = '';
+  });
   function clearPicks(box) {
     if (!box) return;
     const sel = document.querySelector('select[data-pick-into="' + box.id + '"]');

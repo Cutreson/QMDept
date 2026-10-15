@@ -289,6 +289,7 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 
 - Form chỉ có: Dự án (các dự án mình làm Leader dự án), **nội dung công việc phát sinh**, giờ bắt đầu / kết thúc — **không chọn đầu mục kế hoạch**.
 - Xin người hỗ trợ: (a) **chỉ định người chỉ trong nhóm của mình** (NV cùng Leader + Leader của mình, ô chọn → thẻ ✕; server chặn người nhóm khác);
+  (một ô chọn duy nhất: người trong nhóm / phòng ban / nhóm khác; chọn phòng ban hoặc nhóm khác → nhập **số lượng** rồi Thêm → thành thẻ "Phòng … ×N", lại chọn tiếp);
   (b) **xin theo số lượng**: từng phòng ban (Thiết kế cơ, Thiết kế điện, Lắp ráp cơ, Lắp ráp điện) và từng nhóm khác ("Nhóm <tên Leader>") — không chỉ
   định người; (c) **lý do xin hỗ trợ** (bắt buộc khi có xin người / số lượng, ≤ 500 ký tự).
 - Lưu: `calendar_proposals.Departments` = "Thiết kế cơ=2;Nhóm Nguyễn Văn Huề=1", `SupportReason`. Leader duyệt thấy số lượng + lý do; khi duyệt, số lượng ghi vào

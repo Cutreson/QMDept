@@ -20,32 +20,39 @@
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
             <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
         </div>
-        <label class="f" for="@(id)Pick">Người hỗ trợ trong nhóm của tôi (nếu có)</label>
-        <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-nosearch>
-            <option value="">— Chọn người hỗ trợ —</option>
-            @foreach (var p in Model.People)
+        <label class="f" for="@(id)Pick">Người hỗ trợ</label>
+        <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-qty-row="@(id)Qty" data-nosearch>
+            <option value="">— Chọn người / phòng ban / nhóm —</option>
+            <optgroup label="Nhân sự trong nhóm của tôi">
+                @foreach (var p in Model.People)
+                {
+                    <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
+                }
+            </optgroup>
+            <optgroup label="Phòng ban (xin theo số lượng)">
+                @for (var k = 0; k < Fmt.SupportDepartments.Length; k++)
+                {
+                    <option value="qd:@k">Phòng @Fmt.SupportDepartments[k]</option>
+                }
+            </optgroup>
+            @if (Model.OtherGroups.Count > 0)
             {
-                <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
+                <optgroup label="Nhóm khác (xin theo số lượng)">
+                    @foreach (var g in Model.OtherGroups)
+                    {
+                        <option value="qg:@g.Id">Nhóm @g.Name</option>
+                    }
+                </optgroup>
             }
         </select>
-        <div id="@(id)Chips" class="pick-chips"></div>
-        <label class="f">Số lượng người hỗ trợ xin theo phòng ban</label>
-        <div class="pick2 eq">
-            @for (var k = 0; k < Fmt.SupportDepartments.Length; k++)
-            {
-                <div><label class="f" for="@(id)Qd@(k)" style="margin-top:0">@Fmt.SupportDepartments[k]</label><input class="in" type="number" min="0" max="50" value="0" id="@(id)Qd@(k)" name="qd_@k"></div>
-            }
+        @* Chọn phòng ban / nhóm khác → nhập số lượng rồi Thêm; xong lại chọn tiếp ở ô trên (site.js: pickPerson / addQty). *@
+        <div id="@(id)Qty" class="row" style="gap:8px;margin-top:6px" hidden>
+            <b class="qty-name" style="flex:1;min-width:0"></b>
+            <label class="f" for="@(id)QtyN" style="margin:0">Số lượng</label>
+            <input class="in" type="number" min="1" max="50" value="1" id="@(id)QtyN" style="width:84px">
+            <button type="button" class="btn btn-primary btn-sm" data-qty-add>Thêm</button>
         </div>
-        @if (Model.OtherGroups.Count > 0)
-        {
-            <label class="f">Số lượng người hỗ trợ xin theo nhóm khác</label>
-            <div class="pick2 eq">
-                @foreach (var g in Model.OtherGroups)
-                {
-                    <div><label class="f" for="@(id)Qg@(g.Id)" style="margin-top:0">Nhóm @g.Name</label><input class="in" type="number" min="0" max="50" value="0" id="@(id)Qg@(g.Id)" name="qg_@g.Id"></div>
-                }
-            </div>
-        }
+        <div id="@(id)Chips" class="pick-chips"></div>
         <label class="f" for="@(id)R">Lý do xin người hỗ trợ</label>
         <textarea class="in" id="@(id)R" name="supportReason" maxlength="500"></textarea>
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
