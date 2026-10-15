@@ -55,6 +55,7 @@
     if (dr && typeof dr === 'object') {
       const setSel = (sel, v) => { if (sel && v != null) sel.value = v; };
       setSel(statusSel, dr.status); setSel(mealSel, dr.meal); setSel(supportSel, dr.support || 'None'); setSel(provinceSel, dr.province || '');
+      if (dr.supportPick != null && $('#pSupportPick', f)) $('#pSupportPick', f).value = dr.supportPick;
       $('#pNote', f).value = dr.note || ''; $('#pSupportText', f).value = dr.supportText || ''; $('#pCustomer', f).value = dr.customer || '';
       if (dr.checks) picks().forEach(x => { if (x.value in dr.checks) x.checked = !!dr.checks[x.value]; });
       dr.leaveOff = dr.leaveOff || [];
@@ -69,10 +70,42 @@
       Object.assign(dr, {
         status: statusSel.value || '', meal: mealSel.value || '', note: $('#pNote', f).value, support: supportSel.value || 'None',
         province: provinceSel ? provinceSel.value || '' : '', customer: $('#pCustomer', f).value, supportText: $('#pSupportText', f).value, checks,
+        supportPick: ($('#pSupportPick', f) || {}).value || '',
       });
     }
     function saveDraft() { readForm(); store.set(cfg.key, dr); }
     readForm();
+
+    // ---------- nhân sự hỗ trợ: ô chọn + thẻ (site.js: pickPerson / addChip) ----------
+    // #pSupportPick = JSON {emp:[id], qd:{k:SL}, qg:{leaderId:SL}} (máy chủ đọc), #pSupport = phạm vi suy ra (Team / OtherTeam / OtherDept).
+    const supPick = $('#pSupportPick', f), supBox = $('#pSupChips', f), supPicker = $('#pSupportPicker', f);
+    function syncSupport() {
+      if (!supPick || !supBox) return;
+      const j = { emp: [], qd: {}, qg: {} };
+      supBox.querySelectorAll('.pick-chip input[type=hidden]').forEach(i => {
+        if (i.name === 'emp') j.emp.push(+i.value);
+        else if (i.name.startsWith('qd_')) j.qd[i.name.slice(3)] = +i.value;
+        else if (i.name.startsWith('qg_')) j.qg[i.name.slice(3)] = +i.value;
+      });
+      const nd = Object.keys(j.qd).length, ng = Object.keys(j.qg).length;
+      supPick.value = (j.emp.length || nd || ng) ? JSON.stringify(j) : '';
+      supportSel.value = nd ? 'OtherDept' : ng ? 'OtherTeam' : j.emp.length ? 'Team' : 'None';
+      $('#supportWrap', f).hidden = supportSel.value === 'None';
+      saveDraft();
+    }
+    if (supPick && supBox && supPicker) {
+      // Dựng lại thẻ từ JSON đã lưu (kế hoạch đang sửa / bản nháp / dữ liệu vừa gửi bị lỗi).
+      let init = null; try { init = supPick.value ? JSON.parse(supPick.value) : null; } catch { init = null; }
+      const pick = v => { supPicker.value = v; if (supPicker.value === v) supPicker.dispatchEvent(new Event('change', { bubbles: true })); };
+      const qty = (v, n) => { pick(v); const row = $('#pSupQty', f); if (row && !row.hidden) { row.querySelector('input').value = n; row.querySelector('[data-qty-add]').click(); } };
+      if (init) {
+        (init.emp || []).forEach(id => pick(String(id)));
+        Object.entries(init.qd || {}).forEach(([k, n]) => qty('qd:' + k, n));
+        Object.entries(init.qg || {}).forEach(([k, n]) => qty('qg:' + k, n));
+      }
+      new MutationObserver(syncSupport).observe(supBox, { childList: true });
+      syncSupport();
+    }
     const leaveNow = () => isLeave(dr.status) && dr.leave && dr.leave.type === LEAVE_TYPE[dr.status] ? dr.leave : null;
 
     // leaveBox(status, l) — bản C#: ViewModels/StaffReports.cs LeaveBox
@@ -208,7 +241,7 @@
       if (isTrip(status) && !dr.customer.trim()) return stop('Nhập khách hàng', '#pCustomer');
       if (!dr.meal) return stop('Chọn báo cơm', '#pMeal');
       if (!picks().some(x => x.checked) && !(leave && leave.hours >= 8)) return stop('Chọn ít nhất 1 công việc');
-      if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập nội dung cần hỗ trợ nhân sự', '#pSupportText');
+      if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập lý do xin người hỗ trợ', '#pSupportText');
       render();
     });
 

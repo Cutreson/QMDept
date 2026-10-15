@@ -142,6 +142,10 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("SupportPick")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
                     b.Property<string>("SupportScope")
                         .IsRequired()
                         .HasMaxLength(20)

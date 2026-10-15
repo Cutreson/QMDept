@@ -308,3 +308,11 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
   chỉ hiện (và chỉ được server chấp nhận) với dự án mình làm Leader dự án (`WorkflowService.ProposeAsync`); dự án khác chỉ đề xuất việc của chính mình.
 - **NV thêm việc ngoài kế hoạch (Báo cáo đầu ngày)**: bỏ ô "Đầu mục kế hoạch" — chỉ chọn dự án + nhập nội dung + giờ (yêu cầu 2026-10-15; `TaskFieldsVm.ShowItem = false`).
   Form Thêm việc ở Lịch tuần của Leader vẫn còn ô đầu mục.
+
+## 14. Nhân sự hỗ trợ ở Báo cáo đầu ngày — cùng thiết kế với đề xuất công việc (yêu cầu 2026-10-15)
+
+- Thay ô "Không cần hỗ trợ / Trong nhóm / Nhóm khác / Phòng ban khác" bằng **một ô chọn** (như ô người hỗ trợ ở đề xuất công việc): người trong nhóm của mình (+ Leader của mình),
+  phòng ban (Thiết kế cơ / điện, Lắp ráp cơ / điện) và nhóm khác **theo số lượng** → thẻ ✕; bên dưới là **lý do xin người hỗ trợ** (bắt buộc khi có xin).
+- Phạm vi duyệt **suy ra từ lựa chọn** (`StaffController.ResolveSupportAsync`): chỉ người trong nhóm → `Team` (Leader duyệt); có nhóm khác → `OtherTeam`; có phòng ban → `OtherDept`
+  (hai loại sau cần thêm TP duyệt như cũ). Chỉ định người nhóm khác bị chặn.
+- Lưu: `day_plans.SupportScope`, `SupportText` (câu ghép để hiển thị: "Người hỗ trợ: … · Phòng ban: … ×N · Nhóm khác: … — Lý do: …"), `SupportPick` (JSON để dựng lại thẻ khi sửa kế hoạch).

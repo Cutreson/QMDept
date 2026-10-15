@@ -139,6 +139,8 @@ public class DayPlan
     // Nhân sự hỗ trợ
     public SupportScope SupportScope { get; set; } = SupportScope.None;
     [MaxLength(2000)] public string? SupportText { get; set; }
+    /// <summary>Lựa chọn xin hỗ trợ dạng JSON {"emp":[id],"qd":{"chỉ số phòng ban":SL},"qg":{"Id Leader":SL},"reason":"…"} — để dựng lại ô chọn khi sửa kế hoạch.</summary>
+    [MaxLength(1000)] public string? SupportPick { get; set; }
 
     [MaxLength(2000)] public string? Note { get; set; }
     public DateTime SentAt { get; set; }

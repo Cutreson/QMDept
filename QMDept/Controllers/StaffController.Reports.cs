@@ -64,9 +64,9 @@ public partial class StaffController
             var picks = input.Picks.Where(shown.Contains).ToHashSet();
             if (picks.Count == 0 && !(leave is not null && leave.Hours >= 8)) throw new BizException("Chọn ít nhất 1 công việc");
 
-            var support = StaffReports.ParseEnum<SupportScope>(input.Support) ?? SupportScope.None;
-            var supportText = support == SupportScope.None ? null : StaffReports.Clip(input.SupportText, 2000);
-            if (support != SupportScope.None && supportText is null) throw new BizException("Nhập nội dung cần hỗ trợ nhân sự");
+            // Nhân sự hỗ trợ (cùng thiết kế với đề xuất công việc): chỉ chỉ định người trong nhóm mình; phòng ban / nhóm khác xin theo số lượng.
+            // Phạm vi suy ra từ lựa chọn: có phòng ban → OtherDept, có nhóm khác → OtherTeam, chỉ người trong nhóm → Team (Leader duyệt).
+            var (support, supportText, supportPick) = await ResolveSupportAsync(me, input);
             var note = StaffReports.Clip(input.Note, 2000);
 
             foreach (var t in all) t.Selected = picks.Contains(t.Id);
@@ -88,6 +88,7 @@ public partial class StaffController
             plan.TripCustomer = customer;
             plan.SupportScope = support;
             plan.SupportText = supportText;
+            plan.SupportPick = supportPick;
             plan.Note = note;
             plan.SentAt = VnTime.UtcNow;
             // artifact .set() thay cả bản ghi → mọi quyết định duyệt / góp ý cũ bị xóa
@@ -113,6 +114,32 @@ public partial class StaffController
         }
         Toast("Đã gửi kế hoạch đầu ngày");
         return Redirect(Ui.To(Request, "/Staff/Morning", ("d", Fmt.Key(Date))));
+    }
+
+    /// <summary>Đọc lựa chọn xin hỗ trợ của báo cáo đầu ngày → (phạm vi, nội dung hiển thị, JSON lưu lại).</summary>
+    async Task<(SupportScope Scope, string? Text, string? Pick)> ResolveSupportAsync(Person me, StaffPlanInput input)
+    {
+        var pick = StaffSupportPick.Parse(input.SupportPick);
+        var reason = StaffReports.Clip(input.SupportText, 1500);
+        if (pick is null) return (SupportScope.None, null, null);
+        var emp = pick.Emp.Distinct().Where(x => x != me.Id).ToList();
+        var qd = pick.Qd.Where(kv => kv.Value > 0 && int.TryParse(kv.Key, out var k) && k >= 0 && k < Fmt.SupportDepartments.Length).ToDictionary(kv => kv.Key, kv => Math.Min(kv.Value, 50));
+        var leaders = await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted && p.Id != me.LeaderId).ToListAsync();
+        var qg = pick.Qg.Where(kv => kv.Value > 0 && int.TryParse(kv.Key, out var k) && leaders.Any(l => l.Id == k)).ToDictionary(kv => kv.Key, kv => Math.Min(kv.Value, 50));
+        if (emp.Count == 0 && qd.Count == 0 && qg.Count == 0) return (SupportScope.None, null, null);
+        var staff = await Db.People.AsNoTracking().Where(p => emp.Contains(p.Id) && !p.IsDeleted
+            && ((p.Role == Role.Staff && p.LeaderId == me.LeaderId) || p.Id == me.LeaderId)).ToListAsync();
+        if (staff.Count != emp.Count) throw new BizException("Chỉ được chỉ định người hỗ trợ trong nhóm của mình");
+        if (reason is null) throw new BizException("Nhập lý do xin người hỗ trợ");
+        var parts = new List<string>();
+        if (staff.Count > 0) parts.Add("Người hỗ trợ: " + string.Join(", ", staff.Select(p => p.Name)));
+        if (qd.Count > 0) parts.Add("Phòng ban: " + string.Join(", ", qd.Select(kv => $"{Fmt.SupportDepartments[int.Parse(kv.Key)]} ×{kv.Value}")));
+        if (qg.Count > 0) parts.Add("Nhóm khác: " + string.Join(", ", qg.Select(kv => $"Nhóm {leaders.First(l => l.Id == int.Parse(kv.Key)).Name} ×{kv.Value}")));
+        var scope = qd.Count > 0 ? SupportScope.OtherDept : qg.Count > 0 ? SupportScope.OtherTeam : SupportScope.Team;
+        var text = string.Join(" · ", parts) + " — Lý do: " + reason;
+        if (text.Length > 2000) text = text[..2000];
+        pick.Emp = emp; pick.Qd = qd; pick.Qg = qg; pick.Reason = reason;
+        return (scope, text, pick.ToJson());
     }
 
     /// <summary>addOut: thêm việc ngoài kế hoạch (đã chọn) vào ngày đang xem.</summary>

@@ -28,6 +28,8 @@ public sealed class StaffPlanInput
     /// <summary>Nhân sự hỗ trợ (tên enum SupportScope) + nội dung.</summary>
     public string? Support { get; set; }
     public string? SupportText { get; set; }
+    /// <summary>Lựa chọn xin hỗ trợ (JSON do ô chọn người hỗ trợ dựng) — xem StaffSupportPick.</summary>
+    public string? SupportPick { get; set; }
     public string? Note { get; set; }
     /// <summary>Các việc được tích (name="picks").</summary>
     public List<int> Picks { get; set; } = [];
@@ -69,6 +71,8 @@ public sealed class StaffMorningForm
     public string Customer { get; init; } = "";
     public SupportScope Support { get; init; } = SupportScope.None;
     public string SupportText { get; init; } = "";
+    /// <summary>JSON lựa chọn xin hỗ trợ (dựng lại thẻ ở ô chọn).</summary>
+    public string SupportPick { get; init; } = "";
     public string Note { get; init; } = "";
     /// <summary>null = tích theo mặc định (có kế hoạch: việc trong kế hoạch / đã chọn; chưa có: tất cả).</summary>
     public HashSet<int>? Picks { get; init; }
@@ -80,7 +84,9 @@ public sealed class StaffMorningForm
     {
         Status = p.Status, Meal = p.Meal, Leave = StaffReports.LeaveOf(p),
         Province = p.TripProvince ?? "", Customer = p.TripCustomer ?? "",
-        Support = p.SupportScope, SupportText = p.SupportText ?? "", Note = p.Note ?? "",
+        Support = p.SupportScope, SupportPick = p.SupportPick ?? "",
+        // Ô "Lý do" hiện lý do gốc (trong SupportPick); kế hoạch cũ chưa có SupportPick thì hiện nguyên nội dung đã lưu.
+        SupportText = StaffSupportPick.Parse(p.SupportPick)?.Reason ?? p.SupportText ?? "", Note = p.Note ?? "",
     };
 
     public static StaffMorningForm FromInput(StaffPlanInput i) => new()
@@ -88,7 +94,7 @@ public sealed class StaffMorningForm
         Status = StaffReports.ParseEnum<WorkStatus>(i.Status), Meal = StaffReports.ParseEnum<Meal>(i.Meal),
         Leave = StaffReports.LeaveOf(i.LeaveType, i.LeaveSession, i.LeaveFrom, i.LeaveTo),
         Province = i.Province ?? "", Customer = i.Customer ?? "",
-        Support = StaffReports.ParseEnum<SupportScope>(i.Support) ?? SupportScope.None, SupportText = i.SupportText ?? "", Note = i.Note ?? "",
+        Support = StaffReports.ParseEnum<SupportScope>(i.Support) ?? SupportScope.None, SupportText = i.SupportText ?? "", SupportPick = i.SupportPick ?? "", Note = i.Note ?? "",
         Picks = i.Picks.ToHashSet(),
     };
 }
@@ -267,4 +273,30 @@ public static class StaffReports
         sessions = Enum.GetValues<LeaveSession>().ToDictionary(s => s.ToString(), s => { var x = LeaveRules.Session(s); return new[] { x.Label, x.From, x.To }; }),
         clear,
     });
+}
+
+/// <summary>
+/// Lựa chọn xin hỗ trợ ở báo cáo đầu ngày (yêu cầu 2026-10-15) — cùng thiết kế với đề xuất công việc ở lịch tháng:
+/// người trong NHÓM MÌNH (Emp), phòng ban theo số lượng (Qd: chỉ số trong Fmt.SupportDepartments), nhóm khác theo số lượng (Qg: Id Leader), kèm lý do.
+/// Lưu JSON ở day_plans.SupportPick; SupportScope / SupportText do máy chủ suy ra (Team / OtherTeam / OtherDept).
+/// </summary>
+public sealed class StaffSupportPick
+{
+    public List<int> Emp { get; set; } = [];
+    public Dictionary<string, int> Qd { get; set; } = [];
+    public Dictionary<string, int> Qg { get; set; } = [];
+    public string? Reason { get; set; }
+
+    static readonly System.Text.Json.JsonSerializerOptions Opts = new()
+    {
+        PropertyNameCaseInsensitive = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    };
+
+    public static StaffSupportPick? Parse(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return System.Text.Json.JsonSerializer.Deserialize<StaffSupportPick>(json, Opts); } catch { return null; }
+    }
+
+    public string ToJson() => System.Text.Json.JsonSerializer.Serialize(this, Opts);
 }

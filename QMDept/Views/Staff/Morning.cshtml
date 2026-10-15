@@ -153,15 +153,56 @@
         {
             <button type="button" class="link" data-sheet="tplAddOut" style="margin-top:10px">＋ Thêm công việc ngoài kế hoạch</button>
         }
-        <label class="f" for="pSupport" style="margin-top:14px">Nhân sự hỗ trợ</label>
-        <select class="in" id="pSupport" name="support" data-show-target="#supportWrap" data-show-values="Team,OtherTeam,OtherDept" disabled="@ro">
-            <option value="@SupportScope.None">Không cần hỗ trợ</option>
-            @foreach (var s in new[] { SupportScope.Team, SupportScope.OtherTeam, SupportScope.OtherDept })
-            {
-                <option value="@s" selected="@(f.Support == s)">@Labels.Of(s)@(s == SupportScope.Team ? " (Leader duyệt)" : " (cần thêm TP duyệt)")</option>
-            }
-        </select>
-        <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Nội dung cần hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="2000" disabled="@ro">@f.SupportText</textarea></div>
+        @* Nhân sự hỗ trợ — cùng thiết kế với "Đề xuất công việc" ở lịch tháng: ô chọn người trong nhóm / phòng ban / nhóm khác (số lượng) → thẻ ✕;
+           lý do bên dưới. JSON lựa chọn nằm ở #pSupportPick; phạm vi (#pSupport) do staff.js / máy chủ suy ra. *@
+        @{
+            var supCands = me.LeaderId is int sgl
+                ? D.Active.Where(x => x.Id != me.Id && ((x.Role == Role.Staff && x.LeaderId == sgl) || x.Id == sgl)).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
+                : new List<Person>();
+            var supGroups = D.Leaders().Where(l => l.Id != me.LeaderId).ToList();
+        }
+        <label class="f" for="pSupportPicker" style="margin-top:14px">Nhân sự hỗ trợ</label>
+        <input type="hidden" id="pSupport" name="support" value="@f.Support">
+        <input type="hidden" id="pSupportPick" name="supportPick" value="@f.SupportPick">
+        @if (!ro)
+        {
+            <select class="in" id="pSupportPicker" data-pick-into="pSupChips" data-qty-row="pSupQty" data-nosearch>
+                <option value="">— Không cần hỗ trợ / chọn người, phòng ban, nhóm —</option>
+                <optgroup label="Nhân sự trong nhóm của tôi (Leader duyệt)">
+                    @foreach (var p in supCands)
+                    {
+                        <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
+                    }
+                </optgroup>
+                <optgroup label="Phòng ban (xin theo số lượng, cần thêm TP duyệt)">
+                    @for (var k = 0; k < Fmt.SupportDepartments.Length; k++)
+                    {
+                        <option value="qd:@k">Phòng @Fmt.SupportDepartments[k]</option>
+                    }
+                </optgroup>
+                @if (supGroups.Count > 0)
+                {
+                    <optgroup label="Nhóm khác (xin theo số lượng, cần thêm TP duyệt)">
+                        @foreach (var g in supGroups)
+                        {
+                            <option value="qg:@g.Id">Nhóm @g.Name</option>
+                        }
+                    </optgroup>
+                }
+            </select>
+            <div id="pSupQty" class="row" style="gap:8px;margin-top:6px" hidden>
+                <b class="qty-name" style="flex:1;min-width:0"></b>
+                <label class="f" for="pSupQtyN" style="margin:0">Số lượng</label>
+                <input class="in" type="number" min="1" max="50" value="1" id="pSupQtyN" style="width:84px">
+                <button type="button" class="btn btn-primary btn-sm" data-qty-add>Thêm</button>
+            </div>
+            <div id="pSupChips" class="pick-chips"></div>
+        }
+        else if (f.Support != SupportScope.None)
+        {
+            <p class="note" style="margin:0">@f.SupportText</p>
+        }
+        <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Lý do xin người hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="1500" disabled="@ro">@f.SupportText</textarea></div>
         <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
     </section>
     @if (!ro)
