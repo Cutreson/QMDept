@@ -16,15 +16,15 @@
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
         <label class="f" for="@(id)P">Dự án</label>
         @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name + (led.Contains(p.Id) ? " · Leader dự án" : ""))), pid?.ToString(),
-            id: id + "P", extraAttrs: $"data-led=\"{string.Join(",", led)}\" data-led-box=\"{id}W\"")
+            id: id + "P")
         <label class="f" for="@(id)T">Nội dung công việc phát sinh</label>
         <input class="in" id="@(id)T" name="title" maxlength="300">
         <div class="pick2 eq">
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
             <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
         </div>
-        <div id="@(id)W" hidden>
-            <label class="row" style="margin-top:12px;font-size:13.5px"><input type="checkbox" name="self" value="1" checked> <b>Tôi thực hiện</b> (với vai trò Leader dự án)</label>
+        <div id="@(id)W">
+            <label class="row" style="margin-top:12px;font-size:13.5px"><input type="checkbox" name="self" value="1" checked> <b>Tôi thực hiện</b></label>
             <label class="f" for="@(id)Pick">Người hỗ trợ</label>
             <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-qty-row="@(id)Qty" data-nosearch>
                 <option value="">— Chọn người / phòng ban / nhóm —</option>

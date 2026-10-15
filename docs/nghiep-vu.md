@@ -316,3 +316,6 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 - Phạm vi duyệt **suy ra từ lựa chọn** (`StaffController.ResolveSupportAsync`): chỉ người trong nhóm → `Team` (Leader duyệt); có nhóm khác → `OtherTeam`; có phòng ban → `OtherDept`
   (hai loại sau cần thêm TP duyệt như cũ). Chỉ định người nhóm khác bị chặn.
 - Lưu: `day_plans.SupportScope`, `SupportText` (câu ghép để hiển thị: "Người hỗ trợ: … · Phòng ban: … ×N · Nhóm khác: … — Lý do: …"), `SupportPick` (JSON để dựng lại thẻ khi sửa kế hoạch).
+- **Cập nhật (yêu cầu 2026-10-15, "mọi NV có tính năng như Vũ Văn Lực")**: bỏ ràng buộc "chỉ Leader dự án mới xin hỗ trợ". Mọi NV có nhóm, ở dự án đang triển khai bất kỳ, đều dùng đủ:
+  "Tôi thực hiện", xin người hỗ trợ trong nhóm / phòng ban / nhóm khác theo số lượng + lý do; Leader nhóm duyệt. (Phần phụ thuộc DỮ LIỆU — dự án hiện ở "Thông tin dự án",
+  mục "Việc của người hỗ trợ trong dự án bạn phụ trách" — vẫn theo việc ai được chọn làm Leader dự án.)

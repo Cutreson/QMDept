@@ -142,16 +142,9 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (t0.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
 
-        // Mọi thành viên trong nhóm đều đề xuất được công việc của mình (Leader nhóm duyệt — yêu cầu 2026-10-15). Riêng việc xin người hỗ trợ /
-        // chỉ định người / bỏ "Tôi thực hiện" chỉ dành cho Leader dự án của chính dự án đó.
-        var isLead = await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead);
+        // MỌI thành viên trong nhóm có cùng tính năng (yêu cầu 2026-10-15): đề xuất công việc của mình ở dự án bất kỳ, kèm xin người hỗ trợ
+        // (người trong nhóm / phòng ban / nhóm khác theo số lượng) + lý do; Leader nhóm duyệt. Không còn gắn với việc là Leader dự án.
         var ids = people.Distinct().ToList();
-        if (!isLead)
-        {
-            if (ids.Any(x => x != proposerId) || (quotas ?? []).Any(z => z.Qty > 0) || !includeSelf)
-                throw new BizException("Chỉ Leader dự án mới xin người hỗ trợ cho dự án này — bạn chỉ đề xuất được công việc của chính mình");
-            includeSelf = true;
-        }
         // Người đề xuất (Leader dự án) mặc định cùng thực hiện; bỏ tích thì chỉ những người được chỉ định trong nhóm làm.
         if (includeSelf && !ids.Contains(proposerId)) ids.Insert(0, proposerId);
         if (ids.Count == 0) throw new BizException("Chọn người thực hiện: tích “Tôi thực hiện” hoặc chọn người hỗ trợ trong nhóm của mình");

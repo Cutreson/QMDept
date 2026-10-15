@@ -15,7 +15,7 @@
                 @if (me.LeaderId is not null && D.ActivePj().Count > 0) { <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button> }
             </div>
                 // Chỉ chỉ định được người trong nhóm của mình (NV cùng Leader + Leader của mình); nhóm khác / phòng ban chỉ xin theo số lượng.
-                var cands = ledPj.Count > 0 && me.LeaderId is int gl
+                var cands = me.LeaderId is int gl
                     ? D.Active.Where(x => x.Id != me.Id && ((x.Role == Role.Staff && x.LeaderId == gl) || x.Id == gl)).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
                     : new List<Person>();
                 var otherGroups = D.Leaders().Where(l => l.Id != me.LeaderId).ToList();
