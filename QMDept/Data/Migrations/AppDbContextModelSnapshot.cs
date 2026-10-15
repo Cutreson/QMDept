@@ -250,6 +250,10 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<string>("Departments")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
                     b.Property<string>("End")
                         .IsRequired()
                         .HasMaxLength(5)

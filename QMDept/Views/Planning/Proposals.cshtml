@@ -15,7 +15,7 @@
         <div class="asg">
             <div class="row"><b>@D.PName(x.ProposerId)</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.Start–@x.End</span></span></div>
             <div class="t" style="margin-top:4px">@x.Title</div>
-            <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Đề xuất hỗ trợ: " + string.Join(", ", who) : " · Công việc của người đề xuất")</div>
+            <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Đề xuất hỗ trợ: " + string.Join(", ", who) : " · Công việc của người đề xuất")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Phòng ban hỗ trợ: " + x.Departments.Replace(";", ", "))</div>
             @if (Scope.CanLead && !Scope.IsReadOnly)
             {
                 <div class="btn-row">

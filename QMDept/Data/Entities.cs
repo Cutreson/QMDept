@@ -327,6 +327,7 @@ public class CalendarProposal
     public int ProjectId { get; set; }
     public Project? Project { get; set; }
     public int? PlanItemId { get; set; }
+    [MaxLength(300)] public string? Departments { get; set; }        // phòng ban hỗ trợ (Fmt.SupportDepartments, cách nhau ";")
     [MaxLength(300)] public string Title { get; set; } = "";
     [MaxLength(5)] public string Start { get; set; } = "08:00";
     [MaxLength(5)] public string End { get; set; } = "17:00";

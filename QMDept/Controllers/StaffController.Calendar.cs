@@ -65,7 +65,8 @@ public partial class StaffController
     {
         RequireSelfStaff();
         var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
-        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people);
+        var depts = Request.Form["dept"].Select(s => s ?? "").ToList();
+        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, depts);
         Toast("Đã gửi đề xuất — chờ Leader duyệt");
     });
 

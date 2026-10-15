@@ -138,7 +138,7 @@ else
                         var who = x.People.Select(p => p.EmployeeId).Where(i => i != x.ProposerId).Select(i => D.PName(i)).ToList();
                         <div class="trow"><span class="ck @(x.Status == ExtraStatus.Approved ? "on" : "")">@(x.Status == ExtraStatus.Approved ? "✓" : "")</span>
                             <div><div class="t">@x.Title</div>
-                                <div class="s">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Hỗ trợ: " + string.Join(", ", who) : "")@(x.Status == ExtraStatus.Rejected && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
+                                <div class="s">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Hỗ trợ: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Phòng ban: " + x.Departments.Replace(";", ", "))@(x.Status == ExtraStatus.Rejected && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
                             <span class="tm">@x.Start–@x.End <span class="pill @(x.Status == ExtraStatus.Approved ? "p-ok" : x.Status == ExtraStatus.Rejected ? "p-bad" : "p-warn")">@(x.Status == ExtraStatus.Approved ? "Đã duyệt" : x.Status == ExtraStatus.Rejected ? "Từ chối" : "Chờ duyệt")</span></span></div>
                     }
                 </section>

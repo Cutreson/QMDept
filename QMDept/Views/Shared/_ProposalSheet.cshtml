@@ -36,12 +36,20 @@
         {
             <div id="@(id)W" hidden>
                 <label class="f" for="@(id)Pick">Người hỗ trợ (nếu có)</label>
-                <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips">
+                <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-nosearch>
                     <option value="">— Chọn người hỗ trợ —</option>
-                    @foreach (var p in Model.People)
-                    {
-                        <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
-                    }
+                    <optgroup label="Phòng ban">
+                        @foreach (var dn in Fmt.SupportDepartments)
+                        {
+                            <option value="dept:@dn">Phòng @dn</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Nhân sự">
+                        @foreach (var p in Model.People)
+                        {
+                            <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
+                        }
+                    </optgroup>
                 </select>
                 <div id="@(id)Chips" class="pick-chips"></div>
             </div>

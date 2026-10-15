@@ -204,7 +204,8 @@
     const chip = document.createElement('span');
     chip.className = 'pick-chip';
     chip.dataset.value = val;
-    chip.innerHTML = `${esc(text)}<input type="hidden" name="emp" value="${esc(val)}"><button type="button" aria-label="Bỏ ${esc(text)}">✕</button>`;
+    const isDept = val.startsWith("dept:");
+    chip.innerHTML = `${esc(text)}<input type="hidden" name="${isDept ? "dept" : "emp"}" value="${esc(isDept ? val.slice(5) : val)}"><button type="button" aria-label="Bỏ ${esc(text)}">✕</button>`;
     box.appendChild(chip);
     const opt = [...sel.options].find(x => x.value === val);
     if (opt) { opt.disabled = true; opt.hidden = true; }
