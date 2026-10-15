@@ -1,18 +1,21 @@
 @model ProposalSheetVm
-@* Đề xuất lịch của NV (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
-   POST /Staff/ProposeCalendar (ngày = ngày đang chọn ở lịch, Ui.ReturnField). Leader nhóm duyệt thì việc mới vào lịch. *@
+@* Đề xuất công việc của NV ở lịch tháng (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
+   Việc của mình; nếu dự án chọn là dự án mình làm Leader dự án thì có thêm ô chọn người hỗ trợ / Leader hỗ trợ (site.js: select[data-led]).
+   POST /Staff/ProposeCalendar (ngày = ngày đang chọn, Ui.ReturnField). Leader nhóm duyệt thì việc mới vào lịch. *@
 @{
     var id = Model.TemplateId;
     var pid = Model.Projects.FirstOrDefault()?.Id;
+    var showPeople = Model.People.Count > 0;
 }
 <template id="@id">
     <form method="post" action="@Model.Action">
         @Html.AntiForgeryToken()
         @Ui.ReturnField(Context.Request)
-        <h3>@(Model.Support ? "Đề xuất người hỗ trợ" : "Đề xuất công việc của tôi")</h3>
+        <h3>Đề xuất công việc</h3>
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
         <label class="f" for="@(id)P">Dự án</label>
-        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: id + "P", extraAttrs: $"data-items-for=\"{id}I\"")
+        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: id + "P",
+            extraAttrs: $"data-items-for=\"{id}I\"" + (showPeople ? $" data-led=\"{string.Join(",", Model.LedProjectIds)}\" data-led-box=\"{id}W\"" : ""))
         <label class="f" for="@(id)I">Đầu mục kế hoạch</label>
         <select class="in" id="@(id)I" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
             @if (pid is int p0)
@@ -29,14 +32,16 @@
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
             <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
         </div>
-        @if (Model.Support)
+        @if (showPeople)
         {
-            <label class="f">Người hỗ trợ</label>
-            <div class="optbox">
-                @foreach (var p in Model.People)
-                {
-                    <div class="trow"><input type="checkbox" id="@(id)W@(p.Id)" name="emp" value="@p.Id"><label for="@(id)W@(p.Id)" style="cursor:pointer;min-width:0"><div class="t">@p.Name @(p.Role == Role.Leader ? "· Leader" : "")</div></label></div>
-                }
+            <div id="@(id)W" hidden>
+                <label class="f">Người hỗ trợ (nếu có)</label>
+                <div class="optbox">
+                    @foreach (var p in Model.People)
+                    {
+                        <div class="trow"><input type="checkbox" id="@(id)C@(p.Id)" name="emp" value="@p.Id"><label for="@(id)C@(p.Id)" style="cursor:pointer;min-width:0"><div class="t">@p.Name @(p.Role == Role.Leader ? "· Leader" : "")</div></label></div>
+                    }
+                </div>
             </div>
         }
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>

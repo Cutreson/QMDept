@@ -60,8 +60,8 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
   ô đỏ nếu có việc Chậm; chọn ngày → danh sách việc từng người (`teamDayList`) + form **Giao thêm việc** (`calAssignForm`):
   dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia (để trắng, Leader tự tích; nhãn vai trò tự động theo dự án, bị khóa).
 - **NV xem lịch nhóm + đề xuất lịch (yêu cầu 2026-10-15)**: NV có nút "Lịch của tôi / Lịch nhóm" (lịch tháng của các NV cùng nhóm, chỉ xem,
-  `?as=all` — chỉ hiệu lực khi bấm rõ). Chọn một ngày ở lịch của mình → **＋ Đề xuất công việc** (việc của mình, mọi dự án đang triển khai) và, với
-  dự án mình là Leader dự án, **＋ Đề xuất người hỗ trợ** (chọn NV / Leader hỗ trợ). Đề xuất (`calendar_proposals` + `calendar_proposal_people`) ở
+  `?as=all` — chỉ hiệu lực khi bấm rõ). Chọn một ngày ở lịch của mình → **＋ Đề xuất công việc** (một nút duy nhất: việc của mình ở mọi dự án đang triển khai; nếu dự án chọn là dự án mình làm Leader dự án thì hiện thêm ô chọn **người hỗ trợ** — NV / Leader; trước đây tách thành 2 nút, gộp 2026-10-15). Với
+  dự án mình là Leader dự án. Đề xuất (`calendar_proposals` + `calendar_proposal_people`) ở
   trạng thái Chờ duyệt, hiện trong "Đề xuất của tôi"; **Leader nhóm duyệt (tab "Đề xuất lịch") thì việc mới được ghi vào lịch NV + lịch nhóm**
   (nguồn "Đề xuất", `WorkflowService.DecideProposalAsync`), từ chối bắt buộc lý do. Thông báo `CalendarProposed` / `CalendarDecided`.
 - **Leader tự đặt lịch**: ở lịch nhóm, danh sách người (và form Giao thêm việc) có cả Leader — Leader tích chính mình để tự thêm việc vào lịch của leader

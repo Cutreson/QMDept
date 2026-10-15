@@ -73,6 +73,9 @@
     Quản trị (`Services/DevSwitch.cs`, `Controllers/DevController.cs`, đầu `_Layout.cshtml`). Production không bao giờ bật (`/Dev/*` trả 404) — **không
     được bật cờ này trên web thật**.
 
+22. **Luôn chạy lại trình duyệt sau mỗi yêu cầu** (yêu cầu 2026-10-15): xử lý xong một yêu cầu → build, chạy lại app (`http://localhost:5125`) và mở lại
+    trình duyệt (khung Browser) để chủ dự án xem ngay kết quả — không đợi chủ dự án nhắc.
+
 ## 2. Tổng quan kỹ thuật
 
 - ASP.NET Core MVC (.NET 10), Razor Views (server-render, mobile-first), EF Core 10 + MySQL

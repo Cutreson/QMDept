@@ -2,14 +2,14 @@ using QMDept.Data;
 
 namespace QMDept.ViewModels;
 
-/// <summary>Sheet "Đề xuất lịch" của NV ở lịch tháng (partial _ProposalSheet): công việc của mình hoặc người hỗ trợ cho dự án mình là Leader dự án.</summary>
+/// <summary>Sheet "Đề xuất công việc" của NV ở lịch tháng (partial _ProposalSheet): việc của mình, kèm chọn người hỗ trợ khi dự án chọn là dự án mình làm Leader dự án.</summary>
 public sealed class ProposalSheetVm
 {
     public required string TemplateId { get; init; }
-    /// <summary>true = đề xuất người hỗ trợ / Leader hỗ trợ (chọn người); false = công việc của chính mình.</summary>
-    public required bool Support { get; init; }
     public required List<Project> Projects { get; init; }
-    /// <summary>Người có thể được đề xuất hỗ trợ (NV + Leader, trừ mình).</summary>
+    /// <summary>Người có thể được đề xuất hỗ trợ (NV + Leader, trừ mình). Rỗng nếu NV không là Leader dự án nào.</summary>
     public List<Person> People { get; init; } = [];
+    /// <summary>Các dự án NV làm Leader dự án — chỉ khi chọn các dự án này mới hiện ô chọn người hỗ trợ.</summary>
+    public List<int> LedProjectIds { get; init; } = [];
     public required string Action { get; init; }
 }

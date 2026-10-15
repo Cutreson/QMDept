@@ -171,6 +171,7 @@
     const t = e.target;
     if (t.matches && t.matches('[data-autosubmit]')) { const f = t.form; if (f) { if (f.requestSubmit) f.requestSubmit(); else f.submit(); } }
     if (t.matches && t.matches('select[data-items-for]')) { fillItems(t); applyLead(t); }
+    if (t.matches && t.matches('select[data-led]')) toggleLed(t);
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
     if (t.matches && t.matches('select.in')) t.classList.toggle('ph', !t.value);
   });
@@ -185,6 +186,13 @@
       s.classList.toggle('p-mgr', on); s.classList.toggle('p-info', !on);
     });
   }
+  // Đề xuất công việc: ô chọn người hỗ trợ chỉ hiện khi dự án chọn là dự án mình làm Leader dự án (select[data-led="id,id"][data-led-box="idBox"]).
+  function toggleLed(sel) {
+    const box = document.getElementById(sel.dataset.ledBox); if (!box) return;
+    const on = (sel.dataset.led || '').split(',').includes(sel.value);
+    box.hidden = !on;
+    if (!on) box.querySelectorAll('input[type=checkbox]').forEach(c => { c.checked = false; });
+  }
   function fillItems(sel) {
     const target = document.getElementById(sel.dataset.itemsFor); if (!target) return;
     const items = (window.QM_ITEMS || {})[sel.value] || [];
@@ -197,7 +205,7 @@
   // khởi tạo trạng thái hiện/ẩn khi tải trang và khi mở sheet
   const initShow = root => $$('select[data-show-target]', root).forEach(showWhen);
   initShow(document);
-  document.addEventListener('qm:sheet-open', e => initShow(e.target));
+  document.addEventListener('qm:sheet-open', e => { initShow(e.target); $$('select[data-led]', e.target).forEach(toggleLed); });
 
   // ---------- tìm nhanh trong danh sách chọn (yêu cầu 2026-10-15) ----------
   // Danh sách dài (≥ 7 mục: dự án, nhân viên, tỉnh…) có ô gõ chữ cái ở trên: gõ → chỉ còn mục chứa chữ đó (không phân biệt hoa / dấu).
