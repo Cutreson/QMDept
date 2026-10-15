@@ -193,7 +193,7 @@
     const box = document.getElementById(sel.dataset.ledBox); if (!box) return;
     const on = (sel.dataset.led || '').split(',').includes(sel.value);
     box.hidden = !on;
-    if (!on) clearPicks(box.querySelector('.pick-chips'));
+    if (!on) { clearPicks(box.querySelector('.pick-chips')); box.querySelectorAll('input[name=self]').forEach(c => { c.checked = true; }); const qr = box.querySelector('[data-pending]'); if (qr) qr.hidden = true; }
   }
   // Chọn nhiều người bằng ô chọn mở ra như ô chọn dự án: chọn một người → hiện thành thẻ có nút ✕ (input ẩn name="emp"), người đó bị ẩn khỏi danh sách.
   function pickPerson(sel) {

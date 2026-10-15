@@ -303,3 +303,6 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
   tab con "Đề xuất lịch (N)", huy hiệu số trên tab "Kế hoạch & duyệt" và thông báo đẩy. Danh sách chờ duyệt nằm trong `DataCache` (`Dept.PendingProposals`).
 - **Công việc của chính Leader dự án (bổ sung)**: form đề xuất có ô **"Tôi thực hiện (với vai trò Leader dự án)"**, mặc định tích. Tích → người đề xuất là người thực hiện (cùng
   những người hỗ trợ chọn thêm); bỏ tích thì chỉ những người được chỉ định trong nhóm làm — bỏ tích mà không chọn ai thì báo lỗi. Danh sách đề xuất hiện "Thực hiện: …".
+- **Mở rộng cho mọi thành viên trong nhóm (yêu cầu 2026-10-15, thay yêu cầu "chỉ dự án mình làm Leader dự án")**: **mọi NV có nhóm** đều có nút "＋ Đề xuất công việc" và chọn
+  được **mọi dự án đang triển khai** cho công việc của chính mình (Leader nhóm duyệt). Phần **"Tôi thực hiện" + xin người hỗ trợ / phòng ban / nhóm khác + lý do**
+  chỉ hiện (và chỉ được server chấp nhận) với dự án mình làm Leader dự án (`WorkflowService.ProposeAsync`); dự án khác chỉ đề xuất việc của chính mình.

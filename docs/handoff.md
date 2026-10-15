@@ -20,6 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
+  Đề xuất công việc mở cho mọi NV có nhóm (dự án bất kỳ cho việc của mình; xin hỗ trợ chỉ ở dự án mình là Leader dự án).
   Lịch nhóm của NV gồm cả Leader của nhóm (Leader tự đặt việc hiện cho NV thấy) — giống giao diện Leader; đã kiểm tra mọi tài khoản NV / Leader / TP (script audit: GET mọi trang) đều chạy.
   Leader giao việc: bỏ đầu mục, nhãn "Leader" cho trưởng nhóm; đề xuất của NV hiện ở lịch nhóm + huy hiệu (`docs/nghiep-vu.md` §13).
   Đề xuất công việc: bỏ đầu mục, thêm lý do + số lượng xin hỗ trợ theo phòng ban / nhóm khác, chỉ chỉ định người trong nhóm mình (`docs/nghiep-vu.md` §12).
