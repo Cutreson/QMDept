@@ -5,6 +5,7 @@
     var req = Context.Request;
     var d = Scope.Date;
     var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.InScope(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk);
+    var propCount = Scope.MeId is int pl ? D.ProposalsFor(pl).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {
         ("approvals", "/Planning/Approvals", "Kế hoạch"),
@@ -12,7 +13,7 @@
         ("week", "/Planning/Week", "Lịch tuần"),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),
-        ("proposals", "/Planning/Proposals", "Đề xuất lịch"),
+        ("proposals", "/Planning/Proposals", "Đề xuất lịch" + (propCount > 0 ? $" ({propCount})" : "")),
         ("people", "/Planning/People", "Nhân sự"),
         ("assign", "/Planning/Assign", "Phân công"),
     };

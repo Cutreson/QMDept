@@ -293,3 +293,10 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
   định người; (c) **lý do xin hỗ trợ** (bắt buộc khi có xin người / số lượng, ≤ 500 ký tự).
 - Lưu: `calendar_proposals.Departments` = "Thiết kế cơ=2;Nhóm Nguyễn Văn Huề=1", `SupportReason`. Leader duyệt thấy số lượng + lý do; khi duyệt, số lượng ghi vào
   tên việc "· Xin hỗ trợ: Thiết kế cơ ×2, Nhóm … ×1" (`Fmt.QuotaText`).
+
+## 13. Giao thêm việc của Leader + đề xuất chuyển sang trưởng nhóm (yêu cầu 2026-10-15)
+
+- Form "Giao thêm việc" (lịch nhóm) và "Giao việc" (tab Phân công): **không còn chọn đầu mục / "Việc khác"** — chỉ dự án + **nội dung công việc phát sinh** + giờ + người tham gia.
+- Nhãn vai trò ở danh sách người tham gia: **trưởng nhóm (Leader) hiện "Leader"**, Leader dự án hiện "Leader dự án", còn lại "Hỗ trợ" (nhãn khóa, tự đổi theo dự án).
+- Đề xuất lịch của NV **chuyển sang trưởng nhóm của người đề xuất để duyệt**: hiện ở thẻ "Đề xuất chờ duyệt (N)" ngay đầu lịch nhóm của Leader (Duyệt / Từ chối tại chỗ),
+  tab con "Đề xuất lịch (N)", huy hiệu số trên tab "Kế hoạch & duyệt" và thông báo đẩy. Danh sách chờ duyệt nằm trong `DataCache` (`Dept.PendingProposals`).

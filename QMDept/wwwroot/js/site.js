@@ -170,7 +170,8 @@
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.matches && t.matches('[data-autosubmit]')) { const f = t.form; if (f) { if (f.requestSubmit) f.requestSubmit(); else f.submit(); } }
-    if (t.matches && t.matches('select[data-items-for]')) { fillItems(t); applyLead(t); }
+    if (t.matches && t.matches('select[data-items-for]')) fillItems(t);
+    if (t.matches && t.matches('select[data-lead-for]')) applyLead(t);
     if (t.matches && t.matches('select[data-led]')) toggleLed(t);
     if (t.matches && t.matches('select[data-pick-into]')) pickPerson(t);
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
@@ -181,7 +182,7 @@
     const f = sel.form; if (!f || !f.dataset.leads) return;
     let m = {}; try { m = JSON.parse(f.dataset.leads) || {}; } catch (e) { return; }
     const lead = m[sel.value];
-    f.querySelectorAll('[data-role-tag]').forEach(s => {
+    f.querySelectorAll('[data-role-tag]:not([data-group-leader])').forEach(s => {
       const on = lead != null && String(lead) === s.dataset.roleTag;
       s.textContent = on ? 'Leader dự án' : 'Hỗ trợ';
       s.classList.toggle('p-mgr', on); s.classList.toggle('p-info', !on);

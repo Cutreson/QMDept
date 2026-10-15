@@ -1,0 +1,34 @@
+@* Đề xuất lịch của NV trong nhóm đang chờ Leader duyệt (yêu cầu 2026-10-15): hiện ngay ở lịch nhóm của Leader để duyệt / từ chối tại chỗ.
+   Dùng cùng POST /Planning/DecideProposal với tab "Đề xuất lịch". *@
+@{
+    var req = Context.Request;
+    var list = Scope.Account.Role == Role.Leader ? D.ProposalsFor(Scope.Account.Id) : [];
+}
+@if (list.Count > 0)
+{
+    <section class="card sec"><h2>Đề xuất chờ duyệt (@list.Count)</h2>
+        @foreach (var x in list)
+        {
+            var who = x.People.Select(p => p.EmployeeId).Where(i => i != x.ProposerId).Select(i => D.PName(i)).ToList();
+            <div class="asg">
+                <div class="row"><b>@D.PName(x.ProposerId)</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.Start–@x.End</span></span></div>
+                <div class="t" style="margin-top:4px">@x.Title</div>
+                <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Đề xuất hỗ trợ: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Xin hỗ trợ: " + Fmt.QuotaText(x.Departments))</div>
+                @if (!string.IsNullOrEmpty(x.SupportReason)) { <div class="note">Lý do xin hỗ trợ: @x.SupportReason</div> }
+                <div class="btn-row">
+                    <form method="post" action="/Planning/DecideProposal" asp-antiforgery="true" class="ro-ok">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">✓ Duyệt</button>
+                    </form>
+                    <form method="post" action="/Planning/DecideProposal" asp-antiforgery="true" class="ro-ok"
+                          data-prompt="Từ chối đề xuất của @D.PName(x.ProposerId)" data-prompt-label="Lý do từ chối" data-prompt-required data-prompt-name="note">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">✕ Từ chối</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </section>
+}

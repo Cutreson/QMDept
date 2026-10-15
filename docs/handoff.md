@@ -20,6 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
+  Leader giao việc: bỏ đầu mục, nhãn "Leader" cho trưởng nhóm; đề xuất của NV hiện ở lịch nhóm + huy hiệu (`docs/nghiep-vu.md` §13).
   Đề xuất công việc: bỏ đầu mục, thêm lý do + số lượng xin hỗ trợ theo phòng ban / nhóm khác, chỉ chỉ định người trong nhóm mình (`docs/nghiep-vu.md` §12).
   Tab "Làm thêm" đổi tên thành "ĐK làm thêm tại CTy" (tiêu đề trang: "Đăng ký làm thêm tại công ty"). Đề xuất công việc dùng được cả ở Lịch nhóm (partial `_StaffProposals`).
   **2026-10-15 (5 hạng mục)**: NV xem Lịch nhóm + đề xuất lịch (bảng `calendar_proposals`, Leader duyệt ở tab "Đề xuất lịch"); Leader tự đặt lịch cho mình ở lịch nhóm;

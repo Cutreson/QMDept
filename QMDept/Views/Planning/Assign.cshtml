@@ -25,22 +25,12 @@
             @Ui.Select("emp", list.Select(p => (p.Id.ToString(), p.Name + (p.Level is Level level ? " · " + Labels.Of(level) : ""))), null, placeholder: "Chọn nhân viên", id: "asgW")</div>
         <div><label class="f" for="asgD" style="margin-top:0">Ngày làm</label><input class="in" type="date" id="asgD" name="date" value="@Fmt.Key(Scope.Date)"></div>
         <div><label class="f" for="asgP">Dự án</label>
-            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "asgP", extraAttrs: "data-items-for=\"asgI\"")</div>
-        <div><label class="f" for="asgI">Đầu mục kế hoạch</label><select class="in" id="asgI" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
-            @if (pj0 is int p0)
-            {
-                foreach (var i in D.ItemsOf(p0))
-                {
-                    <option value="@i.Id">@i.Title</option>
-                }
-            }
-        </select></div></div>
-    <label class="f" for="asgT">Nội dung công việc</label><input class="in" id="asgT" name="title" maxlength="300">
+            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "asgP")</div></div>
+    <label class="f" for="asgT">Nội dung công việc phát sinh</label><input class="in" id="asgT" name="title" maxlength="300">
     <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "asgE")</div></div>
     <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc</button>
     
 </form>
-<partial name="_ItemsJson" />
 <div class="kpis k4"><div class="kpi k-info"><b>@teamProjects.Count</b><span>Dự án nhóm quản lý</span></div><div class="kpi k-mgr"><b>@(mine.Count(a => a.Role == ProjectRole.Lead))</b><span>Leader dự án</span></div><div class="kpi k-ok"><b>@(mine.Count(a => a.Role != ProjectRole.Lead))</b><span>Hỗ trợ dự án</span></div><div class="kpi k-idle"><b>@(list.Count(p => D.AssignsOf(p.Id).Count == 0))</b><span>Chưa được giao</span></div></div>
 <section class="card sec"><h2>Việc đã giao gần đây (@Model.Given.Count)</h2>
     @if (Model.Given.Count > 0)

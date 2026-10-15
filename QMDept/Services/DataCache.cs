@@ -30,7 +30,7 @@ public sealed class DataCache(IDbContextFactory<AppDbContext> factory)
     public void Invalidate() => Interlocked.Increment(ref _version);
 
     public sealed record BaseSnap(long Version, DateTime At, List<Person> People, List<Project> Projects, List<PlanItem> Items,
-        List<Assignment> Assigns, Dictionary<int, NotifySetting> Notify);
+        List<Assignment> Assigns, Dictionary<int, NotifySetting> Notify, List<CalendarProposal> PendingProposals);
 
     public sealed record RangeSnap(long Version, DateTime At, List<WorkTask> Tasks, List<DayPlan> Plans, List<DayReport> Reports,
         List<Leave> Leaves, List<ProjectNeed> Needs, List<Extra> Extras, List<Overtime> Ots);
@@ -71,9 +71,11 @@ public sealed class DataCache(IDbContextFactory<AppDbContext> factory)
             var items = Q(db => db.PlanItems.AsNoTracking().ToListAsync());
             var assigns = Q(db => db.Assignments.AsNoTracking().ToListAsync());
             var notify = Q(db => db.NotifySettings.AsNoTracking().ToListAsync());
+            // Đề xuất lịch đang chờ duyệt (hiện huy hiệu / thẻ chờ duyệt cho Leader).
+            var proposals = Q(db => db.CalendarProposals.AsNoTracking().Include(p => p.People).Where(p => p.Status == ExtraStatus.Pending).ToListAsync());
             // Chờ đủ mọi truy vấn (một truy vấn lỗi không để các truy vấn còn lại chạy không ai chờ).
-            await Task.WhenAll(people, projects, items, assigns, notify);
-            var snap = new BaseSnap(v, at, await people, await projects, await items, await assigns, (await notify).ToDictionary(x => x.PersonId));
+            await Task.WhenAll(people, projects, items, assigns, notify, proposals);
+            var snap = new BaseSnap(v, at, await people, await projects, await items, await assigns, (await notify).ToDictionary(x => x.PersonId), await proposals);
             // Không để lần nạp cũ hơn (xong muộn) ghi đè ảnh chụp mới hơn.
             BaseSnap? cur;
             do { cur = _base; if (cur is not null && cur.Version > v) break; }

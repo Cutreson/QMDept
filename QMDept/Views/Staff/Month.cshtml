@@ -30,6 +30,7 @@ else
 
 @if (Model.AllMode)
 {
+    <partial name="_LeaderProposals" />
     <div class="mgrid">
         @foreach (var x in Fmt.MonthHeader) { <div class="dow">@x</div> }
         @for (var k = 0; k < Model.Lead; k++) { <div></div> }
@@ -68,16 +69,12 @@ else
             // Leader dự án của từng dự án: chọn dự án → nhãn vai trò tự đổi (khóa), ô tích để trắng (data-leads + site.js).
             var leadMap = D.ActivePj().Select(x => (x.Id, Lead: D.ProjectLead(x.Id)?.Id)).Where(x => x.Lead is not null).ToDictionary(x => x.Id.ToString(), x => x.Lead!.Value);
             var leadDefault = pj0 is int pl ? D.ProjectLead(pl)?.Id : null;
-            <partial name="_ItemsJson" />
             <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" asp-antiforgery="true" data-leads="@System.Text.Json.JsonSerializer.Serialize(leadMap)">
                 @Ui.ReturnField(req)
                 <h2>Giao thêm việc · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h2>
-                <div class="grid2"><div><label class="f" for="calP" style="margin-top:0">Dự án</label>
-                        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "calP", extraAttrs: "data-items-for=\"calI\"")</div>
-                    <div><label class="f" for="calI" style="margin-top:0">Đầu mục kế hoạch</label><select class="in" id="calI" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
-                        @if (pj0 is int p0) { foreach (var i in D.ItemsOf(p0)) { <option value="@i.Id">@i.Title</option> } }
-                    </select></div></div>
-                <label class="f" for="calT">Nội dung công việc</label><input class="in" id="calT" name="title">
+                <label class="f" for="calP" style="margin-top:0">Dự án</label>
+                @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
+                <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
                 <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "calE")</div></div>
                 <label class="f">Người tham gia</label>
                 <div class="optbox">
@@ -86,7 +83,7 @@ else
                         var n = D.TasksOn(sel, p.Id).Count(D.OkCal);
                         var leave = D.OnLeave(sel, p.Id);
                         <div class="trow"><input type="checkbox" id="calW_@p.Id" name="emp" value="@p.Id"><label for="calW_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LevelPill(p)</div><div class="s">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
-                            <span class="pill @(leadDefault == p.Id ? "p-mgr" : "p-info")" data-role-tag="@p.Id">@(leadDefault == p.Id ? "Leader dự án" : "Hỗ trợ")</span></div>
+                            <span class="pill @(p.Role == Role.Leader || leadDefault == p.Id ? "p-mgr" : "p-info")" data-role-tag="@p.Id"@(p.Role == Role.Leader ? " data-group-leader" : "")>@(p.Role == Role.Leader ? "Leader" : leadDefault == p.Id ? "Leader dự án" : "Hỗ trợ")</span></div>
                     }
                 </div>
                 <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc cho người đã chọn</button>

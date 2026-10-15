@@ -44,6 +44,10 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<Project> Projects { get; private set; } = [];
     public List<PlanItem> Items { get; private set; } = [];
     public List<Assignment> Assigns { get; private set; } = [];
+    /// <summary>Đề xuất lịch của NV đang chờ Leader duyệt (CalendarProposal, kèm People).</summary>
+    public List<CalendarProposal> PendingProposals { get; private set; } = [];
+    /// <summary>Đề xuất chờ duyệt của NV thuộc nhóm của Leader <paramref name="leaderId"/>.</summary>
+    public List<CalendarProposal> ProposalsFor(int leaderId) => PendingProposals.Where(x => P(x.ProposerId) is { IsDeleted: false } p && p.LeaderId == leaderId).OrderBy(x => x.Date).ThenBy(x => x.CreatedAt).ToList();
     public IEnumerable<WorkTask> Tasks => _tasks.Values;
     public IEnumerable<DayPlan> Plans => _plans.Values;
     public IEnumerable<DayReport> Reports => _reports.Values;
@@ -64,7 +68,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         if (!_base)
         {
             var b = await cache.GetBaseAsync();
-            People = b.People; Projects = b.Projects; Items = b.Items; Assigns = b.Assigns;
+            People = b.People; Projects = b.Projects; Items = b.Items; Assigns = b.Assigns; PendingProposals = b.PendingProposals;
             _base = true;
         }
         if (_ranges.Any(r => r.From <= from && to <= r.To)) return;

@@ -151,7 +151,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
 
         int Badge(string id)
         {
-            if (scope.Role == Role.Leader && id == "planning") return d.LeaderPending(date);
+            if (scope.Role == Role.Leader && id == "planning") return d.LeaderPending(date) + (scope.MeId is int lid ? d.ProposalsFor(lid).Count : 0);
             if (scope.Role == Role.Manager && id == "approvals") return d.Plans.Count(p => p.Date == date && Dept.PlanSt(p) == PlanState.PendingManager);
             if (id == "overtime") return scope.Role == Role.Staff ? 0 : d.OtPending(date).Count(x => x.Status == OtStatus.Pending);
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
