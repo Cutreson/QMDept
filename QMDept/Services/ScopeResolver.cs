@@ -63,8 +63,11 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         scope.Pool = acc.Role == Role.Staff ? [acc] : subs.Where(p => p.Role == Role.Staff).ToList();
         scope.TeamPeople = acc.Role switch
         {
+            // NV: lịch nhóm gồm Leader của mình (việc Leader tự đặt) + các NV cùng nhóm — giống lịch nhóm bên giao diện Leader.
             Role.Staff => acc.LeaderId is int gl
-                ? Sorted(people.Where(p => !p.IsDeleted && p.Role == Role.Staff && p.LeaderId == gl)).ToList() : [acc],
+                ? [.. people.Where(p => !p.IsDeleted && p.Role == Role.Leader && p.Id == gl),
+                   .. Sorted(people.Where(p => !p.IsDeleted && p.Role == Role.Staff && p.LeaderId == gl))]
+                : [acc],
             Role.Leader => [acc, .. scope.Pool],
             _ => scope.Pool,
         };
