@@ -35,13 +35,15 @@
         @if (showPeople)
         {
             <div id="@(id)W" hidden>
-                <label class="f">Người hỗ trợ (nếu có)</label>
-                <div class="optbox">
+                <label class="f" for="@(id)Pick">Người hỗ trợ (nếu có)</label>
+                <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips">
+                    <option value="">— Chọn người hỗ trợ —</option>
                     @foreach (var p in Model.People)
                     {
-                        <div class="trow"><input type="checkbox" id="@(id)C@(p.Id)" name="emp" value="@p.Id"><label for="@(id)C@(p.Id)" style="cursor:pointer;min-width:0"><div class="t">@p.Name @(p.Role == Role.Leader ? "· Leader" : "")</div></label></div>
+                        <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
                     }
-                </div>
+                </select>
+                <div id="@(id)Chips" class="pick-chips"></div>
             </div>
         }
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>

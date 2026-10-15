@@ -420,3 +420,6 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .notif-x{border:0;background:none;font-size:18px;line-height:1;color:var(--muted);padding:0 2px}
 .notif-t{font-weight:700;margin-bottom:2px}
 @keyframes notif-in{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+.pick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pick-chip{display:inline-flex;align-items:center;gap:6px;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:4px 6px 4px 10px;font-size:13px;font-weight:600}
+.pick-chip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:12px;padding:0 2px}

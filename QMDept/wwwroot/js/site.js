@@ -172,6 +172,7 @@
     if (t.matches && t.matches('[data-autosubmit]')) { const f = t.form; if (f) { if (f.requestSubmit) f.requestSubmit(); else f.submit(); } }
     if (t.matches && t.matches('select[data-items-for]')) { fillItems(t); applyLead(t); }
     if (t.matches && t.matches('select[data-led]')) toggleLed(t);
+    if (t.matches && t.matches('select[data-pick-into]')) pickPerson(t);
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
     if (t.matches && t.matches('select.in')) t.classList.toggle('ph', !t.value);
   });
@@ -191,8 +192,41 @@
     const box = document.getElementById(sel.dataset.ledBox); if (!box) return;
     const on = (sel.dataset.led || '').split(',').includes(sel.value);
     box.hidden = !on;
-    if (!on) box.querySelectorAll('input[type=checkbox]').forEach(c => { c.checked = false; });
+    if (!on) clearPicks(box.querySelector('.pick-chips'));
   }
+  // Chọn nhiều người bằng ô chọn mở ra như ô chọn dự án: chọn một người → hiện thành thẻ có nút ✕ (input ẩn name="emp"), người đó bị ẩn khỏi danh sách.
+  function pickPerson(sel) {
+    const box = document.getElementById(sel.dataset.pickInto); if (!box || !sel.value) return;
+    const val = sel.value, text = sel.options[sel.selectedIndex].textContent;
+    // Xóa chữ đang lọc trước (danh sách được dựng lại), rồi mới ẩn người vừa chọn.
+    const q = sel.previousElementSibling;
+    if (q && q.classList.contains('sel-search') && q.value) { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); }
+    const chip = document.createElement('span');
+    chip.className = 'pick-chip';
+    chip.dataset.value = val;
+    chip.innerHTML = `${esc(text)}<input type="hidden" name="emp" value="${esc(val)}"><button type="button" aria-label="Bỏ ${esc(text)}">✕</button>`;
+    box.appendChild(chip);
+    const opt = [...sel.options].find(x => x.value === val);
+    if (opt) { opt.disabled = true; opt.hidden = true; }
+    sel.value = '';
+  }
+  function clearPicks(box) {
+    if (!box) return;
+    const sel = document.querySelector('select[data-pick-into="' + box.id + '"]');
+    box.querySelectorAll('.pick-chip').forEach(c => {
+      const o = sel && [...sel.options].find(x => x.value === c.dataset.value);
+      if (o) { o.disabled = false; o.hidden = false; }
+      c.remove();
+    });
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.pick-chip button'); if (!b) return;
+    const chip = b.parentNode, box = chip.parentNode;
+    const sel = document.querySelector('select[data-pick-into="' + box.id + '"]');
+    const o = sel && [...sel.options].find(x => x.value === chip.dataset.value);
+    if (o) { o.disabled = false; o.hidden = false; }
+    chip.remove();
+  });
   function fillItems(sel) {
     const target = document.getElementById(sel.dataset.itemsFor); if (!target) return;
     const items = (window.QM_ITEMS || {})[sel.value] || [];
@@ -226,13 +260,13 @@
     sel.parentNode.insertBefore(box, sel);
     let all = null;
     const snap = () => { all = [...sel.options].map(o => ({ v: o.value, t: o.textContent, d: o.disabled })); };
-    box.addEventListener('focus', () => { if (!box.value) snap(); });
     box.addEventListener('input', () => {
-      if (!all) snap();
+      if (!box.dataset.live) { snap(); box.dataset.live = '1'; }
       const q = fold(box.value.trim()), cur = sel.value;
-      const keep = all.filter(o => !q || o.v === cur || fold(o.t).includes(q));
+      const keep = all.filter(o => !(o.d && o.v !== '') && (!q || o.v === cur || fold(o.t).includes(q)));
       sel.innerHTML = keep.map(o => `<option value="${esc(o.v)}"${o.d ? ' disabled' : ''}>${esc(o.t)}</option>`).join('');
       sel.value = cur;
+      if (!q) delete box.dataset.live;
     });
   }
   function enhanceList(box) {
