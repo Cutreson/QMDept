@@ -1,0 +1,35 @@
+@model StaffMonthVm
+@* Đề xuất công việc của NV (yêu cầu 2026-10-15): dùng ở cả "Lịch của tôi" và "Lịch nhóm". Ngày = ngày đang chọn.
+   Leader nhóm duyệt thì việc mới vào lịch. POST /Staff/ProposeCalendar (ở chế độ lịch của mình — Referer đưa NV về lại trang đang xem). *@
+@{
+    var me = Scope.Account;
+    var sel = Scope.Date;
+    var req = Context.Request;
+}
+@if (me.Role == Role.Staff && !Scope.IsViewingOther)
+{
+            @* Đề xuất lịch (yêu cầu 2026-10-15): thêm công việc của mình / người hỗ trợ cho dự án mình là Leader dự án — Leader nhóm duyệt mới ghi vào lịch *@
+            var ledPj = D.Assigns.Where(a => a.EmployeeId == me.Id && a.Role == ProjectRole.Lead).Select(a => D.PJ(a.ProjectId)).OfType<Project>().Where(x => !x.Closed).ToList();
+            var action = Ui.To(req, "/Staff/ProposeCalendar", ("d", Fmt.Key(sel)));
+            <partial name="_ItemsJson" />
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap">
+                @if (ledPj.Count > 0) { <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button> }
+            </div>
+                var cands = ledPj.Count > 0
+                    ? D.Active.Where(x => x.Id != me.Id && (x.Role == Role.Staff || x.Role == Role.Leader)).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
+                    : new List<Person>();
+            <partial name="_ProposalSheet" model="@(new ProposalSheetVm { TemplateId = "propTask", Projects = ledPj, People = cands, LedProjectIds = ledPj.Select(x => x.Id).ToList(), Action = action })" />
+            @if (Model.Proposals.Count > 0)
+            {
+                <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2>
+                    @foreach (var x in Model.Proposals)
+                    {
+                        var who = x.People.Select(p => p.EmployeeId).Where(i => i != x.ProposerId).Select(i => D.PName(i)).ToList();
+                        <div class="trow"><span class="ck @(x.Status == ExtraStatus.Approved ? "on" : "")">@(x.Status == ExtraStatus.Approved ? "✓" : "")</span>
+                            <div><div class="t">@x.Title</div>
+                                <div class="s">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Hỗ trợ: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Phòng ban: " + x.Departments.Replace(";", ", "))@(x.Status == ExtraStatus.Rejected && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
+                            <span class="tm">@x.Start–@x.End <span class="pill @(x.Status == ExtraStatus.Approved ? "p-ok" : x.Status == ExtraStatus.Rejected ? "p-bad" : "p-warn")">@(x.Status == ExtraStatus.Approved ? "Đã duyệt" : x.Status == ExtraStatus.Rejected ? "Từ chối" : "Chờ duyệt")</span></span></div>
+                    }
+                </section>
+            }
+}

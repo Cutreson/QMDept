@@ -21,7 +21,7 @@ public partial class StaffController
         await D.EnsureAsync(Date, Date);
         var ro = Scope.IsReadOnly;
         // Đề xuất lịch của chính NV trong ngày đang chọn (để hiện trạng thái chờ duyệt / đã duyệt / từ chối).
-        var props = Scope.IsSelf && Scope.Account.Role == Role.Staff
+        var props = Scope.Account.Role == Role.Staff && !Scope.IsViewingOther
             ? await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
                 .Where(p => p.ProposerId == Scope.Account.Id && p.Date == Date).OrderBy(p => p.CreatedAt).ToListAsync()
             : [];

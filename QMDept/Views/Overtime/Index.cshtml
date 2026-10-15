@@ -1,11 +1,11 @@
 @model OvertimeVm
 @* otScreen(): tiêu đề, thanh ngày, hạn đăng ký (otDeadline), tab con cho Leader/TP → otMine / otApprove / otSummary. *@
 @{
-    ViewData["Title"] = "Làm thêm";
+    ViewData["Title"] = "Đăng ký làm thêm tại công ty";
     var req = Context.Request;
     var d = Scope.Date;
 }
-@Ui.Head(0, "Đăng ký làm thêm")
+@Ui.Head(0, "Đăng ký làm thêm tại công ty")
 <partial name="_DayBar" />
 @OvertimeUi.Deadline(d)
 @if (Scope.Role != Role.Staff)

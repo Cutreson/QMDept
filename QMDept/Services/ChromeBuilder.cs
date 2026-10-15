@@ -46,7 +46,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             new("month", "Kế hoạch tháng", "week", "/Staff/Month", "Staff", "Month"),
             new("projects", "Thông tin dự án", "home", "/Staff/Projects", "Staff", "Projects"),
             new("morning", "Báo cáo đầu ngày", "sun", "/Staff/Morning", "Staff", "Morning"),
-            new("overtime", "Làm thêm", "clock", "/Overtime", "Overtime", null),
+            new("overtime", "ĐK làm thêm tại CTy", "clock", "/Overtime", "Overtime", null),
             new("evening", "Báo cáo cuối ngày", "flag", "/Staff/Evening", "Staff", "Evening"),
         ],
         [Role.Leader] =
@@ -55,7 +55,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             new("planning", "Kế hoạch & duyệt", "check", "/Planning/Approvals", "Planning", null),
             new("tracking", "Theo dõi", "eye", "/Leader/Tracking", "Leader", "Tracking"),
             new("reports", "Báo cáo TP", "send", "/Leader/Reports", "Leader", "Reports"),
-            new("overtime", "Làm thêm", "clock", "/Overtime", "Overtime", null),
+            new("overtime", "ĐK làm thêm tại CTy", "clock", "/Overtime", "Overtime", null),
         ],
         [Role.Manager] =
         [
@@ -63,7 +63,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             new("approvals", "Phê duyệt", "check", "/Manager/Approvals", "Manager", "Approvals"),
             new("projects", "Dự án", "folder", "/Manager/Projects", "Manager", "Projects"),
             new("reports", "Báo cáo", "doc", "/Manager/Reports", "Manager", "Reports"),
-            new("overtime", "Làm thêm", "clock", "/Overtime", "Overtime", null),
+            new("overtime", "ĐK làm thêm tại CTy", "clock", "/Overtime", "Overtime", null),
             // Không có trong tab TP của artifact (TP quản lý tài khoản ở giao diện Leader) — xem ViewScope.
             new("people", "Nhân sự", "eye", "/Planning/People", "Planning", "People"),
         ],

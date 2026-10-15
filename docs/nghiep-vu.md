@@ -51,7 +51,7 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
 - **Hiện trên lịch tháng (`okCal`)**: Ngoài kế hoạch → chỉ khi Leader đã duyệt kế hoạch đầu ngày có chứa việc đó;
   Chuyển tiếp → chỉ khi `CarryOk` (Leader duyệt chuyển); nguồn khác → luôn hiện.
 
-## 3. Quy trình hằng ngày của Nhân viên (4 tab + Làm thêm)
+## 3. Quy trình hằng ngày của Nhân viên (4 tab + "ĐK làm thêm tại CTy" — tên tab đổi 2026-10-15, tiêu đề trang "Đăng ký làm thêm tại công ty")
 
 ### 3.1 Kế hoạch tháng (`nvMonth`)
 - Lưới tháng (T2→CN). Mỗi ô: số việc đã duyệt (`okCal`) trong ngày. Màu: không việc = xám; xong hết = xanh lá;
@@ -62,7 +62,7 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
 - **NV xem lịch nhóm + đề xuất lịch (yêu cầu 2026-10-15)**: NV có nút "Lịch của tôi / Lịch nhóm" (lịch tháng của các NV cùng nhóm, chỉ xem,
   `?as=all` — chỉ hiệu lực khi bấm rõ). Chọn một ngày ở lịch của mình → **＋ Đề xuất công việc** (một nút duy nhất, **chỉ chọn được các dự án mình làm Leader dự án** — yêu cầu 2026-10-15, kể cả việc của chính mình; kèm ô chọn **người hỗ trợ** NV / Leader dạng ô chọn mở ra như ô chọn dự án (chọn nhiều người → hiện thành thẻ ✕; không có ô gõ lọc). Danh sách có thêm nhóm **Phòng ban**: Thiết kế cơ, Thiết kế điện, Lắp ráp cơ, Lắp ráp điện (`Fmt.SupportDepartments`, lưu ở `calendar_proposals.Departments`; khi duyệt ghi vào tên việc "· Phòng hỗ trợ: …" vì phòng ban không có tài khoản); nút chỉ hiện khi mình là Leader dự án của ít nhất một dự án). Với
   dự án mình là Leader dự án. Đề xuất (`calendar_proposals` + `calendar_proposal_people`) ở
-  trạng thái Chờ duyệt, hiện trong "Đề xuất của tôi"; **Leader nhóm duyệt (tab "Đề xuất lịch") thì việc mới được ghi vào lịch NV + lịch nhóm**
+  trạng thái Chờ duyệt, hiện trong "Đề xuất của tôi" (nút đề xuất có cả ở "Lịch của tôi" và "Lịch nhóm"); **Leader nhóm duyệt (tab "Đề xuất lịch") thì việc mới được ghi vào lịch NV + lịch nhóm**
   (nguồn "Đề xuất", `WorkflowService.DecideProposalAsync`), từ chối bắt buộc lý do. Thông báo `CalendarProposed` / `CalendarDecided`.
 - **Leader tự đặt lịch**: ở lịch nhóm, danh sách người (và form Giao thêm việc) có cả Leader — Leader tích chính mình để tự thêm việc vào lịch của leader
   và lịch nhóm, không cần duyệt.
