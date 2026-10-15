@@ -306,3 +306,5 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 - **Mở rộng cho mọi thành viên trong nhóm (yêu cầu 2026-10-15, thay yêu cầu "chỉ dự án mình làm Leader dự án")**: **mọi NV có nhóm** đều có nút "＋ Đề xuất công việc" và chọn
   được **mọi dự án đang triển khai** cho công việc của chính mình (Leader nhóm duyệt). Phần **"Tôi thực hiện" + xin người hỗ trợ / phòng ban / nhóm khác + lý do**
   chỉ hiện (và chỉ được server chấp nhận) với dự án mình làm Leader dự án (`WorkflowService.ProposeAsync`); dự án khác chỉ đề xuất việc của chính mình.
+- **NV thêm việc ngoài kế hoạch (Báo cáo đầu ngày)**: bỏ ô "Đầu mục kế hoạch" — chỉ chọn dự án + nhập nội dung + giờ (yêu cầu 2026-10-15; `TaskFieldsVm.ShowItem = false`).
+  Form Thêm việc ở Lịch tuần của Leader vẫn còn ô đầu mục.

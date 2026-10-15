@@ -182,7 +182,7 @@
             @Html.AntiForgeryToken()
             @Ui.ReturnField(req)
             <h3>Thêm công việc ngoài kế hoạch</h3>
-            <partial name="_TaskFields" model="@(new TaskFieldsVm { Prefix = "o", ProjectId = D.MainProject(me.Id, d) })" />
+            <partial name="_TaskFields" model="@(new TaskFieldsVm { Prefix = "o", ProjectId = D.MainProject(me.Id, d), ShowItem = false })" />
             <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Thêm vào danh sách</button></div>
         </form>
     </template>

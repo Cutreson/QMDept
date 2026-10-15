@@ -24,6 +24,8 @@ public sealed class TaskFieldsVm
     public DateOnly? SelectedDate { get; init; }
     public string Start { get; init; } = "08:00";
     public string End { get; init; } = "12:00";
+    /// <summary>false = không hiện ô "Đầu mục kế hoạch" (NV thêm việc ngoài kế hoạch chỉ nhập nội dung — yêu cầu 2026-10-15).</summary>
+    public bool ShowItem { get; init; } = true;
 }
 
 /// <summary>Dữ liệu form _TaskFields gửi lên (tên field: projectId, itemId, title, start, end, date). readTaskFields().</summary>

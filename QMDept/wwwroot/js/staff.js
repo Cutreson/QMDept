@@ -252,7 +252,7 @@
     } else if ((f.getAttribute('action') || '').indexOf('/Staff/AddUnplannedTask') === 0) {
       // readTaskFields('o'): nội dung hoặc đầu mục; kết thúc sau bắt đầu
       const oT = $('#oT', f), oI = $('#oI', f), oS = $('#oS', f), oE = $('#oE', f);
-      if (oT && oI && !oT.value.trim() && !oI.value) return stop('Nhập nội dung hoặc chọn đầu mục');
+      if (oT && !oT.value.trim() && !(oI && oI.value)) return stop(oI ? 'Nhập nội dung hoặc chọn đầu mục' : 'Nhập nội dung công việc');
       if (oS && oE && oE.value <= oS.value) return stop('Giờ kết thúc phải sau giờ bắt đầu');
     } else if ((f.getAttribute('action') || '').indexOf('/Staff/ProposeExtra') === 0) {
       // openExtra: kết thúc (nếu có) phải sau bắt đầu
