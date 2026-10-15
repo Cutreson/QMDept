@@ -1,0 +1,45 @@
+@model ProposalSheetVm
+@* Đề xuất lịch của NV (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
+   POST /Staff/ProposeCalendar (ngày = ngày đang chọn ở lịch, Ui.ReturnField). Leader nhóm duyệt thì việc mới vào lịch. *@
+@{
+    var id = Model.TemplateId;
+    var pid = Model.Projects.FirstOrDefault()?.Id;
+}
+<template id="@id">
+    <form method="post" action="@Model.Action">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(Context.Request)
+        <h3>@(Model.Support ? "Đề xuất người hỗ trợ" : "Đề xuất công việc của tôi")</h3>
+        <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
+        <label class="f" for="@(id)P">Dự án</label>
+        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: id + "P", extraAttrs: $"data-items-for=\"{id}I\"")
+        <label class="f" for="@(id)I">Đầu mục kế hoạch</label>
+        <select class="in" id="@(id)I" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
+            @if (pid is int p0)
+            {
+                foreach (var i in D.ItemsOf(p0))
+                {
+                    <option value="@i.Id">@i.Title</option>
+                }
+            }
+        </select>
+        <label class="f" for="@(id)T">Nội dung công việc</label>
+        <input class="in" id="@(id)T" name="title" maxlength="300">
+        <div class="pick2 eq">
+            <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
+            <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
+        </div>
+        @if (Model.Support)
+        {
+            <label class="f">Người hỗ trợ</label>
+            <div class="optbox">
+                @foreach (var p in Model.People)
+                {
+                    <div class="trow"><input type="checkbox" id="@(id)W@(p.Id)" name="emp" value="@p.Id"><label for="@(id)W@(p.Id)" style="cursor:pointer;min-width:0"><div class="t">@p.Name @(p.Role == Role.Leader ? "· Leader" : "")</div></label></div>
+                }
+            </div>
+        }
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
+            <button class="btn btn-primary">Gửi đề xuất</button></div>
+    </form>
+</template>

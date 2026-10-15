@@ -20,6 +20,11 @@ public partial class StaffController
         await D.EnsureAsync(ms, ms.AddDays(Fmt.DaysInMonth(ms) - 1));
         await D.EnsureAsync(Date, Date);
         var ro = Scope.IsReadOnly;
+        // Đề xuất lịch của chính NV trong ngày đang chọn (để hiện trạng thái chờ duyệt / đã duyệt / từ chối).
+        var props = Scope.IsSelf && Scope.Account.Role == Role.Staff
+            ? await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
+                .Where(p => p.ProposerId == Scope.Account.Id && p.Date == Date).OrderBy(p => p.CreatedAt).ToListAsync()
+            : [];
         ViewData["Title"] = "Kế hoạch tháng";
         return View(new StaffMonthVm
         {
@@ -27,7 +32,8 @@ public partial class StaffController
             ReadOnly = ro,
             AllMode = ro && Scope.AllStaff,
             Me = Scope.Me,
-            People = Scope.Pool,
+            People = Scope.TeamPeople,
+            Proposals = props,
         });
     }
 
@@ -41,7 +47,7 @@ public partial class StaffController
         return await Do(async () =>
         {
             RequireLead();
-            var people = StaffCalendar.ReadPeople(Request.Form, Scope.Pool);
+            var people = StaffCalendar.ReadPeople(Request.Form, Scope.TeamPeople);
             // Form chỉ liệt kê activePj(): không nhận dự án đã đóng (vd. đã bàn giao sau khi trang được tải).
             if (people.Count > 0 && await Db.Projects.AnyAsync(p => p.Id == projectId && p.Closed))
                 throw new BizException("Dự án đã bàn giao, không giao thêm việc được");
@@ -49,6 +55,19 @@ public partial class StaffController
             Toast($"Đã giao việc cho {n} người ngày {Fmt.Dm(Date)}");
         });
     }
+
+    /// <summary>
+    /// POST /Staff/ProposeCalendar — NV đề xuất ở lịch tháng (ngày = ngày đang chọn): công việc của mình (không có "emp"), hoặc người hỗ trợ /
+    /// Leader hỗ trợ (field "emp" nhiều giá trị) cho dự án mình là Leader dự án. Leader nhóm duyệt thì mới ghi vào lịch.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ProposeCalendar(int projectId, int? itemId, string? title, string? start, string? end) => await Do(async () =>
+    {
+        RequireSelfStaff();
+        var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
+        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people);
+        Toast("Đã gửi đề xuất — chờ Leader duyệt");
+    });
 
     /// <summary>GET /Staff/Projects — nvProjects (?pt=active|done); có ?pj= → projectDetail(pj, 'nv') (?tab=overview|plan|people).</summary>
     [HttpGet]

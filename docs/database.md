@@ -90,3 +90,10 @@ tương ứng phải đổi tên cột (giữ dữ liệu) và cập nhật dữ
   `PhatSinhKetQua` → `ExtraDecided`, `ChuyenTiep` → `CarryOver`, `GiaoViec` → `TaskAssigned`, `NghiPhep` → `LeaveMarked`,
   `LamThemMoi` → `OvertimeSubmitted`, `LamThemKetQua` → `OvertimeDecided`, `BaoCaoLeader` → `LeaderReportSent`.
 - `leader_reports.SummaryJson`: khóa dự án `kh/tt/st` → `need/onSite/status`.
+
+## Bảng đề xuất lịch (migration `CalendarProposals`, 2026-10-15)
+
+- `calendar_proposals`: Id, Date, ProposerId (NV đề xuất), ProjectId, PlanItemId?, Title, Start, End, Status (Pending/Approved/Rejected),
+  Reason (lý do từ chối), DecidedBy, DecidedAt, CreatedAt.
+- `calendar_proposal_people`: (ProposalId, EmployeeId) — những người sẽ có việc nếu được duyệt (đề xuất việc của mình: chỉ người đề xuất).
+- Cột mới `work_tasks.Supported` (migration `TaskSupported`): người hỗ trợ đã tích "đã hỗ trợ".

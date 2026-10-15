@@ -313,3 +313,37 @@ public class NotifySetting
 
     public bool Allows(NotifyType t) => Enabled && !DisabledTypes.Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(t.ToString());
 }
+
+/// <summary>
+/// Đề xuất lịch của NV chọn từ lịch tháng (yêu cầu 2026-10-15): thêm công việc của mình, hoặc thêm người hỗ trợ / Leader hỗ trợ cho dự án
+/// mình là Leader dự án. Leader nhóm duyệt thì việc mới được ghi vào lịch NV và lịch nhóm (WorkflowService.AssignTaskAsync).
+/// </summary>
+public class CalendarProposal
+{
+    public int Id { get; set; }
+    public DateOnly Date { get; set; }
+    public int ProposerId { get; set; }
+    public Person? Proposer { get; set; }
+    public int ProjectId { get; set; }
+    public Project? Project { get; set; }
+    public int? PlanItemId { get; set; }
+    [MaxLength(300)] public string Title { get; set; } = "";
+    [MaxLength(5)] public string Start { get; set; } = "08:00";
+    [MaxLength(5)] public string End { get; set; } = "17:00";
+    public ExtraStatus Status { get; set; } = ExtraStatus.Pending;   // Pending / Approved / Rejected
+    [MaxLength(2000)] public string? Reason { get; set; }            // lý do từ chối
+    [MaxLength(100)] public string? DecidedBy { get; set; }
+    public DateTime? DecidedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>Những người sẽ có việc nếu được duyệt (đề xuất việc của mình: chỉ người đề xuất).</summary>
+    public ICollection<CalendarProposalPerson> People { get; set; } = new List<CalendarProposalPerson>();
+}
+
+public class CalendarProposalPerson
+{
+    public int ProposalId { get; set; }
+    public CalendarProposal? Proposal { get; set; }
+    public int EmployeeId { get; set; }
+    public Person? Employee { get; set; }
+}

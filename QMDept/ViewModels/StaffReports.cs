@@ -45,6 +45,9 @@ public sealed class StaffUpdateInput
     public string? NextStart { get; set; }
     public string? NextEnd { get; set; }
     public string? NextTitle { get; set; }
+    /// <summary>Giờ làm việc thực tế của hạng mục (NV chỉnh ở báo cáo cuối ngày) — field "start" / "end".</summary>
+    public string? Start { get; set; }
+    public string? End { get; set; }
     public string? Note { get; set; }
 }
 

@@ -165,6 +165,10 @@ public partial class StaffController
         }
         else if (leadId != me.Id) throw new BizException("Không tìm thấy công việc");
         var s = StaffReports.ParseEnum<TaskState>(input.State) ?? t.Status;
+        // Chỉnh thời gian làm việc của hạng mục (yêu cầu 2026-10-15).
+        var tStart = string.IsNullOrEmpty(input.Start) ? t.Start : input.Start;
+        var tEnd = string.IsNullOrEmpty(input.End) ? t.End : input.End;
+        if (!Fmt.IsHhmm(tStart) || !Fmt.IsHhmm(tEnd) || tEnd.Le(tStart)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         var note = StaffReports.Clip(input.Note, 2000);
         if (s != TaskState.Done && note is null) throw new BizException("Nhập lý do chưa hoàn thành");
         var cur = t.CarriedToId is int cid ? await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == cid) : null;
@@ -217,6 +221,7 @@ public partial class StaffController
                 t.CarriedToId = null; t.CarryDate = null;
             }
 
+            t.Start = tStart; t.End = tEnd;
             t.Status = s;
             t.Note = note;
             t.UpdatedAt = VnTime.UtcNow;
@@ -240,7 +245,7 @@ public partial class StaffController
 
     /// <summary>Người hỗ trợ tích / bỏ tích "Đã hỗ trợ" cho việc của mình ở dự án đã có Leader dự án (Leader dự án báo cáo kết quả).</summary>
     [HttpPost]
-    public async Task<IActionResult> TickSupport(int taskId, bool on) => await Do(async () =>
+    public async Task<IActionResult> TickSupport(int taskId, bool on, string? start, string? end) => await Do(async () =>
     {
         RequireSelfStaff();
         var me = Scope.Me!;
@@ -249,6 +254,11 @@ public partial class StaffController
         var leadId = await Db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead)
             .Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
         if (leadId is null || leadId == me.Id) throw new BizException("Việc này báo cáo đầy đủ ở nút Cập nhật");
+        // NV hỗ trợ cũng chỉnh được giờ làm thực tế của việc (yêu cầu 2026-10-15).
+        var s0 = string.IsNullOrEmpty(start) ? t.Start : start;
+        var e0 = string.IsNullOrEmpty(end) ? t.End : end;
+        if (!Fmt.IsHhmm(s0) || !Fmt.IsHhmm(e0) || e0.Le(s0)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+        t.Start = s0; t.End = e0;
         t.Supported = on;
         t.UpdatedAt = VnTime.UtcNow;
         await Db.SaveChangesAsync();

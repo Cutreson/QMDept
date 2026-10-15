@@ -241,6 +241,8 @@
     if (!(f instanceof HTMLFormElement)) return;
     const stop = msg => { e.preventDefault(); e.stopPropagation(); toast(msg); };
     if (f.matches('form[data-upd]')) {
+      const ws = $('#wS', f), we = $('#wE', f);
+      if (ws && we && we.value <= ws.value) return stop('Giờ kết thúc phải sau giờ bắt đầu');
       const s = (f.querySelector('input[name=state]:checked') || {}).value || f.dataset.state;
       if (s !== 'Done' && !$('#uN', f).value.trim()) return stop('Nhập lý do chưa hoàn thành');
       if (s !== 'Done' && $('#nxT', f)) {

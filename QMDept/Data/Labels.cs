@@ -65,6 +65,7 @@ public static class Labels
         [TaskSource.Extra] = new("Phát sinh", "p-info", "var(--brand)"),
         [TaskSource.CarryOver] = new("Chuyển tiếp", "p-info", "var(--brand)"),
         [TaskSource.Assigned] = new("Leader giao", "p-info", "var(--brand)"),
+        [TaskSource.Proposed] = new("Đề xuất", "p-info", "var(--brand)"),
         // WST — trạng thái làm việc đầu ngày
         [WorkStatus.AtOffice] = new("Làm việc tại công ty", "p-info", "var(--brand)"),
         [WorkStatus.DayTrip] = new("Công tác trong ngày", "p-info", "var(--brand)"),

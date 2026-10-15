@@ -1,0 +1,50 @@
+@model PlanningProposalsVm
+@* Leader → Kế hoạch & duyệt → Đề xuất lịch: NV trong nhóm đề xuất thêm công việc / người hỗ trợ ở lịch tháng; duyệt thì việc mới vào lịch NV + lịch nhóm. *@
+@{
+    var req = Context.Request;
+}
+<partial name="_PlanningTabs" model="@("proposals")" />
+<section class="card sec"><h2>Chờ duyệt (@Model.Pending.Count)</h2>
+    @if (Model.Pending.Count == 0)
+    {
+        <p class="note">Không có đề xuất nào chờ duyệt.</p>
+    }
+    @foreach (var x in Model.Pending)
+    {
+        var who = x.People.Select(p => p.EmployeeId).Where(i => i != x.ProposerId).Select(i => D.PName(i)).ToList();
+        <div class="asg">
+            <div class="row"><b>@D.PName(x.ProposerId)</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.Start–@x.End</span></span></div>
+            <div class="t" style="margin-top:4px">@x.Title</div>
+            <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Đề xuất hỗ trợ: " + string.Join(", ", who) : " · Công việc của người đề xuất")</div>
+            @if (Scope.CanLead && !Scope.IsReadOnly)
+            {
+                <div class="btn-row">
+                    <form method="post" action="/Planning/DecideProposal" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">✓ Duyệt</button>
+                    </form>
+                    <form method="post" action="/Planning/DecideProposal" asp-antiforgery="true"
+                          data-prompt="Từ chối đề xuất của @D.PName(x.ProposerId)" data-prompt-label="Lý do từ chối" data-prompt-required data-prompt-name="note">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">✕ Từ chối</button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+</section>
+@if (Model.Recent.Count > 0)
+{
+    <section class="card sec"><h2>Đã quyết định gần đây</h2>
+        @foreach (var x in Model.Recent)
+        {
+            var ok = x.Status == ExtraStatus.Approved;
+            <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
+                <div><div class="t">@x.Title</div>
+                    <div class="s">@D.PName(x.ProposerId) · @D.PjName(x.ProjectId) · @Fmt.Short(x.Date)@(!ok && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
+                <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
+        }
+    </section>
+}

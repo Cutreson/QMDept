@@ -49,6 +49,8 @@ public static class NotifyCatalog
         new(NotifyType.ReportDecided, "Kết quả duyệt báo cáo", "Báo cáo cuối ngày của bạn được duyệt / yêu cầu bổ sung", [Role.Staff]),
         new(NotifyType.ExtraDecided, "Kết quả phát sinh", "Phát sinh của bạn được duyệt / từ chối, Leader thêm phát sinh cho bạn", [Role.Staff]),
         new(NotifyType.CarryOver, "Kế hoạch chuyển tiếp", "Việc chuyển tiếp của bạn được duyệt / chỉnh / hoàn tác", [Role.Staff]),
+        new(NotifyType.CalendarProposed, "Đề xuất lịch mới", "Nhân viên trong nhóm đề xuất thêm công việc / người hỗ trợ ở lịch tháng", [Role.Leader]),
+        new(NotifyType.CalendarDecided, "Kết quả đề xuất lịch", "Đề xuất lịch của bạn được duyệt / từ chối", [Role.Staff]),
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
         new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff]),
         new(NotifyType.LeaveMarked, "Báo nghỉ", "Leader ghi nghỉ / bỏ nghỉ cho bạn", [Role.Staff]),
@@ -153,6 +155,15 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     /// <summary>Giao việc / thêm / xóa việc trong lịch (what: "Bạn được giao việc", "Việc mới trong lịch", "Việc bị xóa khỏi lịch") → NV.</summary>
     public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc") =>
         await SendAsync(emps.Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", $"{title} · bởi {Actor}", Q("/Staff/Month", d));
+
+    /// <summary>NV đề xuất lịch (công việc / người hỗ trợ) → Leader nhóm của người đề xuất.</summary>
+    public async Task CalendarProposedAsync(int proposer, DateOnly d, string title) =>
+        await SendAsync([await LeaderOf(proposer)], NotifyType.CalendarProposed, $"{await Name(proposer)} đề xuất lịch ngày {Fmt.Dm(d)}", title, Q("/Planning/Proposals", d));
+
+    /// <summary>Đề xuất lịch được duyệt / từ chối → NV đề xuất.</summary>
+    public async Task CalendarDecidedAsync(int proposer, DateOnly d, string title, bool approved, string? note) =>
+        await SendAsync([proposer], NotifyType.CalendarDecided, $"Đề xuất lịch ngày {Fmt.Dm(d)} {(approved ? "đã được duyệt" : "bị từ chối")}",
+            string.IsNullOrWhiteSpace(note) ? $"{title} · bởi {Actor}" : $"{title} — {note.Trim()} · bởi {Actor}", Q("/Staff/Month", d));
 
     /// <summary>Được chọn / không còn là Leader dự án → NV (người nhận thấy dự án ở "Thông tin dự án").</summary>
     public async Task ProjectLeadAsync(int emp, string project, bool chosen) =>

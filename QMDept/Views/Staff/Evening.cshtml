@@ -79,6 +79,8 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                             @Ui.ReturnField(req)
                             <input type="hidden" name="taskId" value="@t.Id">
                             <input type="hidden" name="on" value="@(t.Supported ? "false" : "true")">
+                            @Ui.TimeSelect("start", t.Start, id: "tS" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Bắt đầu\"")
+                            @Ui.TimeSelect("end", t.End, end: true, id: "tE" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Kết thúc\"")
                             <button class="btn btn-sm @(t.Supported ? "" : "btn-primary")">@(t.Supported ? "Bỏ tích hỗ trợ" : "✓ Đã hỗ trợ")</button>
                         </form>
                     }
@@ -218,7 +220,8 @@ else if (plan is not null)
                 @Ui.ReturnField(req)
                 <input type="hidden" name="taskId" value="@t.Id">
                 <h3>Cập nhật công việc</h3>
-                <p class="note" style="margin:0 0 8px">@t.Title · <span class="mono">@(t.Start)–@(t.End)</span></p>
+                <p class="note" style="margin:0 0 4px">@t.Title</p>
+                <div class="pick2 eq"><div><label class="f" for="wS" style="margin-top:0">Bắt đầu</label>@Ui.TimeSelect("start", t.Start, id: "wS")</div><div><label class="f" for="wE" style="margin-top:0">Kết thúc</label>@Ui.TimeSelect("end", t.End, end: true, id: "wE")</div></div>
                 <div class="choices" role="radiogroup" aria-label="Trạng thái">
                     @foreach (var s in new[] { TaskState.InProgress, TaskState.Done, TaskState.Late, TaskState.NotStarted })
                     {

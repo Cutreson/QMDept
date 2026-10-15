@@ -15,6 +15,8 @@ public sealed class StaffMonthVm
     public required bool AllMode { get; init; }
     /// <summary>NV đang xem (S.me.nv); null khi nhóm trống.</summary>
     public Person? Me { get; init; }
+    /// <summary>Đề xuất lịch của chính NV trong ngày đang chọn (nvMonth, chế độ một người, đang ở màn hình của mình).</summary>
+    public List<CalendarProposal> Proposals { get; init; } = [];
     /// <summary>ppl = poolFor('nv') (chỉ dùng ở chế độ "Tất cả nhân viên").</summary>
     public List<Person> People { get; init; } = [];
 

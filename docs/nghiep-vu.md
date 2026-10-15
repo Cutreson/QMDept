@@ -59,6 +59,13 @@ theo ngày) · extras (phát sinh) · leader_reports · overtimes (ot) · ot_sen
 - Leader/TP xem một NV: chỉ xem. Chế độ "Tất cả nhân viên": ô = số NV có việc / tổng việc / số người nghỉ (N);
   ô đỏ nếu có việc Chậm; chọn ngày → danh sách việc từng người (`teamDayList`) + form **Giao thêm việc** (`calAssignForm`):
   dự án, đầu mục (hoặc tự nhập), giờ bắt đầu/kết thúc (bước 30'), tích người tham gia (để trắng, Leader tự tích; nhãn vai trò tự động theo dự án, bị khóa).
+- **NV xem lịch nhóm + đề xuất lịch (yêu cầu 2026-10-15)**: NV có nút "Lịch của tôi / Lịch nhóm" (lịch tháng của các NV cùng nhóm, chỉ xem,
+  `?as=all` — chỉ hiệu lực khi bấm rõ). Chọn một ngày ở lịch của mình → **＋ Đề xuất công việc** (việc của mình, mọi dự án đang triển khai) và, với
+  dự án mình là Leader dự án, **＋ Đề xuất người hỗ trợ** (chọn NV / Leader hỗ trợ). Đề xuất (`calendar_proposals` + `calendar_proposal_people`) ở
+  trạng thái Chờ duyệt, hiện trong "Đề xuất của tôi"; **Leader nhóm duyệt (tab "Đề xuất lịch") thì việc mới được ghi vào lịch NV + lịch nhóm**
+  (nguồn "Đề xuất", `WorkflowService.DecideProposalAsync`), từ chối bắt buộc lý do. Thông báo `CalendarProposed` / `CalendarDecided`.
+- **Leader tự đặt lịch**: ở lịch nhóm, danh sách người (và form Giao thêm việc) có cả Leader — Leader tích chính mình để tự thêm việc vào lịch của leader
+  và lịch nhóm, không cần duyệt.
 
 ### 3.2 Thông tin dự án (`nvProjects`, `projectDetail`)
 - **Chỉ hiện dự án mà NV được chọn làm Leader dự án** (yêu cầu 2026-10-14; artifact hiện mọi dự án). Dự án chỉ hỗ trợ / không tham gia
@@ -99,6 +106,8 @@ Form gồm:
   nếu nó còn "Chưa làm".
   Đầu mục: tích "đã xong" + Hoàn thành → đầu mục Hoàn thành (ngày xong, người xong); ngược lại nếu việc
   Đang làm/Hoàn thành/Chậm mà đầu mục đang Chưa làm → đầu mục Đang làm.
+- **Chỉnh giờ làm (yêu cầu 2026-10-15)**: ở "Cập nhật" mỗi hạng mục NV (và Leader dự án khi báo cáo thay người hỗ trợ) sửa được giờ bắt đầu / kết thúc
+  thực tế của việc; người hỗ trợ sửa giờ ngay cạnh nút "Đã hỗ trợ". Kết thúc phải sau bắt đầu.
 - **Vai trò trong dự án (yêu cầu 2026-10-14)** — Leader dự án do Leader / TP chọn ở tab "Leader dự án"; mọi người còn lại có việc ở dự án đó là **người hỗ trợ**:
   - **Người hỗ trợ** (dự án đã có Leader dự án, người làm không phải Leader dự án): ở Báo cáo cuối ngày chỉ **tích "Đã hỗ trợ"** cho từng việc
     (`work_tasks.Supported`, POST `/Staff/TickSupport`); không có Cập nhật / kế hoạch tiếp theo. Gửi báo cáo bị chặn nếu còn việc chưa tích.
@@ -269,3 +278,9 @@ Form gồm:
 | Báo cáo ngày của Leader | Leader gửi / gửi lại báo cáo ngày | mọi TP |
 
 Người tự thao tác không nhận thông báo của chính mình. Link trong thông báo kèm `as=me` để luôn mở màn hình của chính người nhận.
+
+## 11. Ô tìm nhanh trong danh sách chọn (bổ sung — yêu cầu 2026-10-15)
+
+Mọi `<select>` có từ 7 mục trở lên (dự án, nhân viên, tỉnh…) và danh sách tích chọn nhiều người (`.optbox`) tự có ô gõ chữ cái phía trên:
+gõ → chỉ còn các mục chứa chữ đó (không phân biệt hoa / dấu, "dao" ra "Đào Minh Tài"). Mã ở `wwwroot/js/site.js` (`enhanceSearch`); bỏ qua select
+giờ (`.mono`), `data-autosubmit`, `data-nosearch`.

@@ -61,6 +61,13 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         var subs = acc.Role == Role.Staff ? [] : Sorted(Subordinates(people, acc));
         scope.Subordinates = subs;
         scope.Pool = acc.Role == Role.Staff ? [acc] : subs.Where(p => p.Role == Role.Staff).ToList();
+        scope.TeamPeople = acc.Role switch
+        {
+            Role.Staff => acc.LeaderId is int gl
+                ? Sorted(people.Where(p => !p.IsDeleted && p.Role == Role.Staff && p.LeaderId == gl)).ToList() : [acc],
+            Role.Leader => [acc, .. scope.Pool],
+            _ => scope.Pool,
+        };
 
         // Người đang xem: ?as= (ghi nhớ vào cookie) → cookie → chính mình.
         string? sel = http.Request.Query["as"];
@@ -74,7 +81,8 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
 
         Person? viewed = null;
         var allStaff = false;
-        if (sel == "all" && acc.Role != Role.Staff && scope.Pool.Count > 0) allStaff = true;
+        // NV chỉ vào lịch nhóm khi bấm rõ (?as=all) — cookie "all" cũ không biến các trang báo cáo của NV thành chỉ xem.
+        if (sel == "all" && scope.TeamPeople.Count > 0 && (acc.Role != Role.Staff || explicitSel)) allStaff = true;
         else if (int.TryParse(sel, out var vid) && vid != acc.Id) viewed = subs.Find(p => p.Id == vid);
 
         if (explicitSel || (sel == "me" && http.Request.Cookies[ViewCookie] is { } c && c != "me"))
@@ -84,7 +92,7 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         }
 
         scope.AllStaff = allStaff;
-        scope.Me = allStaff ? scope.Pool.FirstOrDefault() : viewed ?? acc;
+        scope.Me = allStaff ? scope.Pool.FirstOrDefault() ?? acc : viewed ?? acc;
         scope.Role = allStaff ? Role.Staff : UiRoleOf(scope.Me!.Role);
         scope.Resolved = true;
 

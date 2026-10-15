@@ -105,7 +105,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         if (scope.IsViewingOther && acc.Role == Role.Leader) defs = defs.Where(t => t.Id == "month");
         var tabs = defs.Any()
             ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : null),
-                !scope.AllStaff && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+                (!scope.AllStaff || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
                 scope.AllStaff ? 0 : Badge(t.Id))).ToList()
@@ -142,7 +142,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             ViewingName = vName,
             ViewingInfo = vInfo,
             HomeHref = WithQ(ScopeResolver.HomeOf(acc.Role), "me"),
-            TeamHref = acc.Role != Role.Staff && scope.Pool.Count > 0 ? WithQ("/Staff/Month", "all") : null,
+            TeamHref = acc.Role != Role.Staff && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && !scope.IsViewingOther,

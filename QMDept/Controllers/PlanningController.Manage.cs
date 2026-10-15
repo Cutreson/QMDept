@@ -327,6 +327,32 @@ public partial class PlanningController
         }
     });
 
+    // ======================= Đề xuất lịch của NV (yêu cầu 2026-10-15) =======================
+
+    /// <summary>GET /Planning/Proposals — đề xuất thêm công việc / người hỗ trợ của NV trong nhóm: chờ duyệt + đã quyết định gần đây.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Proposals()
+    {
+        await D.EnsureAsync(Date, Date);
+        ViewData["Title"] = "Đề xuất lịch";
+        var ids = D.Staff().Select(p => p.Id).ToList();
+        var pending = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
+            .Where(p => ids.Contains(p.ProposerId) && p.Status == ExtraStatus.Pending).OrderBy(p => p.Date).ThenBy(p => p.CreatedAt).ToListAsync();
+        var recent = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
+            .Where(p => ids.Contains(p.ProposerId) && p.Status != ExtraStatus.Pending).OrderByDescending(p => p.DecidedAt).Take(15).ToListAsync();
+        return View(new PlanningProposalsVm { Pending = pending, Recent = recent });
+    }
+
+    /// <summary>POST: duyệt (v=ok → tạo việc vào lịch NV + lịch nhóm) / từ chối (v=no, bắt buộc lý do) một đề xuất lịch.</summary>
+    [HttpPost]
+    public Task<IActionResult> DecideProposal(int id, string? v, string? note) => Do(async () =>
+    {
+        RequireLead();
+        var approve = v switch { "ok" => true, "no" => false, _ => throw new BizException("Thao tác không hợp lệ") };
+        await Flow.DecideProposalAsync(id, approve, note, Scope.Account);
+        Toast(approve ? "Đã duyệt đề xuất — việc đã vào lịch" : "Đã từ chối đề xuất");
+    });
+
     // ======================= Phân công (ldAssign) =======================
 
     /// <summary>GET /Planning/Assign — giao việc 1 NV, việc đã giao gần đây, phân công theo NV / theo dự án.</summary>

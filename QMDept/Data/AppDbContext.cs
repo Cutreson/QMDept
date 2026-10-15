@@ -15,6 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Leave> Leaves => Set<Leave>();
     public DbSet<ProjectNeed> ProjectNeeds => Set<ProjectNeed>();
     public DbSet<Extra> Extras => Set<Extra>();
+    public DbSet<CalendarProposal> CalendarProposals => Set<CalendarProposal>();
+    public DbSet<CalendarProposalPerson> CalendarProposalPeople => Set<CalendarProposalPerson>();
     public DbSet<LeaderReport> LeaderReports => Set<LeaderReport>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
     public DbSet<OvertimeTask> OvertimeTasks => Set<OvertimeTask>();
@@ -116,6 +118,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Employee).WithMany().HasForeignKey(x => x.EmployeeId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Task).WithMany().HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        m.Entity<CalendarProposal>(e =>
+        {
+            e.ToTable("calendar_proposals");
+            e.HasIndex(x => x.Date);
+            e.HasOne(x => x.Proposer).WithMany().HasForeignKey(x => x.ProposerId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        m.Entity<CalendarProposalPerson>(e =>
+        {
+            e.ToTable("calendar_proposal_people");
+            e.HasKey(x => new { x.ProposalId, x.EmployeeId });
+            e.HasOne(x => x.Proposal).WithMany(x => x.People).HasForeignKey(x => x.ProposalId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Employee).WithMany().HasForeignKey(x => x.EmployeeId).OnDelete(DeleteBehavior.Restrict);
         });
 
         m.Entity<LeaderReport>(e =>

@@ -198,4 +198,51 @@
   const initShow = root => $$('select[data-show-target]', root).forEach(showWhen);
   initShow(document);
   document.addEventListener('qm:sheet-open', e => initShow(e.target));
+
+  // ---------- tìm nhanh trong danh sách chọn (yêu cầu 2026-10-15) ----------
+  // Danh sách dài (≥ 7 mục: dự án, nhân viên, tỉnh…) có ô gõ chữ cái ở trên: gõ → chỉ còn mục chứa chữ đó (không phân biệt hoa / dấu).
+  // Áp cho <select class="in"> và danh sách tích chọn .optbox; bỏ qua select giờ (.mono), tự gửi (data-autosubmit) hoặc data-nosearch.
+  const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+  const MIN_SEARCH = 7;
+  function searchBox(label) {
+    const b = document.createElement('input');
+    b.type = 'search'; b.className = 'in sel-search'; b.autocomplete = 'off';
+    b.setAttribute('aria-label', label);
+    return b;
+  }
+  function enhanceSelect(sel) {
+    if (sel.dataset.searchOn || sel.multiple || sel.options.length < MIN_SEARCH) return;
+    if (sel.matches('.mono,[data-autosubmit],[data-nosearch]') || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
+    sel.dataset.searchOn = '1';
+    const box = searchBox('Gõ chữ cái để lọc danh sách');
+    sel.parentNode.insertBefore(box, sel);
+    let all = null;
+    const snap = () => { all = [...sel.options].map(o => ({ v: o.value, t: o.textContent, d: o.disabled })); };
+    box.addEventListener('focus', () => { if (!box.value) snap(); });
+    box.addEventListener('input', () => {
+      if (!all) snap();
+      const q = fold(box.value.trim()), cur = sel.value;
+      const keep = all.filter(o => !q || o.v === cur || fold(o.t).includes(q));
+      sel.innerHTML = keep.map(o => `<option value="${esc(o.v)}"${o.d ? ' disabled' : ''}>${esc(o.t)}</option>`).join('');
+      sel.value = cur;
+    });
+  }
+  function enhanceList(box) {
+    if (box.dataset.searchOn) return;
+    const rows = [...box.children].filter(x => x.matches('.trow'));
+    if (rows.length < MIN_SEARCH) return;
+    box.dataset.searchOn = '1';
+    const input = searchBox('Gõ chữ cái để lọc danh sách');
+    box.parentNode.insertBefore(input, box);
+    input.addEventListener('input', () => {
+      const q = fold(input.value.trim());
+      rows.forEach(r => { r.hidden = !!q && !fold(r.textContent).includes(q); });
+    });
+  }
+  function enhanceSearch(root) {
+    $$('select.in', root).forEach(enhanceSelect);
+    $$('.optbox', root).forEach(enhanceList);
+  }
+  enhanceSearch(document);
+  document.addEventListener('qm:sheet-open', e => enhanceSearch(e.target));
 })();

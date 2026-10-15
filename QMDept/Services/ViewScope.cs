@@ -31,6 +31,8 @@ public sealed class ViewScope
     public DateOnly Today { get; set; }
     /// <summary>NV mà tài khoản được xem / giao việc ở lịch cả nhóm (Leader: nhóm mình; TP, Quản trị: mọi NV).</summary>
     public List<Person> Pool { get; set; } = [];
+    /// <summary>Những người hiện ở lịch cả nhóm + được tích khi giao việc: NV → các NV cùng nhóm (kể cả mình); Leader → mình + nhóm mình; TP / Quản trị → Pool.</summary>
+    public List<Person> TeamPeople { get; set; } = [];
     /// <summary>Cấp dưới tài khoản được chọn để xem màn hình (cho combobox), theo thứ tự TP → Leader → NV.</summary>
     public List<Person> Subordinates { get; set; } = [];
 

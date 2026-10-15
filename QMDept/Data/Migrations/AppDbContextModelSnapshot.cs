@@ -231,6 +231,84 @@ namespace QMDept.Data.Migrations
                     b.ToTable("day_reports", (string)null);
                 });
 
+            modelBuilder.Entity("QMDept.Data.CalendarProposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("End")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<int?>("PlanItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProposerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<string>("Start")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Date");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("ProposerId");
+
+                    b.ToTable("calendar_proposals", (string)null);
+                });
+
+            modelBuilder.Entity("QMDept.Data.CalendarProposalPerson", b =>
+                {
+                    b.Property<int>("ProposalId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProposalId", "EmployeeId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("calendar_proposal_people", (string)null);
+                });
+
             modelBuilder.Entity("QMDept.Data.Extra", b =>
                 {
                     b.Property<int>("Id")
@@ -906,6 +984,44 @@ namespace QMDept.Data.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("QMDept.Data.CalendarProposal", b =>
+                {
+                    b.HasOne("QMDept.Data.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QMDept.Data.Person", "Proposer")
+                        .WithMany()
+                        .HasForeignKey("ProposerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Proposer");
+                });
+
+            modelBuilder.Entity("QMDept.Data.CalendarProposalPerson", b =>
+                {
+                    b.HasOne("QMDept.Data.Person", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QMDept.Data.CalendarProposal", "Proposal")
+                        .WithMany("People")
+                        .HasForeignKey("ProposalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Proposal");
+                });
+
             modelBuilder.Entity("QMDept.Data.Extra", b =>
                 {
                     b.HasOne("QMDept.Data.Person", "Employee")
@@ -1057,6 +1173,11 @@ namespace QMDept.Data.Migrations
                     b.Navigation("PlanItem");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("QMDept.Data.CalendarProposal", b =>
+                {
+                    b.Navigation("People");
                 });
 
             modelBuilder.Entity("QMDept.Data.DayPlan", b =>

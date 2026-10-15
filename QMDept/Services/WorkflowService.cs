@@ -87,7 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Nếu NV đã gửi kế hoạch ngày đó → việc được chọn sẵn và thêm vào kế hoạch. Cập nhật vai trò trong dự án.
     /// </summary>
     public async Task<int> AssignTaskAsync(DateOnly date, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyList<int> people, string actor)
+        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned)
     {
         if (people.Count == 0) throw new BizException("Tích chọn ít nhất 1 người tham gia");
         var item = itemId is int iid ? await db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
@@ -108,7 +108,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             var t = new WorkTask
             {
                 Date = date, EmployeeId = emp, ProjectId = projectId, PlanItemId = item?.Id, Title = t0, Start = start, End = end,
-                Status = TaskState.NotStarted, Source = TaskSource.Assigned, GivenBy = actor, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
+                Status = TaskState.NotStarted, Source = source, GivenBy = actor, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
             };
             db.WorkTasks.Add(t);
             await db.SaveChangesAsync();
@@ -121,6 +121,81 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         return people.Count;
     }
 
+
+    // ======================= Đề xuất lịch của NV (yêu cầu 2026-10-15) =======================
+
+    /// <summary>
+    /// NV đề xuất ở lịch tháng: thêm công việc của mình (people = chỉ người đề xuất), hoặc thêm người hỗ trợ / Leader hỗ trợ cho dự án mình là
+    /// Leader dự án. Chưa ghi vào lịch — Leader nhóm duyệt (<see cref="DecideProposalAsync"/>) thì mới tạo việc.
+    /// </summary>
+    public async Task<CalendarProposal> ProposeAsync(DateOnly date, int proposerId, int projectId, int? itemId, string? title, string start, string end,
+        IReadOnlyCollection<int> people)
+    {
+        var me = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == proposerId && !p.IsDeleted && p.Role == Role.Staff)
+            ?? throw new BizException("Không tìm thấy nhân viên");
+        if (me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm nên chưa có Leader duyệt đề xuất");
+        var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
+        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không đề xuất thêm việc được");
+        var item = itemId is int iid ? await db.PlanItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
+        var t0 = string.IsNullOrWhiteSpace(title) ? item?.Title : title.Trim();
+        if (string.IsNullOrEmpty(t0)) throw new BizException("Nhập nội dung công việc hoặc chọn đầu mục");
+        if (t0.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
+        if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+
+        var ids = people.Distinct().ToList();
+        if (ids.Count == 0) ids.Add(proposerId);
+        var others = ids.Where(x => x != proposerId).ToList();
+        if (others.Count > 0)
+        {
+            // Chỉ Leader dự án mới đề xuất thêm người hỗ trợ / Leader hỗ trợ cho dự án đó.
+            if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
+                throw new BizException("Chỉ Leader dự án mới đề xuất thêm người hỗ trợ cho dự án này");
+            var okCount = await db.People.CountAsync(p => others.Contains(p.Id) && !p.IsDeleted && (p.Role == Role.Staff || p.Role == Role.Leader));
+            if (okCount != others.Count) throw new BizException("Người hỗ trợ không hợp lệ");
+        }
+        var x = new CalendarProposal
+        {
+            Date = date, ProposerId = proposerId, ProjectId = projectId, PlanItemId = item?.Id, Title = t0, Start = start, End = end,
+            Status = ExtraStatus.Pending, CreatedAt = VnTime.UtcNow,
+        };
+        foreach (var id in ids) x.People.Add(new CalendarProposalPerson { EmployeeId = id });
+        db.CalendarProposals.Add(x);
+        await db.SaveChangesAsync();
+        await notify.CalendarProposedAsync(proposerId, date, t0);
+        return x;
+    }
+
+    /// <summary>
+    /// Leader nhóm (hoặc TP / Quản trị) duyệt / từ chối đề xuất. Duyệt → tạo việc (nguồn "Đề xuất") cho mọi người trong đề xuất,
+    /// vào lịch NV và lịch nhóm; từ chối bắt buộc lý do.
+    /// </summary>
+    public async Task DecideProposalAsync(int id, bool approve, string? reason, Person actor)
+    {
+        var x = await db.CalendarProposals.Include(p => p.People).FirstOrDefaultAsync(p => p.Id == id) ?? throw new BizException("Không tìm thấy đề xuất");
+        if (x.Status != ExtraStatus.Pending) throw new BizException("Đề xuất đã được quyết định");
+        var proposer = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == x.ProposerId);
+        if (actor.Role == Role.Leader && proposer?.LeaderId != actor.Id) throw new BizException("Đề xuất không thuộc nhóm bạn quản lý");
+        var note = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        if (!approve && note is null) throw new BizException("Nhập lý do từ chối");
+        if (note is not null && note.Length > 2000) throw new BizException("Lý do tối đa 2000 ký tự");
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
+        if (approve)
+        {
+            // Giành quyền duyệt: hai Leader bấm cùng lúc chỉ tạo việc một lần.
+            var claimed = await db.CalendarProposals.Where(p => p.Id == id && p.Status == ExtraStatus.Pending)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, ExtraStatus.Approved));
+            if (claimed == 0) throw new BizException("Đề xuất đã được quyết định");
+            await AssignTaskAsync(x.Date, x.ProjectId, x.PlanItemId, x.Title, x.Start, x.End, x.People.Select(p => p.EmployeeId).ToList(),
+                proposer?.Name ?? actor.Name, TaskSource.Proposed);
+        }
+        else x.Status = ExtraStatus.Rejected;
+        x.Reason = approve ? null : note;
+        x.DecidedBy = actor.Name;
+        x.DecidedAt = VnTime.UtcNow;
+        await db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
+        await notify.CalendarDecidedAsync(x.ProposerId, x.Date, x.Title, approve, note);
+    }
     /// <summary>
     /// Đặt vai trò NV trong dự án (chỉ ghi khi khác vai trò hiện tại). Mỗi dự án chỉ có MỘT Leader dự án (yêu cầu 2026-10-14):
     /// chọn người mới làm Leader dự án thì người đang là Leader dự án chuyển về "Hỗ trợ".

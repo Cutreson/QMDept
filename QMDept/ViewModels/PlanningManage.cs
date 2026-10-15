@@ -116,3 +116,10 @@ public static class PlanningManage
         return QueryHelpers.AddQueryString(path, q);
     }
 }
+
+/// <summary>Đề xuất lịch của NV trong nhóm: chờ duyệt + đã quyết định gần đây (PlanningController.Proposals).</summary>
+public sealed class PlanningProposalsVm
+{
+    public required List<CalendarProposal> Pending { get; init; }
+    public required List<CalendarProposal> Recent { get; init; }
+}

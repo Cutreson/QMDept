@@ -38,6 +38,7 @@ public enum TaskSource
     Extra,     // 'phat_sinh'       tạo ra khi phát sinh được duyệt ("Phát sinh")
     CarryOver, // 'chuyen_tiep'     chuyển tiếp từ việc chưa xong ("Chuyển tiếp")
     Assigned,  // 'giao_viec'       Leader / TP giao ("Leader giao")
+    Proposed,  // (mới 2026-10-15)  NV đề xuất ở lịch tháng, Leader duyệt ("Đề xuất")
 }
 
 /// <summary>Trạng thái dự án (PS). Override chỉ dùng OnTrack/InProgress/Behind/AtRisk; Completed là trạng thái tính ra.</summary>
@@ -197,4 +198,6 @@ public enum NotifyType
     OvertimeCancelled,   // người đăng ký hủy đăng ký làm thêm → Leader (của NV) / TP (của Leader)
     CarryProposed,       // NV đề xuất / sửa việc chuyển tiếp sau khi báo cáo cuối ngày đã được duyệt → Leader nhóm
     ProjectLead,         // được chọn / không còn là Leader dự án → NV
+    CalendarProposed,    // NV đề xuất lịch (công việc / người hỗ trợ) ở lịch tháng → Leader nhóm
+    CalendarDecided,     // đề xuất lịch được duyệt / từ chối → NV đề xuất
 }
