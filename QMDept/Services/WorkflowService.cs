@@ -129,7 +129,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Leader dự án. Chưa ghi vào lịch — Leader nhóm duyệt (<see cref="DecideProposalAsync"/>) thì mới tạo việc.
     /// </summary>
     public async Task<CalendarProposal> ProposeAsync(DateOnly date, int proposerId, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyCollection<int> people, IReadOnlyCollection<string>? departments = null)
+        IReadOnlyCollection<int> people, IReadOnlyCollection<(string Name, int Qty)>? quotas = null, string? supportReason = null)
     {
         var me = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == proposerId && !p.IsDeleted && p.Role == Role.Staff)
             ?? throw new BizException("Không tìm thấy nhân viên");
@@ -147,18 +147,28 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         // NV chỉ đề xuất việc thuộc dự án mình là Leader dự án (yêu cầu 2026-10-15) — kể cả việc của chính mình.
         if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
             throw new BizException("Chỉ đề xuất được công việc của dự án bạn làm Leader dự án");
+        // Chỉ chỉ định được người trong NHÓM CỦA MÌNH (NV cùng Leader + Leader của mình); phòng ban / nhóm khác chỉ xin theo số lượng.
         var others = ids.Where(x => x != proposerId).ToList();
         if (others.Count > 0)
         {
-            var okCount = await db.People.CountAsync(p => others.Contains(p.Id) && !p.IsDeleted && (p.Role == Role.Staff || p.Role == Role.Leader));
-            if (okCount != others.Count) throw new BizException("Người hỗ trợ không hợp lệ");
+            var okCount = await db.People.CountAsync(p => others.Contains(p.Id) && !p.IsDeleted
+                && ((p.Role == Role.Staff && p.LeaderId == me.LeaderId) || p.Id == me.LeaderId));
+            if (okCount != others.Count) throw new BizException("Chỉ được chỉ định người hỗ trợ trong nhóm của mình");
         }
-        var depts = (departments ?? []).Where(d => !string.IsNullOrWhiteSpace(d)).Select(d => d.Trim()).Distinct().ToList();
-        if (depts.Any(d => !Fmt.SupportDepartments.Contains(d))) throw new BizException("Phòng ban hỗ trợ không hợp lệ");
+        // Số lượng xin theo phòng ban (Fmt.SupportDepartments) và theo nhóm khác ("Nhóm <tên Leader>"), mỗi mục 1–50 người.
+        var otherGroups = await db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted && p.Id != me.LeaderId).Select(p => "Nhóm " + p.Name).ToListAsync();
+        var q = (quotas ?? []).Where(z => z.Qty > 0).GroupBy(z => z.Name.Trim()).Select(g => (Name: g.Key, Qty: g.Sum(z => z.Qty))).ToList();
+        if (q.Any(z => !Fmt.SupportDepartments.Contains(z.Name) && !otherGroups.Contains(z.Name) || z.Qty > 50))
+            throw new BizException("Phòng ban / nhóm xin hỗ trợ không hợp lệ");
+        var reasonText = string.IsNullOrWhiteSpace(supportReason) ? null : supportReason.Trim();
+        if ((others.Count > 0 || q.Count > 0) && reasonText is null) throw new BizException("Nhập lý do xin người hỗ trợ");
+        if (reasonText is { Length: > 500 }) throw new BizException("Lý do tối đa 500 ký tự");
+        var quotaText = q.Count > 0 ? string.Join(";", q.Select(z => $"{z.Name}={z.Qty}")) : null;
+        if (quotaText is { Length: > 300 }) throw new BizException("Danh sách phòng ban / nhóm xin hỗ trợ quá dài");
         var x = new CalendarProposal
         {
             Date = date, ProposerId = proposerId, ProjectId = projectId, PlanItemId = item?.Id, Title = t0, Start = start, End = end,
-            Departments = depts.Count > 0 ? string.Join(";", depts) : null,
+            Departments = quotaText, SupportReason = reasonText,
             Status = ExtraStatus.Pending, CreatedAt = VnTime.UtcNow,
         };
         foreach (var id in ids) x.People.Add(new CalendarProposalPerson { EmployeeId = id });
@@ -188,8 +198,8 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             var claimed = await db.CalendarProposals.Where(p => p.Id == id && p.Status == ExtraStatus.Pending)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, ExtraStatus.Approved));
             if (claimed == 0) throw new BizException("Đề xuất đã được quyết định");
-            // Phòng ban hỗ trợ không có tài khoản trong hệ thống → ghi vào tên việc để hiện trên lịch.
-            var title = string.IsNullOrEmpty(x.Departments) ? x.Title : $"{x.Title} · Phòng hỗ trợ: {x.Departments.Replace(";", ", ")}";
+            // Phòng ban / nhóm khác chỉ xin theo số lượng (không chỉ định người) → ghi vào tên việc để hiện trên lịch.
+            var title = string.IsNullOrEmpty(x.Departments) ? x.Title : $"{x.Title} · Xin hỗ trợ: {Fmt.QuotaText(x.Departments)}";
             if (title.Length > 300) title = title[..300];
             await AssignTaskAsync(x.Date, x.ProjectId, x.PlanItemId, title, x.Start, x.End, x.People.Select(p => p.EmployeeId).ToList(),
                 proposer?.Name ?? actor.Name, TaskSource.Proposed);

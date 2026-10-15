@@ -96,5 +96,5 @@ tương ứng phải đổi tên cột (giữ dữ liệu) và cập nhật dữ
 - `calendar_proposals`: Id, Date, ProposerId (NV đề xuất), ProjectId, PlanItemId?, Title, Start, End, Status (Pending/Approved/Rejected),
   Reason (lý do từ chối), DecidedBy, DecidedAt, CreatedAt.
 - `calendar_proposal_people`: (ProposalId, EmployeeId) — những người sẽ có việc nếu được duyệt (đề xuất việc của mình: chỉ người đề xuất).
-- `calendar_proposals.Departments` (migration `ProposalDepartments`): phòng ban hỗ trợ đề xuất, cách nhau ";".
+- `calendar_proposals.Departments` (migration `ProposalDepartments`): số lượng người hỗ trợ xin theo phòng ban / nhóm khác, "tên=SL;tên=SL"; `SupportReason` (migration `ProposalSupportReason`): lý do xin hỗ trợ.
 - Cột mới `work_tasks.Supported` (migration `TaskSupported`): người hỗ trợ đã tích "đã hỗ trợ".

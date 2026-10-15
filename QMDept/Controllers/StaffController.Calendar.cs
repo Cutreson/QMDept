@@ -65,8 +65,13 @@ public partial class StaffController
     {
         RequireSelfStaff();
         var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
-        var depts = Request.Form["dept"].Select(s => s ?? "").ToList();
-        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, depts);
+        // Xin người hỗ trợ theo số lượng: từng phòng ban (qd_<chỉ số>) và từng nhóm khác (qg_<Id Leader>) — không chỉ định người ngoài nhóm.
+        var quotas = new List<(string Name, int Qty)>();
+        for (var k = 0; k < Fmt.SupportDepartments.Length; k++)
+            if (int.TryParse(Request.Form["qd_" + k], out var qd) && qd > 0) quotas.Add((Fmt.SupportDepartments[k], qd));
+        foreach (var l in await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted).ToListAsync())
+            if (int.TryParse(Request.Form["qg_" + l.Id], out var qg) && qg > 0) quotas.Add(("Nhóm " + l.Name, qg));
+        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, quotas, Request.Form["supportReason"].ToString());
         Toast("Đã gửi đề xuất — chờ Leader duyệt");
     });
 

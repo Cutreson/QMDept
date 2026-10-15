@@ -284,3 +284,12 @@ Người tự thao tác không nhận thông báo của chính mình. Link trong
 Mọi `<select>` có từ 7 mục trở lên (dự án, nhân viên, tỉnh…) và danh sách tích chọn nhiều người (`.optbox`) tự có ô gõ chữ cái phía trên:
 gõ → chỉ còn các mục chứa chữ đó (không phân biệt hoa / dấu, "dao" ra "Đào Minh Tài"). Mã ở `wwwroot/js/site.js` (`enhanceSearch`); bỏ qua select
 giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
+
+## 12. Đề xuất công việc phát sinh ở lịch tháng — chỉnh lần 2 (yêu cầu 2026-10-15)
+
+- Form chỉ có: Dự án (các dự án mình làm Leader dự án), **nội dung công việc phát sinh**, giờ bắt đầu / kết thúc — **không chọn đầu mục kế hoạch**.
+- Xin người hỗ trợ: (a) **chỉ định người chỉ trong nhóm của mình** (NV cùng Leader + Leader của mình, ô chọn → thẻ ✕; server chặn người nhóm khác);
+  (b) **xin theo số lượng**: từng phòng ban (Thiết kế cơ, Thiết kế điện, Lắp ráp cơ, Lắp ráp điện) và từng nhóm khác ("Nhóm <tên Leader>") — không chỉ
+  định người; (c) **lý do xin hỗ trợ** (bắt buộc khi có xin người / số lượng, ≤ 500 ký tự).
+- Lưu: `calendar_proposals.Departments` = "Thiết kế cơ=2;Nhóm Nguyễn Văn Huề=1", `SupportReason`. Leader duyệt thấy số lượng + lý do; khi duyệt, số lượng ghi vào
+  tên việc "· Xin hỗ trợ: Thiết kế cơ ×2, Nhóm … ×1" (`Fmt.QuotaText`).

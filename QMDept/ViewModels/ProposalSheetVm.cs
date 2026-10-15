@@ -11,5 +11,7 @@ public sealed class ProposalSheetVm
     public List<Person> People { get; init; } = [];
     /// <summary>Các dự án NV làm Leader dự án — chỉ khi chọn các dự án này mới hiện ô chọn người hỗ trợ.</summary>
     public List<int> LedProjectIds { get; init; } = [];
+    /// <summary>Các nhóm khác (Leader của nhóm đó) — chỉ xin hỗ trợ theo số lượng, không chỉ định người.</summary>
+    public List<Person> OtherGroups { get; init; } = [];
     public required string Action { get; init; }
 }

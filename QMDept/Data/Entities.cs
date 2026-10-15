@@ -327,7 +327,8 @@ public class CalendarProposal
     public int ProjectId { get; set; }
     public Project? Project { get; set; }
     public int? PlanItemId { get; set; }
-    [MaxLength(300)] public string? Departments { get; set; }        // phòng ban hỗ trợ (Fmt.SupportDepartments, cách nhau ";")
+    [MaxLength(300)] public string? Departments { get; set; }        // số lượng người hỗ trợ xin theo phòng ban / nhóm khác: "Thiết kế cơ=2;Nhóm Lê Ngọc Tân=1"
+    [MaxLength(500)] public string? SupportReason { get; set; }      // lý do xin người hỗ trợ
     [MaxLength(300)] public string Title { get; set; } = "";
     [MaxLength(5)] public string Start { get; set; } = "08:00";
     [MaxLength(5)] public string End { get; set; } = "17:00";

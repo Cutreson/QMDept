@@ -76,6 +76,8 @@ public static class Fmt
     /// <summary>34 tỉnh / thành (đơn vị hành chính cấp tỉnh từ 01/7/2025) cho công tác.</summary>
     /// <summary>Phòng ban có thể đề xuất hỗ trợ ở lịch tháng (yêu cầu 2026-10-15).</summary>
     public static readonly string[] SupportDepartments = ["Thiết kế cơ", "Thiết kế điện", "Lắp ráp cơ", "Lắp ráp điện"];
+    /// <summary>"Thiết kế cơ=2;Nhóm A=1" → "Thiết kế cơ ×2, Nhóm A ×1".</summary>
+    public static string QuotaText(string? q) => string.Join(", ", (q ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Replace("=", " ×")));
 
     public static readonly string[] Provinces = ["Hà Nội", "TP Hồ Chí Minh", "Hải Phòng", "Đà Nẵng", "Huế", "Cần Thơ", "An Giang", "Bắc Ninh", "Cà Mau", "Cao Bằng", "Đắk Lắk", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Tĩnh", "Hưng Yên", "Khánh Hòa", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Nghệ An", "Ninh Bình", "Phú Thọ", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sơn La", "Tây Ninh", "Thái Nguyên", "Thanh Hóa", "Tuyên Quang", "Vĩnh Long"];
 

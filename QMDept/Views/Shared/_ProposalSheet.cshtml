@@ -1,11 +1,10 @@
 @model ProposalSheetVm
-@* Đề xuất công việc của NV ở lịch tháng (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
-   Việc của mình; nếu dự án chọn là dự án mình làm Leader dự án thì có thêm ô chọn người hỗ trợ / Leader hỗ trợ (site.js: select[data-led]).
-   POST /Staff/ProposeCalendar (ngày = ngày đang chọn, Ui.ReturnField). Leader nhóm duyệt thì việc mới vào lịch. *@
+@* Đề xuất công việc phát sinh của NV ở lịch tháng (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
+   Chỉ nội dung công việc (không chọn đầu mục) + giờ; xin người hỗ trợ: chỉ định người TRONG NHÓM MÌNH (ô chọn → thẻ ✕), xin theo số lượng cho
+   từng phòng ban và nhóm khác; có lý do. POST /Staff/ProposeCalendar. Leader nhóm duyệt thì việc mới vào lịch. *@
 @{
     var id = Model.TemplateId;
     var pid = Model.Projects.FirstOrDefault()?.Id;
-    var showPeople = Model.People.Count > 0;
 }
 <template id="@id">
     <form method="post" action="@Model.Action">
@@ -14,46 +13,41 @@
         <h3>Đề xuất công việc</h3>
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
         <label class="f" for="@(id)P">Dự án</label>
-        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: id + "P",
-            extraAttrs: $"data-items-for=\"{id}I\"" + (showPeople ? $" data-led=\"{string.Join(",", Model.LedProjectIds)}\" data-led-box=\"{id}W\"" : ""))
-        <label class="f" for="@(id)I">Đầu mục kế hoạch</label>
-        <select class="in" id="@(id)I" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
-            @if (pid is int p0)
-            {
-                foreach (var i in D.ItemsOf(p0))
-                {
-                    <option value="@i.Id">@i.Title</option>
-                }
-            }
-        </select>
-        <label class="f" for="@(id)T">Nội dung công việc</label>
+        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: id + "P")
+        <label class="f" for="@(id)T">Nội dung công việc phát sinh</label>
         <input class="in" id="@(id)T" name="title" maxlength="300">
         <div class="pick2 eq">
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
             <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
         </div>
-        @if (showPeople)
+        <label class="f" for="@(id)Pick">Người hỗ trợ trong nhóm của tôi (nếu có)</label>
+        <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-nosearch>
+            <option value="">— Chọn người hỗ trợ —</option>
+            @foreach (var p in Model.People)
+            {
+                <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
+            }
+        </select>
+        <div id="@(id)Chips" class="pick-chips"></div>
+        <label class="f">Số lượng người hỗ trợ xin theo phòng ban</label>
+        <div class="pick2 eq">
+            @for (var k = 0; k < Fmt.SupportDepartments.Length; k++)
+            {
+                <div><label class="f" for="@(id)Qd@(k)" style="margin-top:0">@Fmt.SupportDepartments[k]</label><input class="in" type="number" min="0" max="50" value="0" id="@(id)Qd@(k)" name="qd_@k"></div>
+            }
+        </div>
+        @if (Model.OtherGroups.Count > 0)
         {
-            <div id="@(id)W" hidden>
-                <label class="f" for="@(id)Pick">Người hỗ trợ (nếu có)</label>
-                <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-nosearch>
-                    <option value="">— Chọn người hỗ trợ —</option>
-                    <optgroup label="Phòng ban">
-                        @foreach (var dn in Fmt.SupportDepartments)
-                        {
-                            <option value="dept:@dn">Phòng @dn</option>
-                        }
-                    </optgroup>
-                    <optgroup label="Nhân sự">
-                        @foreach (var p in Model.People)
-                        {
-                            <option value="@p.Id">@p.Name@(p.Role == Role.Leader ? " · Leader" : "")</option>
-                        }
-                    </optgroup>
-                </select>
-                <div id="@(id)Chips" class="pick-chips"></div>
+            <label class="f">Số lượng người hỗ trợ xin theo nhóm khác</label>
+            <div class="pick2 eq">
+                @foreach (var g in Model.OtherGroups)
+                {
+                    <div><label class="f" for="@(id)Qg@(g.Id)" style="margin-top:0">Nhóm @g.Name</label><input class="in" type="number" min="0" max="50" value="0" id="@(id)Qg@(g.Id)" name="qg_@g.Id"></div>
+                }
             </div>
         }
+        <label class="f" for="@(id)R">Lý do xin người hỗ trợ</label>
+        <textarea class="in" id="@(id)R" name="supportReason" maxlength="500"></textarea>
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
             <button class="btn btn-primary">Gửi đề xuất</button></div>
     </form>

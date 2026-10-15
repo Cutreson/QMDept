@@ -282,6 +282,10 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("SupportReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(300)
