@@ -124,12 +124,12 @@ else
             var action = Ui.To(req, "/Staff/ProposeCalendar", ("d", Fmt.Key(sel)));
             <partial name="_ItemsJson" />
             <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap">
-                <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button>
+                @if (ledPj.Count > 0) { <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button> }
             </div>
                 var cands = ledPj.Count > 0
                     ? D.Active.Where(x => x.Id != me.Id && (x.Role == Role.Staff || x.Role == Role.Leader)).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
                     : new List<Person>();
-            <partial name="_ProposalSheet" model="@(new ProposalSheetVm { TemplateId = "propTask", Projects = D.ActivePj(), People = cands, LedProjectIds = ledPj.Select(x => x.Id).ToList(), Action = action })" />
+            <partial name="_ProposalSheet" model="@(new ProposalSheetVm { TemplateId = "propTask", Projects = ledPj, People = cands, LedProjectIds = ledPj.Select(x => x.Id).ToList(), Action = action })" />
             @if (Model.Proposals.Count > 0)
             {
                 <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2>

@@ -144,12 +144,12 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
 
         var ids = people.Distinct().ToList();
         if (ids.Count == 0) ids.Add(proposerId);
+        // NV chỉ đề xuất việc thuộc dự án mình là Leader dự án (yêu cầu 2026-10-15) — kể cả việc của chính mình.
+        if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
+            throw new BizException("Chỉ đề xuất được công việc của dự án bạn làm Leader dự án");
         var others = ids.Where(x => x != proposerId).ToList();
         if (others.Count > 0)
         {
-            // Chỉ Leader dự án mới đề xuất thêm người hỗ trợ / Leader hỗ trợ cho dự án đó.
-            if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
-                throw new BizException("Chỉ Leader dự án mới đề xuất thêm người hỗ trợ cho dự án này");
             var okCount = await db.People.CountAsync(p => others.Contains(p.Id) && !p.IsDeleted && (p.Role == Role.Staff || p.Role == Role.Leader));
             if (okCount != others.Count) throw new BizException("Người hỗ trợ không hợp lệ");
         }
