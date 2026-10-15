@@ -301,3 +301,5 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 - Nhãn vai trò ở danh sách người tham gia: **trưởng nhóm (Leader) hiện "Leader"**, Leader dự án hiện "Leader dự án", còn lại "Hỗ trợ" (nhãn khóa, tự đổi theo dự án).
 - Đề xuất lịch của NV **chuyển sang trưởng nhóm của người đề xuất để duyệt**: hiện ở thẻ "Đề xuất chờ duyệt (N)" ngay đầu lịch nhóm của Leader (Duyệt / Từ chối tại chỗ),
   tab con "Đề xuất lịch (N)", huy hiệu số trên tab "Kế hoạch & duyệt" và thông báo đẩy. Danh sách chờ duyệt nằm trong `DataCache` (`Dept.PendingProposals`).
+- **Công việc của chính Leader dự án (bổ sung)**: form đề xuất có ô **"Tôi thực hiện (với vai trò Leader dự án)"**, mặc định tích. Tích → người đề xuất là người thực hiện (cùng
+  những người hỗ trợ chọn thêm); bỏ tích thì chỉ những người được chỉ định trong nhóm làm — bỏ tích mà không chọn ai thì báo lỗi. Danh sách đề xuất hiện "Thực hiện: …".

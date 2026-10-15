@@ -9,11 +9,11 @@
     <section class="card sec"><h2>Đề xuất chờ duyệt (@list.Count)</h2>
         @foreach (var x in list)
         {
-            var who = x.People.Select(p => p.EmployeeId).Where(i => i != x.ProposerId).Select(i => D.PName(i)).ToList();
+            var who = x.People.Select(p => D.PName(p.EmployeeId)).ToList();   // người thực hiện (gồm cả người đề xuất nếu "Tôi thực hiện")
             <div class="asg">
                 <div class="row"><b>@D.PName(x.ProposerId)</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.Start–@x.End</span></span></div>
                 <div class="t" style="margin-top:4px">@x.Title</div>
-                <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Đề xuất hỗ trợ: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Xin hỗ trợ: " + Fmt.QuotaText(x.Departments))</div>
+                <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Thực hiện: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Xin hỗ trợ: " + Fmt.QuotaText(x.Departments))</div>
                 @if (!string.IsNullOrEmpty(x.SupportReason)) { <div class="note">Lý do xin hỗ trợ: @x.SupportReason</div> }
                 <div class="btn-row">
                     <form method="post" action="/Planning/DecideProposal" asp-antiforgery="true" class="ro-ok">

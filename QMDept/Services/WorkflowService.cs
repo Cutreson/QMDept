@@ -129,7 +129,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Leader dự án. Chưa ghi vào lịch — Leader nhóm duyệt (<see cref="DecideProposalAsync"/>) thì mới tạo việc.
     /// </summary>
     public async Task<CalendarProposal> ProposeAsync(DateOnly date, int proposerId, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyCollection<int> people, IReadOnlyCollection<(string Name, int Qty)>? quotas = null, string? supportReason = null)
+        IReadOnlyCollection<int> people, IReadOnlyCollection<(string Name, int Qty)>? quotas = null, string? supportReason = null, bool includeSelf = true)
     {
         var me = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == proposerId && !p.IsDeleted && p.Role == Role.Staff)
             ?? throw new BizException("Không tìm thấy nhân viên");
@@ -143,7 +143,9 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
 
         var ids = people.Distinct().ToList();
-        if (ids.Count == 0) ids.Add(proposerId);
+        // Người đề xuất (Leader dự án) mặc định cùng thực hiện; bỏ tích thì chỉ những người được chỉ định trong nhóm làm.
+        if (includeSelf && !ids.Contains(proposerId)) ids.Insert(0, proposerId);
+        if (ids.Count == 0) throw new BizException("Chọn người thực hiện: tích “Tôi thực hiện” hoặc chọn người hỗ trợ trong nhóm của mình");
         // NV chỉ đề xuất việc thuộc dự án mình là Leader dự án (yêu cầu 2026-10-15) — kể cả việc của chính mình.
         if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
             throw new BizException("Chỉ đề xuất được công việc của dự án bạn làm Leader dự án");

@@ -71,7 +71,8 @@ public partial class StaffController
             if (int.TryParse(Request.Form["qd_" + k], out var qd) && qd > 0) quotas.Add((Fmt.SupportDepartments[k], qd));
         foreach (var l in await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted).ToListAsync())
             if (int.TryParse(Request.Form["qg_" + l.Id], out var qg) && qg > 0) quotas.Add(("Nhóm " + l.Name, qg));
-        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, quotas, Request.Form["supportReason"].ToString());
+        var includeSelf = Request.Form["self"].Count > 0;   // ô tích "Tôi thực hiện"
+        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, quotas, Request.Form["supportReason"].ToString(), includeSelf);
         Toast("Đã gửi đề xuất — chờ Leader duyệt");
     });
 

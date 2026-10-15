@@ -20,6 +20,7 @@
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
             <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: id + "E")</div>
         </div>
+        <label class="row" style="margin-top:12px;font-size:13.5px"><input type="checkbox" name="self" value="1" checked> <b>Tôi thực hiện</b> (với vai trò Leader dự án)</label>
         <label class="f" for="@(id)Pick">Người hỗ trợ</label>
         <select class="in" id="@(id)Pick" data-pick-into="@(id)Chips" data-qty-row="@(id)Qty" data-nosearch>
             <option value="">— Chọn người / phòng ban / nhóm —</option>
