@@ -20,7 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
-  **2026-10-16 (sau khi xóa): nạp file thông tin DA.xlsx — 88 dự án / 576 hạng mục, đã kiểm khớp 100% (docs/nghiep-vu.md §18).**
+  **2026-10-16: nạp lại file thông tin DA.xlsx — CHỈ sheet "Dự án chế tạo": 48 dự án / 355 hạng mục, kiểm khớp 100% (docs/nghiep-vu.md §18); dự án demo + nội bộ đã xóa.**
   **2026-10-16: chủ dự án yêu cầu XÓA toàn bộ dữ liệu dự án + giao việc của mọi nhân sự trên DB thật** (`tools/delete-project-data.sql`, đã chạy): DB còn 11 tài khoản (admin + 10 nhân sự chuẩn), 0 dự án / phân công / việc / đề xuất / kế hoạch ngày / báo cáo. Muốn có dự án phải tạo lại (Trưởng phòng / Quản trị → Dự án → ＋ Dự án mới).
   Ô chọn có tìm kiếm trong chính ô (1 ô thay vì 2) — docs/nghiep-vu.md §17.
   Số lượng dự án (N · đang triển khai · hoàn thành) ở mọi màn hình thông tin dự án (docs/nghiep-vu.md §16).

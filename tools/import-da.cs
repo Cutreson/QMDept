@@ -1,7 +1,7 @@
 #:package MySql.Data@9.4.0
 // Nạp / kiểm tra file "thông tin DA.xlsx" (2 sheet: "Dự án chế tạo", "Dự án demo + Nội bộ") vào DB thật (yêu cầu chủ dự án 2026-10-16).
-//   dotnet run tools/import-da.cs gen <file.xlsx> <out.sql>   đọc Excel → sinh file SQL (mỗi câu một dòng) để chạy bằng tools/dbquery.cs
-//   dotnet run tools/import-da.cs verify <file.xlsx>          đọc lại Excel và so từng dự án / hạng mục với DB (báo mọi chỗ lệch)
+//   dotnet run tools/import-da.cs gen <file.xlsx> <out.sql> [chetao]   đọc Excel → sinh file SQL (mỗi câu một dòng) để chạy bằng tools/dbquery.cs; "chetao" = chỉ sheet Dự án chế tạo
+//   dotnet run tools/import-da.cs verify <file.xlsx> [chetao]  đọc lại Excel và so từng dự án / hạng mục với DB (báo mọi chỗ lệch)
 //   dotnet run tools/import-da.cs report <file.xlsx>          in thống kê + các điểm bất thường trong file (ngày lỗi, tên trống…)
 // Quy tắc nạp (đã ghi ở docs/nghiep-vu.md §18): sheet 1 → ngày TT = ngày hạng mục; sheet 2 → ngày TT nếu có, không thì KH; dự án trống tên bị bỏ qua.
 using System.IO.Compression;
@@ -15,6 +15,8 @@ var xlsx = args.Length > 1 ? args[1] : "";
 var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 var sheets = ReadXlsx(xlsx);
 var projects = Parse(sheets, today, out var notes);
+// Tham số cuối "chetao": chỉ lấy sheet "Dự án chế tạo", bỏ sheet "Dự án demo + Nội bộ" (yêu cầu 2026-10-16)
+if (args.Length > 2 && args[^1] == "chetao") projects = projects.Where(p => p.Category == "Dự án chế tạo").ToList();
 
 if (mode == "gen") { File.WriteAllText(args[2], BuildSql(projects), new UTF8Encoding(false)); Console.WriteLine($"Đã sinh {args[2]}: {projects.Count} dự án, {projects.Sum(p => p.Items.Count)} hạng mục"); }
 else if (mode == "report") Report();
