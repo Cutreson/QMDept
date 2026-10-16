@@ -20,6 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
+  2026-10-16: thứ tự tab con Leader: Kế hoạch, Lịch tuần, Phân công, Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
   2026-10-16: form đề xuất chỉ liệt kê dự án NV được giao làm Leader dự án (đã kiểm tra 6 NV).
   Mọi NV có cùng tính năng đề xuất + xin hỗ trợ (không còn gắn với việc là Leader dự án); đã so sánh 6 NV bằng script (id 11/12/13/27/28/29) — giống nhau.
   Báo cáo đầu ngày: "Nhân sự hỗ trợ" thiết kế giống đề xuất công việc (docs/nghiep-vu.md §14).

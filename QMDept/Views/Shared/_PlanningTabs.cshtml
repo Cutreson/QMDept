@@ -8,14 +8,15 @@
     var propCount = Scope.MeId is int pl ? D.ProposalsFor(pl).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {
+        // Thứ tự theo yêu cầu 2026-10-16: Kế hoạch, Lịch tuần, Phân công, Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
         ("approvals", "/Planning/Approvals", "Kế hoạch"),
-        ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
         ("week", "/Planning/Week", "Lịch tuần"),
+        ("assign", "/Planning/Assign", "Phân công"),
+        ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
+        ("proposals", "/Planning/Proposals", "Đề xuất lịch" + (propCount > 0 ? $" ({propCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),
-        ("proposals", "/Planning/Proposals", "Đề xuất lịch" + (propCount > 0 ? $" ({propCount})" : "")),
         ("people", "/Planning/People", "Nhân sự"),
-        ("assign", "/Planning/Assign", "Phân công"),
     };
 }
 @Ui.Head(2, "Kế hoạch & phê duyệt")

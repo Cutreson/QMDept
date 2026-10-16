@@ -323,3 +323,7 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
   không có nút "＋ Đề xuất công việc"; máy chủ cũng chặn (`WorkflowService.ProposeAsync`). Trong dự án được giao, mọi NV đều dùng đủ "Tôi thực hiện" + xin người hỗ trợ / phòng ban / nhóm khác + lý do.
   (Thay cho mục "mở rộng cho mọi thành viên" phía trên về phạm vi dự án.) Đã kiểm tra 6 NV: Lực [Dây truyền dây, Máy kiểm tra tấm, Băng tải 1], Tài [Chiller], Hùng [Máy ép vòng bi],
   Hòa / Đoàn / Vinh không có dự án → không có nút.
+
+## 15. Thứ tự tab con "Kế hoạch & duyệt" của Leader (yêu cầu 2026-10-16)
+
+Kế hoạch → Lịch tuần → Phân công → Báo cáo → Đề xuất lịch → Dự án & đầu mục → Leader dự án → Nhân sự (`Views/Shared/_PlanningTabs.cshtml`).
