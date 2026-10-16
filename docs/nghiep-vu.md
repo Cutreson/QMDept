@@ -327,3 +327,8 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 ## 15. Thứ tự tab con "Kế hoạch & duyệt" của Leader (yêu cầu 2026-10-16)
 
 Kế hoạch → Lịch tuần → Phân công → Báo cáo → Đề xuất lịch → Dự án & đầu mục → Leader dự án → Nhân sự (`Views/Shared/_PlanningTabs.cshtml`).
+
+## 16. Số lượng dự án ở mọi màn hình thông tin dự án (yêu cầu 2026-10-16)
+
+Dòng "N dự án · X đang triển khai · Y đã hoàn thành" (`Dept.PjCountText`; đang triển khai = chưa bàn giao và chưa 100%): NV → Thông tin dự án (dưới tiêu đề; chỉ đếm dự án mình là Leader dự án),
+TP → Dự án, Leader / TP → Dự án & đầu mục, bảng "Tình hình dự án" (Leader Tổng quan) và "Tiến độ dự án" (TP Tổng quan).

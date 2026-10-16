@@ -15,7 +15,7 @@ else
         (Ui.Here(req, ("pt", "done")), $"Đã hoàn thành ({Model.Done.Count})", Model.Tab == "done", 0),
     };
     var list = Model.List;
-    @Ui.Head(2, "Thông tin dự án")
+    @Ui.Head(2, "Thông tin dự án", D.PjCountText(Model.Active.Concat(Model.Done), Scope.Date))
     @Ui.Seg(seg)
     if (list.Count > 0)
     {

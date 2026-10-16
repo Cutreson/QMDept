@@ -23,7 +23,8 @@ else
             <a class="btn" href="@Ui.To(req, "/Planning/ProjectLeads")">Chọn Leader dự án</a>
         </div>
     }
-    <div class="pchips" style="margin-top:14px">
+    <p class="note" style="margin:14px 0 0"><b>@D.PjCountText(Model.Projects, Scope.Date)</b></p>
+    <div class="pchips" style="margin-top:8px">
         @foreach (var x in Model.Projects)
         {
             <a class="pchip" href="@Ui.Here(req, ("pj", x.Id.ToString()))" aria-pressed="@(x.Id == Model.Pid ? "true" : "false")">@x.Name</a>

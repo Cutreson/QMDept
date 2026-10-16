@@ -148,7 +148,7 @@ public static class Blocks
             var st = d.PjStatus(p.Id, date); var need = d.Need(date, p.Id); var onSite = d.OnSite(date, p.Id).Count;
             sb.Append($"<tr><td><b>{E(p.Name)}</b></td><td class=\"n\">{Ui.PctPill(d.PjPct(p.Id), st).ToHtml()}</td><td class=\"n {(onSite < need ? "red" : "")}\">{need} / {onSite}</td><td>{Labels.PillHtml(st)}</td></tr>");
         }
-        sb.Append("</tbody></table></div><p class=\"note\">KH = nhu cầu nhân sự, TT = số người có việc tại dự án trong ngày. Tiến độ = % đầu mục kế hoạch đã xong.</p>");
+        sb.Append($"</tbody></table></div><p class=\"note\"><b>{d.PjCountText(ps, date)}</b>. KH = nhu cầu nhân sự, TT = số người có việc tại dự án trong ngày. Tiến độ = % đầu mục kế hoạch đã xong.</p>");
         return H(sb.ToString());
     }
 

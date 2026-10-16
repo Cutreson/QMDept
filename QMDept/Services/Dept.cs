@@ -135,6 +135,21 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         _ => "Trưởng phòng",
     };
 
+    /// <summary>
+    /// Số lượng dự án (yêu cầu 2026-10-16): tổng / đang triển khai (chưa bàn giao và chưa hoàn thành) / đã hoàn thành (đóng hoặc 100%),
+    /// theo trạng thái ở ngày <paramref name="date"/>. Hiện ở mọi màn hình "Thông tin dự án".
+    /// </summary>
+    public (int Total, int Active, int Done) PjCounts(IEnumerable<Project> ps, DateOnly date)
+    {
+        var l = ps.ToList();
+        var done = l.Count(p => p.Closed || PjStatus(p.Id, date) == ProjectStatus.Completed);
+        return (l.Count, l.Count - done, done);
+    }
+    public string PjCountText(IEnumerable<Project> ps, DateOnly date)
+    {
+        var (t, a, d) = PjCounts(ps, date);
+        return $"{t} dự án · {a} đang triển khai · {d} đã hoàn thành";
+    }
     public List<Project> ActivePj() { GuardBase(); return Projects.Where(p => !p.Closed).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<Project> AllPj() { GuardBase(); return Projects.OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<PlanItem> ItemsOf(int pid) { GuardBase(); return Items.Where(i => i.ProjectId == pid).OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).ToList(); }

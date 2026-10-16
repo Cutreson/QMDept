@@ -12,6 +12,7 @@ else
 {
     <partial name="_PlanningTabs" model="@("projects")" />
 }
+<p class="note" style="margin:0 0 8px"><b>@D.PjCountText(Model.Projects, Scope.Date)</b></p>
 <div class="pchips">
     @foreach (var x in Model.Projects)
     {
