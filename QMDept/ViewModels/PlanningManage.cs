@@ -45,6 +45,10 @@ public sealed class PlanningLeadsVm
 {
     public required List<Project> Projects { get; init; }
     public required List<Person> Staff { get; init; }
+    /// <summary>"has" = dự án đã có Leader dự án; "none" = chưa chọn.</summary>
+    public string Filter { get; init; } = "has";
+    public int HasCount { get; init; }
+    public int NoneCount { get; init; }
 }
 
 /// <summary>ldAssign: phân công.</summary>

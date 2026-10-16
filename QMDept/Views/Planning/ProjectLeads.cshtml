@@ -4,9 +4,14 @@
     var req = Context.Request;
 }
 <partial name="_PlanningTabs" model="@("leads")" />
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("f", "has")), $"Đã có Leader dự án ({Model.HasCount})", Model.Filter == "has", 0),
+    (Ui.Here(req, ("f", "none")), $"Chưa chọn Leader dự án ({Model.NoneCount})", Model.Filter == "none", 0),
+})
 @if (Model.Projects.Count == 0)
 {
-    <div class="empty">Chưa có dự án đang triển khai.</div>
+    <div class="empty">@(Model.Filter == "has" ? "Chưa có dự án nào được chọn Leader dự án." : "Mọi dự án đã được chọn Leader dự án.")</div>
     return;
 }
 @if (Model.Staff.Count == 0)

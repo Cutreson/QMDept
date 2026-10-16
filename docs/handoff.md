@@ -20,6 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
+  Tab "Leader dự án": 2 mục nhỏ Đã có / Chưa chọn Leader dự án.
   TP / Quản trị KHÔNG chọn Leader dự án (đã bỏ nút + chặn); chỉ Leader nhóm chọn.
   TP / Quản trị: nút "Leader phụ trách dự án" (/Planning/ProjectOwners) giao dự án cho nhóm Leader (docs/nghiep-vu.md §19).
   **2026-10-16: nạp lại file thông tin DA.xlsx — CHỈ sheet "Dự án chế tạo": 48 dự án / 355 hạng mục, kiểm khớp 100% (docs/nghiep-vu.md §18); dự án demo + nội bộ đã xóa.**

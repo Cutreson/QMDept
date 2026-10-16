@@ -294,13 +294,17 @@ public partial class PlanningController
 
     /// <summary>GET /Planning/ProjectLeads — chọn người làm Leader dự án cho từng dự án đang triển khai (NV chỉ thấy dự án mình là Leader dự án).</summary>
     [HttpGet]
-    public async Task<IActionResult> ProjectLeads()
+    public async Task<IActionResult> ProjectLeads(string? f)
     {
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader dự án";
         // Chỉ Leader chọn Leader dự án (TP / Quản trị chỉ chọn Leader phụ trách dự án). Leader thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách.
         var projects = D.ActivePj().Where(p => p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId).ToList();
-        return View(new PlanningLeadsVm { Projects = projects, Staff = D.Staff() });
+        // Chia 2 mục: đã có Leader dự án (f=has) / chưa chọn Leader dự án (f=none); mặc định mục đầu có dự án (đã có → chưa chọn).
+        var has = projects.Where(p => D.ProjectLead(p.Id) is not null).ToList();
+        var none = projects.Where(p => D.ProjectLead(p.Id) is null).ToList();
+        var filter = f == "has" || f == "none" ? f : has.Count > 0 ? "has" : "none";
+        return View(new PlanningLeadsVm { Projects = filter == "has" ? has : none, Staff = D.Staff(), Filter = filter, HasCount = has.Count, NoneCount = none.Count });
     }
 
     /// <summary>POST: chọn (hoặc bỏ chọn khi emp trống) Leader dự án của một dự án. Mỗi dự án một Leader dự án; người cũ về "Hỗ trợ".</summary>

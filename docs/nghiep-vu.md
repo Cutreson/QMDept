@@ -365,3 +365,5 @@ bộ lọc "Chưa có Leader" + đếm. Lưu `projects.OwnerLeaderId`; Leader đ
 (Leader chỉ thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách) để chọn người làm Leader dự án trong nhóm mình. Chỉ TP / Quản trị đổi được (Leader gọi POST bị chặn).
 - **Đính chính (2026-10-16)**: Trưởng phòng / Quản trị **không** chọn Leader dự án — đã bỏ nút "Chọn Leader dự án" ở trang Dự án và chặn `/Planning/ProjectLeads` + `SetProjectLead` với TP / Quản trị;
   việc chọn Leader dự án chỉ của Leader nhóm. TP / Quản trị chỉ chọn **Leader (nhóm) phụ trách** dự án (§19).
+- **Tab "Leader dự án" chia 2 mục nhỏ (2026-10-16)**: "Đã có Leader dự án (N)" (`?f=has`) và "Chưa chọn Leader dự án (M)" (`?f=none`); mặc định mở mục đầu có dự án (đã có → chưa chọn).
+  Chọn xong một dự án thì dự án chuyển từ mục "Chưa chọn" sang "Đã có".
