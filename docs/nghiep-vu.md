@@ -339,3 +339,20 @@ Không còn ô gõ riêng phía trên ô chọn (trước đây hiện 2 ô, vd.
 bấm / gõ chữ cái ngay trong ô → danh sách chỉ còn mục chứa chữ đó (không phân biệt hoa / dấu), chọn bằng chuột hoặc ↑ ↓ Enter, Esc để đóng (`site.js: enhanceSelect`, lớp `.combo`).
 `<select>` gốc vẫn nằm trong form (ẩn) nên giá trị / kiểm tra bắt buộc không đổi; danh sách < 7 mục vẫn là ô chọn thường; ô chọn người hỗ trợ (`data-pick-into`) giữ ô chọn thường.
 Danh sách tích chọn nhiều người (`.optbox` ≥ 7 dòng) vẫn có ô lọc phía trên vì là danh sách tích.
+
+## 18. Dữ liệu dự án nạp từ file "thông tin DA.xlsx" (yêu cầu 2026-10-16)
+
+Công cụ: `tools/import-da.cs` (`gen` sinh SQL, `verify` so DB với file, `report` thống kê + điểm bất thường); nạp bằng `tools/dbquery.cs`. Đã nạp **88 dự án / 576 hạng mục** vào DB thật
+và kiểm tra khớp 100% (so từng dự án + hạng mục; thêm một lượt đối chiếu độc lập bằng trình đọc khác).
+
+- **Sheet "Dự án chế tạo"** (48 dự án, 355 hạng mục): Dự án → tên; Mã dự án → `Project.Code`; Khách hàng → Nhà máy (`Factory`); Tỉnh thành → Địa điểm (`Location`); Số lượng → `Quantity`;
+  Leader → **Leader phụ trách** (`OwnerLeaderId`, tài khoản Leader trùng tên); Hạng mục → đầu mục; Ngày bắt đầu / kết thúc **TT (thực tế)** → ngày đầu mục.
+- **Sheet "Dự án demo + Nội bộ"** (40 dự án có tên, 221 hạng mục): Trạng thái "Đã hoàn thành" → dự án **Đã bàn giao**; Dự án → tên (nguyên văn, gồm mã); Cấp độ → `Level`; Số lượng; Ngày PO / Ngày giao hàng theo PO
+  (`PoDate` / `DeliveryDate`; nếu ghi dạng chữ như "02/04" thì đưa vào Ghi chú); Hạng mục → đầu mục; PIC → `PlanItem.Pic`; ngày **KH** → `PlanStart/PlanEnd`, ngày **TT** → ngày đầu mục (không có TT thì lấy KH);
+  Tình trạng / Nguyên nhân chậm / NOTE → `PlanItem.Note`.
+- Trạng thái đầu mục: sheet 2 theo cột Trạng thái hạng mục (hoặc Tiến độ thực tế = 1; dự án đã hoàn thành → mọi hạng mục xong); sheet 1 (không có cột trạng thái) suy theo ngày TT so với ngày nạp
+  (kết thúc đã qua → Hoàn thành, đã bắt đầu → Đang làm, còn lại → Chưa làm). Ngày dự án = ngày sớm nhất / muộn nhất của các đầu mục (không có thì ngày PO / giao hàng). Nhu cầu nhân sự mặc định 2.
+- **Điểm bất thường trong file** (giữ nguyên hoặc bỏ qua, đã báo chủ dự án): 4 hạng mục kết thúc trước bắt đầu (sheet 1 dòng 64, 142, 167, 169 — giữ nguyên); 3 ô ngày bắt đầu lỗi `#REF!`
+  (dòng 66, 162, 196 — để trống); 4 dự án sheet 2 STT 41–44 không có tên → **không nạp**.
+- Hiển thị: mã · nhà máy – địa điểm ở thẻ / tiêu đề dự án; mục "Thông tin dự án" có Mã, Số lượng, Leader phụ trách, Loại, Cấp độ, PO, Giao hàng, Ghi chú; hạng mục hiện PIC, ngày KH, ghi chú; danh sách > 12 dự án dùng
+  ô chọn có tìm kiếm thay hàng nút; Leader chỉ thấy ở tab "Leader dự án" các dự án do mình phụ trách (+ dự án chưa có Leader phụ trách).

@@ -727,6 +727,20 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("Pic")
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)");
+
+                    b.Property<DateTime?>("PlanEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("PlanStart")
+                        .HasColumnType("date");
+
                     b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
@@ -784,6 +798,34 @@ namespace QMDept.Data.Migrations
                     b.Property<int>("Need")
                         .HasColumnType("int");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Level")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<int?>("OwnerLeaderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PoDate")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("int");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
@@ -795,6 +837,7 @@ namespace QMDept.Data.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.HasKey("Id");
+b.HasIndex("OwnerLeaderId");
 
                     b.ToTable("projects", (string)null);
                 });
@@ -1148,6 +1191,14 @@ namespace QMDept.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("QMDept.Data.Project", b =>
+                {
+                    b.HasOne("QMDept.Data.Person", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerLeaderId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("QMDept.Data.ProjectNeed", b =>

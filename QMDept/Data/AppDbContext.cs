@@ -46,7 +46,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Leader).WithMany(x => x.Members).HasForeignKey(x => x.LeaderId).OnDelete(DeleteBehavior.SetNull);
         });
 
-        m.Entity<Project>(e => e.ToTable("projects"));
+        m.Entity<Project>(e =>
+        {
+            e.ToTable("projects");
+            e.HasOne<Person>().WithMany().HasForeignKey(x => x.OwnerLeaderId).OnDelete(DeleteBehavior.SetNull);
+        });
 
         m.Entity<PlanItem>(e =>
         {

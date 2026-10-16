@@ -13,7 +13,7 @@
     var st = D.PjStatus(p.Id, date);
     var pct = D.PjPct(p.Id);
     var it = D.ItemsOf(p.Id);
-    var place = Dept.Place(p);
+    var place = Dept.SubLine(p);
 }
 <div class="head">
     @if (Model.Who != ProjectDetailVm.ManagerView && Model.BackHref is not null)
@@ -32,6 +32,7 @@
         <div class="row" style="justify-content:space-between">
             <div>
                 <div>🏭 @(string.IsNullOrEmpty(place) ? "—" : place)</div>
+                @foreach (var (k, val) in D.ProjectInfo(p)) { <div class="note"><span class="muted">@k:</span> <b>@val</b></div> }
                 <div class="mono note">📅 @Fmt.Dmy(p.StartDate) – @Fmt.Dmy(p.EndDate) (@(p.StartDate is DateOnly s0 && p.EndDate is DateOnly e0 ? (Fmt.DaysBetween(s0, e0) + 1).ToString() : "?") ngày)</div>
             </div>
             @Ui.Pill(st)

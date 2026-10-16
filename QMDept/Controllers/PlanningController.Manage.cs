@@ -80,7 +80,7 @@ public partial class PlanningController
 
     /// <summary>POST projForm: tạo dự án mới (→ chuyển sang chip dự án vừa tạo) hoặc lưu thông tin dự án.</summary>
     [HttpPost]
-    public async Task<IActionResult> SaveProject(int? id, string? name, string? factory, string? location, string? start, string? end,
+    public async Task<IActionResult> SaveProject(int? id, string? name, string? factory, string? location, string? start, string? end, string? code, int? quantity,
         int? need, string? statusOverride, bool closed)
     {
         int? created = null;
@@ -90,6 +90,8 @@ public partial class PlanningController
             var n = PlanningManage.Text(name, 200, "Tên dự án") ?? throw new BizException("Nhập tên dự án");
             var fa = PlanningManage.Text(factory, 200, "Nhà máy");
             var lo = PlanningManage.Text(location, 200, "Địa điểm");
+            var cd = PlanningManage.Text(code, 80, "Mã dự án");
+            var qt = quantity is int q0 && q0 >= 0 ? q0 : (int?)null;
             var s = PlanningManage.Date(start);
             var e = PlanningManage.Date(end);
             if (s is DateOnly s0 && e is DateOnly e0 && e0 < s0) throw new BizException("Ngày kết thúc phải sau ngày bắt đầu");
@@ -98,6 +100,7 @@ public partial class PlanningController
             if (id is int pid)
             {
                 var p = await Db.Projects.FirstOrDefaultAsync(x => x.Id == pid) ?? throw new BizException("Không tìm thấy dự án");
+                p.Code = cd; p.Quantity = qt;
                 p.Name = n; p.Factory = fa; p.Location = lo; p.StartDate = s; p.EndDate = e; p.Need = k; p.StatusOverride = ov; p.Closed = closed;
                 await Db.SaveChangesAsync();
                 Toast("Đã lưu dự án");
@@ -106,7 +109,7 @@ public partial class PlanningController
             {
                 var p = new Project
                 {
-                    Name = n, Factory = fa, Location = lo, StartDate = s, EndDate = e, Need = k, StatusOverride = ov, Closed = false,
+                    Code = cd, Quantity = qt, Name = n, Factory = fa, Location = lo, StartDate = s, EndDate = e, Need = k, StatusOverride = ov, Closed = false,
                     SortOrder = await Db.Projects.CountAsync() + 1, CreatedAt = VnTime.UtcNow,
                 };
                 Db.Projects.Add(p);
@@ -295,7 +298,9 @@ public partial class PlanningController
     {
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader dự án";
-        return View(new PlanningLeadsVm { Projects = D.ActivePj(), Staff = D.Staff() });
+        // Leader chỉ thấy dự án do mình phụ trách (cột Leader trong file Excel) + dự án chưa có Leader phụ trách; TP / Quản trị thấy tất cả.
+        var projects = D.ActivePj().Where(p => Scope.IsManager || p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId).ToList();
+        return View(new PlanningLeadsVm { Projects = projects, Staff = D.Staff() });
     }
 
     /// <summary>POST: chọn (hoặc bỏ chọn khi emp trống) Leader dự án của một dự án. Mỗi dự án một Leader dự án; người cũ về "Hỗ trợ".</summary>
@@ -306,6 +311,7 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         var pj = await Db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
         if (pj.Closed) throw new BizException("Dự án đã bàn giao, không đổi Leader dự án được");
+        if (!Scope.IsManager && pj.OwnerLeaderId is int ow && ow != Scope.MeId) throw new BizException("Dự án này do Leader nhóm khác phụ trách");
         var olds = await Db.Assignments.Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead).ToListAsync();
         if (emp is int e)
         {

@@ -27,7 +27,7 @@ else
     <form class="card sec" method="post" action="/Planning/SetProjectLead" asp-antiforgery="true">
         @Ui.ReturnField(req)
         <input type="hidden" name="projectId" value="@p.Id">
-        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.Place(p)</div></div>
+        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.SubLine(p)</div></div>
             <span class="note" style="margin-left:auto">@(lead is null ? "Chưa chọn Leader dự án" : "Leader dự án: " + lead.Name)</span></div>
         <label class="f" for="pl@(p.Id)">Leader dự án</label>
         <div class="row" style="gap:8px">

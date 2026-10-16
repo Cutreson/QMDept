@@ -173,6 +173,7 @@
     if (t.matches && t.matches('select[data-items-for]')) fillItems(t);
     if (t.matches && t.matches('select[data-lead-for]')) applyLead(t);
     if (t.matches && t.matches('select[data-led]')) toggleLed(t);
+    if (t.matches && t.matches('select[data-nav]') && t.value) location.href = t.value;
     if (t.matches && t.matches('select[data-pick-into]')) pickPerson(t);
     if (t.matches && t.matches('select[data-show-target]')) showWhen(t);
     if (t.matches && t.matches('select.in')) t.classList.toggle('ph', !t.value);

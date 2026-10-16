@@ -34,6 +34,15 @@ public class Project
     [MaxLength(200)] public string Name { get; set; } = "";
     [MaxLength(200)] public string? Factory { get; set; }           // Nhà máy (= khách hàng)
     [MaxLength(200)] public string? Location { get; set; }
+    // --- Thông tin nạp từ file "thông tin DA.xlsx" (2026-10-16) ---
+    [MaxLength(80)] public string? Code { get; set; }                 // Mã dự án (vd. TC0625-03-P1)
+    public int? Quantity { get; set; }                                // Số lượng (máy / bộ)
+    public int? OwnerLeaderId { get; set; }                           // Leader (trưởng nhóm) phụ trách dự án
+    public DateOnly? PoDate { get; set; }                             // Ngày PO
+    public DateOnly? DeliveryDate { get; set; }                       // Ngày giao hàng theo PO
+    [MaxLength(20)] public string? Level { get; set; }                // Cấp độ
+    [MaxLength(40)] public string? Category { get; set; }             // "Dự án chế tạo" / "Dự án demo + Nội bộ"
+    [MaxLength(300)] public string? Note { get; set; }                // Ghi chú (vd. ngày PO / giao hàng ghi dạng chữ trong file)
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public int Need { get; set; } = 2;                               // Nhu cầu nhân sự/ngày mặc định
@@ -58,6 +67,11 @@ public class PlanItem
     public TaskState Status { get; set; } = TaskState.NotStarted;      // chỉ NotStarted / InProgress / Done
     public DateOnly? DoneDate { get; set; }
     [MaxLength(100)] public string? DoneBy { get; set; }
+    // --- Thông tin nạp từ file "thông tin DA.xlsx" (2026-10-16) ---
+    [MaxLength(120)] public string? Pic { get; set; }                  // Người phụ trách hạng mục (PIC)
+    [MaxLength(500)] public string? Note { get; set; }                 // Ghi chú / nguyên nhân chậm của hạng mục
+    public DateOnly? PlanStart { get; set; }                           // Ngày bắt đầu KẾ HOẠCH (KH); StartDate = thực tế (TT)
+    public DateOnly? PlanEnd { get; set; }                             // Ngày kết thúc KẾ HOẠCH (KH); EndDate = thực tế (TT)
 }
 
 /// <summary>Phân công nhân viên vào dự án (collection `assign`, id = `${project}_${employee}`).</summary>

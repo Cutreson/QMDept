@@ -49,7 +49,7 @@ public static class Blocks
     public static IHtmlContent ProjectCard(this Dept d, Project p, string href, string? mine = null)
     {
         var st = d.PjStatus(p.Id, d.Scope.Date);
-        var place = Dept.Place(p);
+        var place = Dept.SubLine(p);
         return H($"<a class=\"card pcard\" href=\"{E(href)}\">{Ui.Ptile(d.Tile(p.Id), p.Name).ToHtml()}"
             + $"<span style=\"min-width:0\"><span class=\"t\"><b>{E(p.Name)}</b>{Labels.PillHtml(st)}</span>"
             + $"<span class=\"note\" style=\"display:block\">{E(place)}{(mine is null ? "" : $" · <b style=\"color:var(--brand)\">{E(mine)}</b>")}</span>"
@@ -105,7 +105,12 @@ public static class Blocks
             var cls = st == TaskState.Done ? "done" : st == TaskState.InProgress ? "cur" : "";
             var late = st != TaskState.Done && i.EndDate is DateOnly e && e < today;
             sb.Append($"<li class=\"{cls}\"><span class=\"node\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"h\"><span class=\"title\"><span class=\"num\">{k + 1}.</span>{E(i.Title)}</span>{(late ? "<span class=\"pill p-bad\">Trễ</span>" : Labels.PillHtml(st))}</div>");
-            sb.Append($"<div class=\"meta mono\">{Fmt.Dm(i.StartDate)} – {Fmt.Dm(i.EndDate)}{(i.DoneDate is DateOnly dd ? $" · xong {Fmt.Dm(dd)}{(string.IsNullOrEmpty(i.DoneBy) ? "" : " · " + E(i.DoneBy))}" : "")}</div></div></li>");
+            var extra = new List<string>();
+            if (!string.IsNullOrEmpty(i.Pic)) extra.Add("PIC: " + E(i.Pic));
+            if (i.PlanStart is not null || i.PlanEnd is not null) extra.Add($"KH {Fmt.Dm(i.PlanStart)} – {Fmt.Dm(i.PlanEnd)}");
+            sb.Append($"<div class=\"meta mono\">{Fmt.Dm(i.StartDate)} – {Fmt.Dm(i.EndDate)}{(i.DoneDate is DateOnly dd ? $" · xong {Fmt.Dm(dd)}{(string.IsNullOrEmpty(i.DoneBy) ? "" : " · " + E(i.DoneBy))}" : "")}{(extra.Count > 0 ? " · " + string.Join(" · ", extra) : "")}</div>");
+            if (!string.IsNullOrEmpty(i.Note)) sb.Append($"<div class=\"meta\">{E(i.Note)}</div>");
+            sb.Append("</div></li>");
         }
         return H(sb.Append("</ol>").ToString());
     }
