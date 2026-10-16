@@ -30,6 +30,8 @@ public sealed class ChromeModel
     public string? OwnHref { get; init; }
     public bool OwnActive { get; init; }
     public string OwnLabel { get; init; } = "Kế hoạch";
+    /// <summary>Leader: ô "Xem màn hình" nhân viên nằm trong trang Kế hoạch (lịch tháng), không nằm ở thanh trên (yêu cầu 2026-10-16).</summary>
+    public bool ViewInPlan { get; init; }
     /// <summary>Nút "Lịch nhóm" cạnh combobox (lịch tháng cả nhóm, ?as=all) — null với NV / khi không có NV cấp dưới.</summary>
     public string? TeamHref { get; init; }
     /// <summary>Đang ở lịch nhóm.</summary>
@@ -152,7 +154,8 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             HomeHref = WithQ(ScopeResolver.HomeOf(acc.Role), "me"),
             TeamHref = acc.Role is not (Role.Staff or Role.Leader) && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
             OwnHref = acc.Role == Role.Leader ? WithQ("/Staff/Month", "mine") : null,
-            OwnActive = (scope.OwnCalendar && !onStatus) || (acc.Role == Role.Leader && scope.AllStaff),
+            OwnActive = (scope.OwnCalendar && !onStatus) || (acc.Role == Role.Leader && (scope.AllStaff || scope.IsViewingOther)),
+            ViewInPlan = acc.Role == Role.Leader,
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,

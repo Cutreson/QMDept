@@ -67,11 +67,13 @@
                 <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
             }
         </div>
-        @if (chrome is not null && chrome.ViewOptions.Count > 0)
+        @if (chrome is not null && (chrome.ViewOptions.Count > 0 || chrome.OwnHref is not null))
         {
             @* Cấp trên chọn cấp dưới để xem màn hình của họ (chỉ xem) — xem ViewScope. *@
             <form method="get" action="@Context.Request.Path" class="row va viewas">
                 @if (!string.IsNullOrEmpty(Context.Request.Query["d"])) { <input type="hidden" name="d" value="@Context.Request.Query["d"]"> }
+                @if (!chrome.ViewInPlan)
+                {
                 <span class="note" style="white-space:nowrap">Xem màn hình:</span>
                 <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
                     @if (!chrome.ViewOptions.Any(o => o.Selected)) { <option value="" selected disabled hidden>Chọn người</option> }
@@ -82,6 +84,7 @@
                         </optgroup>
                     }
                 </select>
+                }
                 <a class="btn btn-sm@(chrome.MineActive ? " btn-primary" : "")" href="@chrome.HomeHref" style="white-space:nowrap" aria-current="@(chrome.MineActive ? "page" : null)">Màn hình của tôi</a>
                 @if (chrome.OwnHref is not null)
                 {

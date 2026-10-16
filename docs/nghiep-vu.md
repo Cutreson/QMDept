@@ -395,3 +395,5 @@ Trang "Trạng thái làm việc" của Leader (`/Staff/Morning?as=mine`) dùng 
 Cập nhật 2026-10-16: trang Trạng thái làm việc của Leader bỏ phần Nhân sự hỗ trợ và Ghi chú (chỉ còn nội dung công việc + trạng thái & báo cơm).
 
 Cập nhật 2026-10-16: tab "Trạng thái làm việc" của Leader nằm trong thanh tab của Màn hình của tôi (giữa Tổng quan và Kế hoạch & duyệt); nút "Kế hoạch" chỉ còn lịch tháng (Lịch của tôi | Lịch nhóm).
+
+Cập nhật 2026-10-16: Leader chọn nhân viên để xem màn hình ở trang Kế hoạch (ô "Xem màn hình" dưới thanh Lịch của tôi | Lịch nhóm), không còn ở thanh trên. TP / Quản trị giữ ô ở thanh trên.

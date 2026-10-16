@@ -21,10 +21,22 @@ else
 {
     <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1></div></div>
 }
-@if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role == Role.Leader && (Scope.AllStaff || Scope.OwnCalendar)))
+@if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role == Role.Leader && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther)))
 {
     @* NV / Leader xem lịch của mình hoặc lịch cả nhóm — yêu cầu 2026-10-15 (NV), 2026-10-16 (Leader: ?as=mine, chỉ xem) *@
-    @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Leader ? "mine" : "me")), "Lịch của tôi", !Model.AllMode, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm", Model.AllMode, 0) })
+    @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Leader ? "mine" : "me")), "Lịch của tôi", !Model.AllMode && !Scope.IsViewingOther, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm", Model.AllMode, 0) })
+}
+@if (Scope.Account.Role == Role.Leader && Scope.Subordinates.Count > 0 && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther))
+{
+    @* Leader chọn nhân viên trong nhóm để xem màn hình (chỉ xem) — chuyển từ thanh trên vào mục Kế hoạch (yêu cầu 2026-10-16) *@
+    <form method="get" action="@req.Path" class="row" style="margin-bottom:12px">
+        @if (!string.IsNullOrEmpty(req.Query["d"])) { <input type="hidden" name="d" value="@req.Query["d"]"> }
+        <span class="note" style="white-space:nowrap">Xem màn hình:</span>
+        <select class="in" name="as" data-autosubmit aria-label="Chọn nhân sự để xem màn hình">
+            @if (!Scope.IsViewingOther) { <option value="" selected disabled hidden>Chọn nhân sự</option> }
+            @foreach (var p in Scope.Subordinates) { <option value="@p.Id" selected="@(Scope.IsViewingOther && Scope.MeId == p.Id)">@p.Name</option> }
+        </select>
+    </form>
 }
 <partial name="_MonthBar" />
 
