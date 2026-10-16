@@ -127,6 +127,7 @@ else if (Model.Mode == "leader")
         <section class="card apv">
             <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">trạng thái làm việc · gửi @VnTime.Hm(p.SentAt)</span></b>@Ui.Pill(st)</div>
             @Blocks.PlanMeta(p)
+            @D.PlanTable(p)
             @if (!string.IsNullOrEmpty(p.Note))
             {
                 <div class="cmt"><b>Leader ghi chú:</b> @p.Note</div>

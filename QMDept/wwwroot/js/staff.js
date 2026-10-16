@@ -246,7 +246,6 @@
       if (!status) return stop('Chọn trạng thái làm việc', '#pStatus');
       if (isLeave(status) && (!leave || leave.type !== LEAVE_TYPE[status])) { stop('Chọn thời gian nghỉ'); openLeave(status); return; }
       if (!dr.meal) return stop('Chọn báo cơm', '#pMeal');
-      if (f.dataset.leader === '1') { render(); return; }   // Leader: chỉ khai báo trạng thái làm việc + báo cơm
       if (!picks().some(x => x.checked) && !(leave && leave.hours >= 8)) return stop('Chọn ít nhất 1 công việc');
       if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập lý do xin người hỗ trợ', '#pSupportText');
       render();

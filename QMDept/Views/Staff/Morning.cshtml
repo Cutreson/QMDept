@@ -44,8 +44,6 @@
     {
         <div class="notice"><span class="ic">✓</span><div><b>Đã gửi @(lead ? "trạng thái làm việc" : "kế hoạch") lúc @VnTime.Hm(plan.SentAt)</b></div></div>
     }
-    @if (!lead)
-    {
     <section class="card sec">
         <h2>Công việc đã chọn (@sel.Count)</h2>
         @if (sel.Count > 0)
@@ -65,7 +63,6 @@
         }
         @Html.Raw(Blocks.SupCmt(plan, string.IsNullOrEmpty(plan.Note) ? "margin-top:10px" : ""))
     </section>
-    }
     <section class="card sec">
         <h2>Trạng thái &amp; báo cơm</h2>
         <div class="kv2">
@@ -116,10 +113,8 @@
     var isTrip = f.Status is WorkStatus w1 && LeaveRules.IsTrip(w1);
     var dis = ro ? "disabled" : null;
 }
-<form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")" data-leader="@(lead ? "1" : "0")">
+<form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")">
     @Ui.ReturnField(req)
-    @if (!lead)
-    {
     <section class="card sec">
         <h2>1. Nội dung công việc</h2>
         @if (Model.List.Count > 0)
@@ -192,17 +187,8 @@
         <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Lý do xin người hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="1500" disabled="@ro">@f.SupportText</textarea></div>
         <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
     </section>
-    }
-    else
-    {
-        @* JS (staff.js) vẫn đọc các ô này → giữ ô ẩn *@
-        <input type="hidden" id="pSupport" name="support" value="None">
-        <input type="hidden" id="pSupportPick" name="supportPick" value="">
-        <textarea id="pNote" name="note" hidden></textarea>
-        <div id="supportWrap" hidden><textarea id="pSupportText" name="supportText" hidden></textarea></div>
-    }
     <section class="card sec">
-        <h2>@(lead ? "Trạng thái làm việc" : "2. Trạng thái &amp; báo cơm")</h2>
+        <h2>2. Trạng thái &amp; báo cơm</h2>
         <div class="pick2">
             <div><label class="f" for="pStatus" style="margin-top:0">Trạng thái làm việc</label>@Ui.Select("status", Ui.EnumOpts<WorkStatus>(), f.Status?.ToString(), "Chọn trạng thái…", id: "pStatus", extraAttrs: dis)</div>
             <div><label class="f" for="pMeal" style="margin-top:0">Báo cơm</label>@Ui.Select("meal", Ui.EnumOpts<Meal>(), f.Meal?.ToString(), "Chọn…", id: "pMeal", extraAttrs: dis)</div>
@@ -216,10 +202,7 @@
         <input type="hidden" name="leaveFrom" value="@(f.Leave?.From)">
         <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
         @* Công tác: địa điểm + khách hàng tự lấy theo dự án của các việc đã chọn (staff.js đổ vào #tripInfo; máy chủ ghi lại khi gửi) — NV không phải chọn (yêu cầu 2026-10-16). *@
-        @if (!lead)
-        {
-            <div class="leave-line" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">Địa điểm công tác: <b id="tripPlace"></b> · Khách hàng: <b id="tripCustomer"></b></div>
-        }
+        <div class="leave-line" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">Địa điểm công tác: <b id="tripPlace"></b> · Khách hàng: <b id="tripCustomer"></b></div>
     </section>
     @if (!ro)
     {
@@ -231,7 +214,7 @@
     }
 </form>
 
-@if (!ro && !lead)
+@if (!ro)
 {
     @* addTaskFields('o', mainProject(me, d)) + addOut: form riêng trong bảng trượt (không lồng trong planForm). *@
     <template id="tplAddOut">

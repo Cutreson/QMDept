@@ -158,6 +158,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     `Fmt.ParseInput` (dd/MM/yyyy hoặc yyyy-MM-dd). Khóa ISO `yyyy-MM-dd` chỉ dùng trong URL / field ẩn. Danh sách gồm cả Leader nhóm và NV gọi là **"nhân sự"**
     (không gọi "nhân viên", vì Leader không phải nhân viên) và Leader nhóm hiện pill **"Leader"** thay cho cấp bậc Tech (`Ui.LevelPill`).
 24. **Leader có nút "Kế hoạch"** (yêu cầu 2026-10-16, sửa lại cùng ngày): một nút "Kế hoạch" cạnh "Màn hình của tôi" (thay "Lịch của tôi" + "Lịch nhóm") → `/Staff/Month?as=mine` với thanh chuyển
-    "Lịch của tôi | Lịch nhóm" và 2 tab: **Kế hoạch tháng**, **Trạng thái làm việc** (= báo cáo đầu ngày rút gọn: chỉ trạng thái làm việc trong ngày + báo cơm; **không có báo cáo cuối ngày**).
+    "Lịch của tôi | Lịch nhóm" và 2 tab: **Kế hoạch tháng**, **Trạng thái làm việc** (= form báo cáo đầu ngày như nhân viên: nội dung công việc — chọn dự án + nội dung, nhân sự hỗ trợ, ghi chú — rồi trạng thái làm việc & báo cơm; **không có báo cáo cuối ngày**).
     `ViewScope.OwnCalendar` = chế độ cá nhân của Leader, cookie `qm_view=mine`, chỉ ở đường dẫn `/Staff/*`; sang trang Leader tự về `me`; chỉ `SubmitPlan` cho phép Leader (`RequireSelfStaff(leaderOk: true)`).
     **Người duyệt trạng thái làm việc của Leader là Trưởng phòng** (Quản trị cũng được): `Manager/Approvals?mode=leader` ("Của Leader"), quyết định ghi vào `DayPlan.Leader*`; phần duyệt của Leader (`Dept.IsTeamStaff`) chỉ tính nhân viên.

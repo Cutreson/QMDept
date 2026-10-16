@@ -388,3 +388,6 @@ NV chỉ chọn trạng thái (kể cả "Công tác trong ngày / dài ngày") 
 ### 19e. Sửa lại mục 19d (yêu cầu 2026-10-16)
 Leader **không còn báo cáo cuối ngày**; "báo cáo đầu ngày" của Leader rút gọn thành **"Trạng thái làm việc trong ngày"** (trạng thái làm việc + nghỉ / công tác + báo cơm; không chọn việc, không xin hỗ trợ).
 Header Leader: nút "Kế hoạch" duy nhất (gộp "Lịch của tôi" và "Lịch nhóm" — trong trang vẫn có thanh "Lịch của tôi | Lịch nhóm"). Trưởng phòng duyệt ở Phê duyệt → "Của Leader" (chỉ còn trạng thái làm việc). Đã bỏ phần duyệt báo cáo cuối ngày của Leader.
+
+### 19f. Trạng thái làm việc của Leader có lại phần nội dung công việc (yêu cầu 2026-10-16)
+Trang "Trạng thái làm việc" của Leader (`/Staff/Morning?as=mine`) dùng đúng form của nhân viên: 1. Nội dung công việc (việc trong lịch, "＋ Thêm công việc ngoài kế hoạch" chọn dự án + nội dung + giờ, nhân sự hỗ trợ trong nhóm mình, ghi chú), 2. Trạng thái & báo cơm (công tác tự điền địa điểm + khách hàng theo dự án). Vẫn không có báo cáo cuối ngày. Trưởng phòng duyệt ở Phê duyệt → Của Leader (có bảng việc).
