@@ -29,20 +29,11 @@ public sealed class ManagerApprovalsVm
     /// <summary>Chế độ extra: phát sinh (mọi ngày, mới nhất trước) phù hợp bộ lọc.</summary>
     public List<Extra> Extras { get; init; } = [];
 
-    /// <summary>Số kế hoạch + báo cáo cuối ngày của Leader đang chờ TP duyệt trong ngày (số trên nút "Của Leader").</summary>
+    /// <summary>Số kế hoạch (trạng thái làm việc) của Leader đang chờ TP duyệt trong ngày (số trên nút "Của Leader").</summary>
     public int PendingLeader { get; init; }
-    /// <summary>Chế độ leader: kế hoạch đầu ngày / báo cáo cuối ngày của Leader (theo bộ lọc) + Leader chưa gửi.</summary>
+    /// <summary>Chế độ leader: trạng thái làm việc trong ngày của Leader (theo bộ lọc) + Leader chưa gửi.</summary>
     public List<DayPlan> LeaderPlans { get; init; } = [];
-    public List<DayReport> LeaderReports { get; init; } = [];
     public List<Person> LeaderNotSentPlan { get; init; } = [];
-    public List<Person> LeaderNotSentReport { get; init; } = [];
-
-    /// <summary>Bộ lọc báo cáo cuối ngày theo eodSt: pending → Chờ duyệt; approved → Đã duyệt; rejected → Yêu cầu bổ sung.</summary>
-    public static bool ReportMatches(DayReport r, string f)
-    {
-        var st = Dept.EodSt(r);
-        return f switch { "all" => true, "pending" => st == EodState.Pending, "approved" => st == EodState.Approved, _ => st == EodState.Rejected };
-    }
 
     /// <summary>Các lựa chọn của ô "Trạng thái:".</summary>
     public static readonly (string Value, string Label)[] Filters =

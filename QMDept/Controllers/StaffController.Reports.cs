@@ -43,8 +43,10 @@ public partial class StaffController
     {
         try
         {
-            RequireSelfStaff();
+            RequireSelfStaff(leaderOk: true);
             var me = Scope.Me!;
+            // Leader: chỉ khai báo trạng thái làm việc trong ngày + báo cơm (không chọn việc, không xin hỗ trợ) — yêu cầu 2026-10-16.
+            var leaderSelf = me.Role == Role.Leader;
             var plan = await Db.DayPlans.Include(p => p.PlanTasks).FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == me.Id);
             StaffReports.RequireEditable(plan);
             var status = StaffReports.ParseEnum<WorkStatus>(input.Status) ?? throw new BizException("Chọn trạng thái làm việc");
@@ -55,7 +57,8 @@ public partial class StaffController
             // Chỉ nhận việc của chính NV trong ngày, đang hiện trên form (việc chuyển tiếp phải đã được duyệt).
             var shown = all.Where(t => t.Source != TaskSource.CarryOver || t.CarryOk).Select(t => t.Id).ToHashSet();
             var picks = input.Picks.Where(shown.Contains).ToHashSet();
-            if (picks.Count == 0 && !(leave is not null && leave.Hours >= 8)) throw new BizException("Chọn ít nhất 1 công việc");
+            if (leaderSelf) picks.Clear();
+            else if (picks.Count == 0 && !(leave is not null && leave.Hours >= 8)) throw new BizException("Chọn ít nhất 1 công việc");
 
             // Công tác: địa điểm + khách hàng lấy theo dự án của các việc đã chọn, NV không phải chọn (yêu cầu 2026-10-16).
             string? province = null, customer = null;
@@ -68,10 +71,10 @@ public partial class StaffController
 
             // Nhân sự hỗ trợ (cùng thiết kế với đề xuất công việc): chỉ chỉ định người trong nhóm mình; phòng ban / nhóm khác xin theo số lượng.
             // Phạm vi suy ra từ lựa chọn: có phòng ban → OtherDept, có nhóm khác → OtherTeam, chỉ người trong nhóm → Team (Leader duyệt).
-            var (support, supportText, supportPick) = await ResolveSupportAsync(me, input);
+            var (support, supportText, supportPick) = leaderSelf ? (SupportScope.None, (string?)null, (string?)null) : await ResolveSupportAsync(me, input);
             var note = StaffReports.Clip(input.Note, 2000);
 
-            foreach (var t in all) t.Selected = picks.Contains(t.Id);
+            if (!leaderSelf) foreach (var t in all) t.Selected = picks.Contains(t.Id);
 
             if (plan is null)
             {
@@ -173,6 +176,8 @@ public partial class StaffController
     [HttpGet]
     public async Task<IActionResult> Evening()
     {
+        // Leader không có báo cáo cuối ngày (yêu cầu 2026-10-16): về lịch tháng.
+        if (Scope.Account.Role == Role.Leader) return Redirect(Ui.To(Request, "/Staff/Month", ("as", "mine")));
         await D.EnsureAsync(Date, Date.AddDays(14));
         return View(new StaffEveningVm { Me = Scope.Me, Open = StaffReports.OpenIds(Request) });
     }

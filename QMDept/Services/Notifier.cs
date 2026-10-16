@@ -37,8 +37,8 @@ public static class NotifyCatalog
 
     public static readonly Item[] All =
     [
-        new(NotifyType.PlanSubmitted, "Kế hoạch đầu ngày mới", "Nhân viên trong nhóm (hoặc Leader, với Trưởng phòng) gửi / gửi lại kế hoạch đầu ngày", [Role.Leader, Role.Manager]),
-        new(NotifyType.ReportSubmitted, "Báo cáo cuối ngày mới", "Nhân viên trong nhóm (hoặc Leader, với Trưởng phòng) gửi báo cáo cuối ngày", [Role.Leader, Role.Manager]),
+        new(NotifyType.PlanSubmitted, "Kế hoạch đầu ngày mới", "Nhân viên trong nhóm gửi / gửi lại kế hoạch đầu ngày (Leader gửi trạng thái làm việc thì Trưởng phòng nhận)", [Role.Leader, Role.Manager]),
+        new(NotifyType.ReportSubmitted, "Báo cáo cuối ngày mới", "Nhân viên trong nhóm gửi báo cáo cuối ngày", [Role.Leader]),
         new(NotifyType.ExtraProposed, "Đề xuất phát sinh mới", "Nhân viên trong nhóm đề xuất công việc phát sinh", [Role.Leader]),
         new(NotifyType.SupportNeedsManager, "Yêu cầu hỗ trợ nhân sự", "Kế hoạch cần Trưởng phòng duyệt hỗ trợ nhân sự nhóm khác / phòng ban khác", [Role.Manager]),
         new(NotifyType.LeaderReportSent, "Báo cáo ngày của Leader", "Leader gửi báo cáo ngày cho Trưởng phòng", [Role.Manager]),
@@ -118,7 +118,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     public async Task PlanSubmittedAsync(int emp, DateOnly d)
     {
         // Leader nhóm tự gửi kế hoạch của mình → Trưởng phòng duyệt (yêu cầu 2026-10-16).
-        if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.PlanSubmitted, $"{await Name(emp)} (Leader) gửi kế hoạch ngày {Fmt.Dm(d)}", "Kế hoạch đầu ngày của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
+        if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.PlanSubmitted, $"{await Name(emp)} (Leader) báo trạng thái làm việc ngày {Fmt.Dm(d)}", "Trạng thái làm việc của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
         await SendAsync([await LeaderOf(emp)], NotifyType.PlanSubmitted, $"{await Name(emp)} gửi kế hoạch ngày {Fmt.Dm(d)}", "Kế hoạch đầu ngày đang chờ bạn duyệt.", Q("/Planning/Approvals?ap=pending", d));
     }
 
@@ -137,7 +137,6 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     /// <summary>NV gửi báo cáo cuối ngày → Leader nhóm.</summary>
     public async Task ReportSubmittedAsync(int emp, DateOnly d)
     {
-        if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.ReportSubmitted, $"{await Name(emp)} (Leader) gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
         await SendAsync([await LeaderOf(emp)], NotifyType.ReportSubmitted, $"{await Name(emp)} gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo đang chờ bạn duyệt.", Q("/Planning/Reports", d));
     }
 

@@ -85,7 +85,7 @@
                 <a class="btn btn-sm@(chrome.MineActive ? " btn-primary" : "")" href="@chrome.HomeHref" style="white-space:nowrap" aria-current="@(chrome.MineActive ? "page" : null)">Màn hình của tôi</a>
                 @if (chrome.OwnHref is not null)
                 {
-                    <a class="btn btn-sm@(chrome.OwnActive ? " btn-primary" : "")" href="@chrome.OwnHref" style="white-space:nowrap" aria-current="@(chrome.OwnActive ? "page" : null)">Lịch &amp; báo cáo của tôi</a>
+                    <a class="btn btn-sm@(chrome.OwnActive ? " btn-primary" : "")" href="@chrome.OwnHref" style="white-space:nowrap" aria-current="@(chrome.OwnActive ? "page" : null)">@chrome.OwnLabel</a>
                 }
                 @if (chrome.TeamHref is not null)
                 {

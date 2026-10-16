@@ -43,8 +43,7 @@ public class ManagerController : AppController
         bool IsLeaderPerson(int emp) => D.P(emp) is { Role: Role.Leader };
         // Kế hoạch / báo cáo của chính Leader (Leader tự gửi → Trưởng phòng duyệt, yêu cầu 2026-10-16): mục riêng "Của Leader".
         var leaderPlans = D.Plans.Where(p => p.Date == Date && IsLeaderPerson(p.EmployeeId)).ToList();
-        var leaderReports = D.Reports.Where(r => r.Date == Date && IsLeaderPerson(r.EmployeeId)).ToList();
-        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending) + leaderReports.Count(r => Dept.EodSt(r) == EodState.Pending);
+        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending);
         var pendingManager = D.Plans.Count(p => p.Date == Date && !IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.PendingManager);
 
         var plans = new List<DayPlan>();
@@ -57,7 +56,6 @@ public class ManagerController : AppController
         else if (mode == "leader")
         {
             leaderPlans = leaderPlans.Where(p => ManagerApprovalsVm.PlanMatches(p, f)).OrderBy(p => p.SentAt).ToList();
-            leaderReports = leaderReports.Where(r => ManagerApprovalsVm.ReportMatches(r, f)).OrderBy(r => r.SentAt).ToList();
         }
         else
         {
@@ -80,9 +78,8 @@ public class ManagerController : AppController
         return View(new ManagerApprovalsVm
         {
             Mode = mode, Filter = f, PendingManager = pendingManager, Plans = plans, Extras = extras, PendingLeader = pendingLeader,
-            LeaderPlans = mode == "leader" ? leaderPlans : [], LeaderReports = mode == "leader" ? leaderReports : [],
+            LeaderPlans = mode == "leader" ? leaderPlans : [],
             LeaderNotSentPlan = mode == "leader" ? D.Leaders().Where(l => D.PlanOf(Date, l.Id) is null && D.OnLeave(Date, l.Id) is null).ToList() : [],
-            LeaderNotSentReport = mode == "leader" ? D.Leaders().Where(l => D.ReportOf(Date, l.Id) is null && D.OnLeave(Date, l.Id) is null && D.PlanOf(Date, l.Id) is not null).ToList() : [],
         });
     }
 
@@ -96,14 +93,6 @@ public class ManagerController : AppController
         var p = await Db.DayPlans.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy kế hoạch");
         if (!await Db.People.AnyAsync(x => x.Id == p.EmployeeId && x.Role == Role.Leader)) throw new BizException("Chỉ dùng cho kế hoạch của Leader");
         return p;
-    }
-
-    async Task<DayReport> LoadLeaderReportAsync(int id)
-    {
-        RequireManager();
-        var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy báo cáo");
-        if (!await Db.People.AnyAsync(x => x.Id == r.EmployeeId && x.Role == Role.Leader)) throw new BizException("Chỉ dùng cho báo cáo của Leader");
-        return r;
     }
 
     /// <summary>POST /Manager/DecideLeaderPlan — duyệt (v=ok) / từ chối (v=no, bắt buộc lý do) kế hoạch đầu ngày của Leader.</summary>
@@ -134,61 +123,6 @@ public class ManagerController : AppController
         await Db.SaveChangesAsync();
         await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, "Trưởng phòng hoàn tác quyết định, chờ duyệt lại");
     }, "Đã hoàn tác");
-
-    /// <summary>POST /Manager/DecideLeaderReport — duyệt (v=ok) / yêu cầu bổ sung (v=no, bắt buộc nội dung) báo cáo cuối ngày của Leader.</summary>
-    [HttpPost]
-    public async Task<IActionResult> DecideLeaderReport(int id, string? v, string? note) => await Do(async () =>
-    {
-        if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
-        var r = await LoadLeaderReportAsync(id);
-        if (r.LeaderDecision is not null) throw new BizException("Báo cáo đã được quyết định");
-        var n = PlanningApproval.CleanNote(note);
-        if (v == "no" && n is null) throw new BizException("Nhập nội dung cần bổ sung");
-        r.LeaderDecision = v == "ok" ? Decision.Ok : Decision.No;
-        r.LeaderBy = Scope.ActorName; r.LeaderAt = VnTime.UtcNow; r.LeaderNote = n;
-        await Db.SaveChangesAsync();
-        await Notify.ReportDecidedAsync(r.EmployeeId, r.Date, v == "ok", n);
-    }, "Đã quyết định báo cáo của Leader");
-
-    /// <summary>POST /Manager/UndoLeaderReport — hoàn tác quyết định báo cáo của Leader.</summary>
-    [HttpPost]
-    public async Task<IActionResult> UndoLeaderReport(int id) => await Do(async () =>
-    {
-        var r = await LoadLeaderReportAsync(id);
-        if (r.LeaderDecision is null) return;
-        r.LeaderDecision = null; r.LeaderAt = null; r.LeaderNote = null; r.LeaderBy = null;
-        await Db.SaveChangesAsync();
-        await Notify.ReportUndoneAsync(r.EmployeeId, r.Date);
-    }, "Đã hoàn tác");
-
-    /// <summary>
-    /// POST /Manager/Decide — tpDecide: TP duyệt / từ chối kế hoạch cần hỗ trợ nhân sự nhóm khác / phòng ban khác.
-    /// Chỉ khi Leader đã duyệt và TP chưa quyết định (Chờ TP duyệt). Từ chối bắt buộc lý do.
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> Decide(int id, string? v, string? note)
-    {
-        var ok = v == "ok";
-        return await Do(async () =>
-        {
-            RequireManager();
-            if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
-            var p = await Db.DayPlans.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy kế hoạch");
-            if (!Dept.NeedsManager(p)) throw new BizException("Kế hoạch này không cần Trưởng phòng duyệt");
-            if (Dept.PlanSt(p) != PlanState.PendingManager)
-                throw new BizException(p.LeaderDecision is null ? "Đang chờ Leader duyệt trước." : "Kế hoạch không còn ở trạng thái chờ TP duyệt");
-            note = ok ? null : note?.Trim(); // artifact: chỉ nút Từ chối mở askText → chỉ khi từ chối mới ghi tpNote (ManagerNote)
-            if (!ok && string.IsNullOrEmpty(note)) throw new BizException("Nhập lý do");
-            if (note is { Length: > 2000 }) throw new BizException("Lý do tối đa 2000 ký tự");
-
-            p.ManagerDecision = ok ? Decision.Ok : Decision.No;
-            p.ManagerBy = Scope.ActorName;
-            p.ManagerAt = VnTime.UtcNow;
-            if (!ok) p.ManagerNote = note;
-            await Db.SaveChangesAsync();
-            await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, ok ? "Trưởng phòng đã duyệt hỗ trợ nhân sự" : "Trưởng phòng từ chối", note, alsoLeader: true);
-        }, ok ? "Đã duyệt" : "Đã từ chối");
-    }
 
     /// <summary>GET /Manager/Projects?pj=&amp;tab=overview|plan|people — tpProjects: chip mọi dự án + projectDetail(pid, 'tp').</summary>
     [HttpGet]

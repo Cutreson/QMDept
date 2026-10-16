@@ -384,3 +384,7 @@ NV chỉ chọn trạng thái (kể cả "Công tác trong ngày / dài ngày") 
 - Người duyệt là **Trưởng phòng**: tab "Phê duyệt" → "Của Leader" (`?mode=leader`): kế hoạch đầu ngày (Duyệt / Từ chối + lý do) và báo cáo cuối ngày (Duyệt / Yêu cầu bổ sung) của các Leader; có Hoàn tác. Thông báo đẩy `PlanSubmitted` / `ReportSubmitted` gửi tới Trưởng phòng.
 - Chỉ định người hỗ trợ: Leader chọn được NV trong nhóm của mình (không chọn chính mình); nhóm khác / phòng ban xin theo số lượng như NV. Việc chuyển tiếp và phát sinh của Leader tự được duyệt (không có cấp duyệt riêng).
 - Phần duyệt của Leader (kế hoạch, báo cáo, số chờ duyệt) không còn tính Leader — chỉ NV trong nhóm (`Dept.IsTeamStaff`).
+
+### 19e. Sửa lại mục 19d (yêu cầu 2026-10-16)
+Leader **không còn báo cáo cuối ngày**; "báo cáo đầu ngày" của Leader rút gọn thành **"Trạng thái làm việc trong ngày"** (trạng thái làm việc + nghỉ / công tác + báo cơm; không chọn việc, không xin hỗ trợ).
+Header Leader: nút "Kế hoạch" duy nhất (gộp "Lịch của tôi" và "Lịch nhóm" — trong trang vẫn có thanh "Lịch của tôi | Lịch nhóm"). Trưởng phòng duyệt ở Phê duyệt → "Của Leader" (chỉ còn trạng thái làm việc). Đã bỏ phần duyệt báo cáo cuối ngày của Leader.

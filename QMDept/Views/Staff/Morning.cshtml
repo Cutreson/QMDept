@@ -9,11 +9,13 @@
     var ro = Scope.IsReadOnly;
     var me = Model.Me;
     var plan = Model.Plan;
+    // Leader (chế độ cá nhân ?as=mine): trang này chỉ khai báo "Trạng thái làm việc trong ngày" + báo cơm (yêu cầu 2026-10-16), không có việc / hỗ trợ / báo cáo cuối ngày
+    var lead = me is not null && me.Role == Role.Leader;
 }
 @section Scripts {
     <script src="~/js/staff.js" asp-append-version="true"></script>
 }
-@Ui.Head(3, "Báo cáo đầu ngày")
+@Ui.Head(3, lead ? "Trạng thái làm việc trong ngày" : "Báo cáo đầu ngày")
 <partial name="_DayBar" />
 @if (me is null)
 {
@@ -36,12 +38,14 @@
     var needsManager = Dept.NeedsManager(plan);
     if (st == PlanState.Rejected)
     {
-        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>Kế hoạch bị từ chối</b></div></div>
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@(lead ? "Trạng thái làm việc bị từ chối" : "Kế hoạch bị từ chối")</b></div></div>
     }
     else
     {
-        <div class="notice"><span class="ic">✓</span><div><b>Đã gửi kế hoạch lúc @VnTime.Hm(plan.SentAt)</b></div></div>
+        <div class="notice"><span class="ic">✓</span><div><b>Đã gửi @(lead ? "trạng thái làm việc" : "kế hoạch") lúc @VnTime.Hm(plan.SentAt)</b></div></div>
     }
+    @if (!lead)
+    {
     <section class="card sec">
         <h2>Công việc đã chọn (@sel.Count)</h2>
         @if (sel.Count > 0)
@@ -61,6 +65,7 @@
         }
         @Html.Raw(Blocks.SupCmt(plan, string.IsNullOrEmpty(plan.Note) ? "margin-top:10px" : ""))
     </section>
+    }
     <section class="card sec">
         <h2>Trạng thái &amp; báo cơm</h2>
         <div class="kv2">
@@ -93,10 +98,13 @@
         }
         @if (st != PlanState.Approved && !ro)
         {
-            <a class="btn btn-ghost btn-block" href="@Ui.Here(req, ("edit", dkey))" style="margin-top:6px">Sửa kế hoạch và gửi lại</a>
+            <a class="btn btn-ghost btn-block" href="@Ui.Here(req, ("edit", dkey))" style="margin-top:6px">@(lead ? "Sửa trạng thái và gửi lại" : "Sửa kế hoạch và gửi lại")</a>
         }
     </section>
-    <a class="btn btn-primary btn-block" href="@Ui.To(req, "/Staff/Evening")">Tiếp: Báo cáo cuối ngày ›</a>
+    @if (!lead)
+    {
+        <a class="btn btn-primary btn-block" href="@Ui.To(req, "/Staff/Evening")">Tiếp: Báo cáo cuối ngày ›</a>
+    }
     return;
 }
 
@@ -108,8 +116,10 @@
     var isTrip = f.Status is WorkStatus w1 && LeaveRules.IsTrip(w1);
     var dis = ro ? "disabled" : null;
 }
-<form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")">
+<form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")" data-leader="@(lead ? "1" : "0")">
     @Ui.ReturnField(req)
+    @if (!lead)
+    {
     <section class="card sec">
         <h2>1. Nội dung công việc</h2>
         @if (Model.List.Count > 0)
@@ -182,8 +192,17 @@
         <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Lý do xin người hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="1500" disabled="@ro">@f.SupportText</textarea></div>
         <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
     </section>
+    }
+    else
+    {
+        @* JS (staff.js) vẫn đọc các ô này → giữ ô ẩn *@
+        <input type="hidden" id="pSupport" name="support" value="None">
+        <input type="hidden" id="pSupportPick" name="supportPick" value="">
+        <textarea id="pNote" name="note" hidden></textarea>
+        <div id="supportWrap" hidden><textarea id="pSupportText" name="supportText" hidden></textarea></div>
+    }
     <section class="card sec">
-        <h2>2. Trạng thái &amp; báo cơm</h2>
+        <h2>@(lead ? "Trạng thái làm việc" : "2. Trạng thái &amp; báo cơm")</h2>
         <div class="pick2">
             <div><label class="f" for="pStatus" style="margin-top:0">Trạng thái làm việc</label>@Ui.Select("status", Ui.EnumOpts<WorkStatus>(), f.Status?.ToString(), "Chọn trạng thái…", id: "pStatus", extraAttrs: dis)</div>
             <div><label class="f" for="pMeal" style="margin-top:0">Báo cơm</label>@Ui.Select("meal", Ui.EnumOpts<Meal>(), f.Meal?.ToString(), "Chọn…", id: "pMeal", extraAttrs: dis)</div>
@@ -197,11 +216,14 @@
         <input type="hidden" name="leaveFrom" value="@(f.Leave?.From)">
         <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
         @* Công tác: địa điểm + khách hàng tự lấy theo dự án của các việc đã chọn (staff.js đổ vào #tripInfo; máy chủ ghi lại khi gửi) — NV không phải chọn (yêu cầu 2026-10-16). *@
-        <div class="leave-line" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">Địa điểm công tác: <b id="tripPlace"></b> · Khách hàng: <b id="tripCustomer"></b></div>
+        @if (!lead)
+        {
+            <div class="leave-line" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">Địa điểm công tác: <b id="tripPlace"></b> · Khách hàng: <b id="tripCustomer"></b></div>
+        }
     </section>
     @if (!ro)
     {
-        <button class="btn btn-primary btn-block">Gửi kế hoạch đầu ngày</button>
+        <button class="btn btn-primary btn-block">@(lead ? "Gửi trạng thái làm việc" : "Gửi kế hoạch đầu ngày")</button>
         if (Model.Editing)
         {
             <a class="btn btn-block" href="@Ui.Here(req, ("edit", null))" style="margin-top:8px">Hủy sửa</a>
@@ -209,7 +231,7 @@
     }
 </form>
 
-@if (!ro)
+@if (!ro && !lead)
 {
     @* addTaskFields('o', mainProject(me, d)) + addOut: form riêng trong bảng trượt (không lồng trong planForm). *@
     <template id="tplAddOut">

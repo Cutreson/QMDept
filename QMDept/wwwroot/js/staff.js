@@ -123,10 +123,13 @@
       wrap.hidden = !isLeave(dr.status);
       wrap.innerHTML = wrap.hidden ? '' : leaveBox(dr.status, ln);
       // Công tác: địa điểm + khách hàng tự lấy theo dự án của các việc đang chọn (data-place / data-customer trên ô tích việc)
-      const trip = $('#tripWrap', f); trip.hidden = !isTrip(dr.status);
-      if (!trip.hidden) {
+      const trip = $('#tripWrap', f);   // Leader (trạng thái làm việc): không có dòng địa điểm công tác
+      if (trip) {
+        trip.hidden = !isTrip(dr.status);
+        if (!trip.hidden) {
         const uniq = k => [...new Set(picks().filter(x => x.checked).map(x => (x.dataset[k] || '').trim()).filter(Boolean))];
         $('#tripPlace', f).textContent = uniq('place').join('; ') || '—'; $('#tripCustomer', f).textContent = uniq('customer').join(', ') || '—';
+        }
       }
       $('#supportWrap', f).hidden = !SUPPORT_SCOPES.includes(supportSel.value);
       picks().forEach(x => {
@@ -243,6 +246,7 @@
       if (!status) return stop('Chọn trạng thái làm việc', '#pStatus');
       if (isLeave(status) && (!leave || leave.type !== LEAVE_TYPE[status])) { stop('Chọn thời gian nghỉ'); openLeave(status); return; }
       if (!dr.meal) return stop('Chọn báo cơm', '#pMeal');
+      if (f.dataset.leader === '1') { render(); return; }   // Leader: chỉ khai báo trạng thái làm việc + báo cơm
       if (!picks().some(x => x.checked) && !(leave && leave.hours >= 8)) return stop('Chọn ít nhất 1 công việc');
       if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập lý do xin người hỗ trợ', '#pSupportText');
       render();

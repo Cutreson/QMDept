@@ -29,6 +29,7 @@ public sealed class ChromeModel
     /// <summary>Nút "Lịch của tôi" (lịch tháng riêng của Leader, ?as=mine) — chỉ Leader.</summary>
     public string? OwnHref { get; init; }
     public bool OwnActive { get; init; }
+    public string OwnLabel { get; init; } = "Kế hoạch";
     /// <summary>Nút "Lịch nhóm" cạnh combobox (lịch tháng cả nhóm, ?as=all) — null với NV / khi không có NV cấp dưới.</summary>
     public string? TeamHref { get; init; }
     /// <summary>Đang ở lịch nhóm.</summary>
@@ -106,10 +107,10 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         // Leader xem nhân viên: chỉ có lịch tháng của người đó (xem AppController).
         if (scope.IsViewingOther && acc.Role == Role.Leader) defs = defs.Where(t => t.Id == "month");
-        // Leader ở "Lịch của tôi": lịch tháng + báo cáo đầu ngày + báo cáo cuối ngày của chính mình (kiểu nhân viên; Trưởng phòng duyệt).
-        if (scope.OwnCalendar) defs = defs.Where(t => t.Id is "month" or "morning" or "evening");
+        // Leader ở "Kế hoạch": kế hoạch tháng + trạng thái làm việc trong ngày của chính mình (Trưởng phòng duyệt); không có báo cáo cuối ngày.
+        if (scope.OwnCalendar) defs = defs.Where(t => t.Id is "month" or "morning");
         var tabs = defs.Any()
-            ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : scope.OwnCalendar ? "mine" : null),
+            ? defs.Select(t => new TabLink(t.Id, scope.OwnCalendar && t.Id == "morning" ? "Trạng thái làm việc" : t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : scope.OwnCalendar ? "mine" : null),
                 (!scope.AllStaff || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
@@ -147,9 +148,9 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             ViewingName = vName,
             ViewingInfo = vInfo,
             HomeHref = WithQ(ScopeResolver.HomeOf(acc.Role), "me"),
-            TeamHref = acc.Role != Role.Staff && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
+            TeamHref = acc.Role is not (Role.Staff or Role.Leader) && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
             OwnHref = acc.Role == Role.Leader ? WithQ("/Staff/Month", "mine") : null,
-            OwnActive = scope.OwnCalendar,
+            OwnActive = scope.OwnCalendar || (acc.Role == Role.Leader && scope.AllStaff),
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && !scope.OwnCalendar && !scope.IsViewingOther,
@@ -161,8 +162,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (scope.Role == Role.Leader && id == "planning") return d.LeaderPending(date) + (scope.MeId is int lid ? d.ProposalsFor(lid).Count : 0);
             if (scope.Role == Role.Manager && id == "approvals")
                 return d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
-                    + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending)
-                    + d.Reports.Count(r => r.Date == date && d.P(r.EmployeeId) is { Role: Role.Leader } && Dept.EodSt(r) == EodState.Pending);
+                    + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending);
             if (id == "overtime") return scope.Role == Role.Staff ? 0 : d.OtPending(date).Count(x => x.Status == OtStatus.Pending);
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
                 return d.ExtrasOn(date).Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
