@@ -21,10 +21,10 @@ else
 {
     <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1></div></div>
 }
-@if (Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1)
+@if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role == Role.Leader && (Scope.AllStaff || Scope.OwnCalendar)))
 {
-    @* NV xem lịch của mình hoặc lịch cả nhóm mình (chỉ xem) — yêu cầu 2026-10-15 *@
-    @Ui.Seg(new[] { (Ui.Here(req, ("as", "me")), "Lịch của tôi", !Model.AllMode, 0), (Ui.Here(req, ("as", "all")), "Lịch nhóm", Model.AllMode, 0) })
+    @* NV / Leader xem lịch của mình hoặc lịch cả nhóm — yêu cầu 2026-10-15 (NV), 2026-10-16 (Leader: ?as=mine, chỉ xem) *@
+    @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Leader ? "mine" : "me")), "Lịch của tôi", !Model.AllMode, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm", Model.AllMode, 0) })
 }
 <partial name="_MonthBar" />
 

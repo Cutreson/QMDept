@@ -157,3 +157,5 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     ô chọn ngày dùng `Ui.DateInput` — ô chữ dd/MM/yyyy + nút lịch, **không dùng `<input type=date>`** vì trình duyệt tự đổi theo ngôn ngữ máy). Server đọc ngày nhập bằng
     `Fmt.ParseInput` (dd/MM/yyyy hoặc yyyy-MM-dd). Khóa ISO `yyyy-MM-dd` chỉ dùng trong URL / field ẩn. Danh sách gồm cả Leader nhóm và NV gọi là **"nhân sự"**
     (không gọi "nhân viên", vì Leader không phải nhân viên) và Leader nhóm hiện pill **"Leader"** thay cho cấp bậc Tech (`Ui.LevelPill`).
+24. **Leader có nút "Lịch của tôi"** (yêu cầu 2026-10-16): cạnh "Màn hình của tôi" / "Lịch nhóm" (và thanh chuyển "Lịch của tôi | Lịch nhóm" trong trang lịch tháng) —
+    lịch tháng riêng của Leader, chỉ xem, `/Staff/Month?as=mine` (`ViewScope.OwnCalendar`, chỉ GET trang `/Staff/Month`, không lưu cookie; `ScopeResolver`, `ChromeBuilder.OwnHref`).

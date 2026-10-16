@@ -88,6 +88,10 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         if (sel == "all" && scope.TeamPeople.Count > 0 && (acc.Role != Role.Staff || explicitSel)) allStaff = true;
         else if (int.TryParse(sel, out var vid) && vid != acc.Id) viewed = subs.Find(p => p.Id == vid);
 
+        // Leader xem lịch riêng của mình (?as=mine): chỉ trang /Staff/Month, chỉ GET, không ghi nhớ vào cookie.
+        var ownCal = !allStaff && explicitSel && sel == "mine" && acc.Role == Role.Leader && HttpMethods.IsGet(http.Request.Method)
+            && http.Request.Path.Value?.TrimEnd('/').Equals("/Staff/Month", StringComparison.OrdinalIgnoreCase) == true;
+
         if (explicitSel || (sel == "me" && http.Request.Cookies[ViewCookie] is { } c && c != "me"))
         {
             var val = allStaff ? "all" : viewed is not null ? viewed.Id.ToString() : "me";
@@ -95,8 +99,9 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         }
 
         scope.AllStaff = allStaff;
+        scope.OwnCalendar = ownCal;
         scope.Me = allStaff ? scope.Pool.FirstOrDefault() ?? acc : viewed ?? acc;
-        scope.Role = allStaff ? Role.Staff : UiRoleOf(scope.Me!.Role);
+        scope.Role = allStaff || ownCal ? Role.Staff : UiRoleOf(scope.Me!.Role);
         scope.Resolved = true;
 
         // Trang riêng của Quản trị ([UiRole(Admin)]) chỉ mở ở màn hình của chính tài khoản Quản trị.

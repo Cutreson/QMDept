@@ -26,6 +26,9 @@ public sealed class ChromeModel
     public bool NotifyEnabled { get; init; } = true;
     /// <summary>Link "Về màn hình của tôi".</summary>
     public string HomeHref { get; init; } = "/";
+    /// <summary>Nút "Lịch của tôi" (lịch tháng riêng của Leader, ?as=mine) — chỉ Leader.</summary>
+    public string? OwnHref { get; init; }
+    public bool OwnActive { get; init; }
     /// <summary>Nút "Lịch nhóm" cạnh combobox (lịch tháng cả nhóm, ?as=all) — null với NV / khi không có NV cấp dưới.</summary>
     public string? TeamHref { get; init; }
     /// <summary>Đang ở lịch nhóm.</summary>
@@ -98,17 +101,17 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         // Thanh tab: giao diện của người đang xem; ở lịch cả nhóm (AllStaff) → tab của chính tài khoản (kèm as=me để thoát).
         var controller = ctx.GetRouteValue("controller")?.ToString();
         var action = ctx.GetRouteValue("action")?.ToString();
-        var tabRole = scope.AllStaff ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
+        var tabRole = scope.AllStaff || scope.OwnCalendar ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         // Leader xem nhân viên: chỉ có lịch tháng của người đó (xem AppController).
         if (scope.IsViewingOther && acc.Role == Role.Leader) defs = defs.Where(t => t.Id == "month");
         var tabs = defs.Any()
-            ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : null),
-                (!scope.AllStaff || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+            ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff || scope.OwnCalendar ? "me" : null),
+                (!(scope.AllStaff || scope.OwnCalendar) || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
-                scope.AllStaff ? 0 : Badge(t.Id))).ToList()
+                scope.AllStaff || scope.OwnCalendar ? 0 : Badge(t.Id))).ToList()
             : [];
 
         // Combobox "Xem màn hình": chỉ cấp dưới theo nhóm vai trò. "Màn hình của tôi" (HomeHref) và lịch cả nhóm (TeamHref) là hai nút riêng cạnh combobox.
@@ -143,9 +146,11 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             ViewingInfo = vInfo,
             HomeHref = WithQ(ScopeResolver.HomeOf(acc.Role), "me"),
             TeamHref = acc.Role != Role.Staff && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
+            OwnHref = acc.Role == Role.Leader ? WithQ("/Staff/Month", "mine") : null,
+            OwnActive = scope.OwnCalendar,
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
-            MineActive = !scope.AllStaff && !scope.IsViewingOther,
+            MineActive = !scope.AllStaff && !scope.OwnCalendar && !scope.IsViewingOther,
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
