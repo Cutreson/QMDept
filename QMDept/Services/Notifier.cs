@@ -49,6 +49,7 @@ public static class NotifyCatalog
         new(NotifyType.ReportDecided, "Kết quả duyệt báo cáo", "Báo cáo cuối ngày của bạn được duyệt / yêu cầu bổ sung", [Role.Staff]),
         new(NotifyType.ExtraDecided, "Kết quả phát sinh", "Phát sinh của bạn được duyệt / từ chối, Leader thêm phát sinh cho bạn", [Role.Staff]),
         new(NotifyType.CarryOver, "Kế hoạch chuyển tiếp", "Việc chuyển tiếp của bạn được duyệt / chỉnh / hoàn tác", [Role.Staff]),
+        new(NotifyType.ProjectOwner, "Dự án giao nhóm phụ trách", "Trưởng phòng giao / bỏ giao một dự án cho nhóm của bạn phụ trách", [Role.Leader]),
         new(NotifyType.CalendarProposed, "Đề xuất lịch mới", "Nhân viên trong nhóm đề xuất thêm công việc / người hỗ trợ ở lịch tháng", [Role.Leader]),
         new(NotifyType.CalendarDecided, "Kết quả đề xuất lịch", "Đề xuất lịch của bạn được duyệt / từ chối", [Role.Staff]),
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
@@ -164,6 +165,11 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     public async Task CalendarDecidedAsync(int proposer, DateOnly d, string title, bool approved, string? note) =>
         await SendAsync([proposer], NotifyType.CalendarDecided, $"Đề xuất lịch ngày {Fmt.Dm(d)} {(approved ? "đã được duyệt" : "bị từ chối")}",
             string.IsNullOrWhiteSpace(note) ? $"{title} · bởi {Actor}" : $"{title} — {note.Trim()} · bởi {Actor}", Q("/Staff/Month", d));
+
+    /// <summary>TP giao / bỏ giao dự án cho nhóm Leader phụ trách → Leader đó.</summary>
+    public async Task ProjectOwnerAsync(int leader, string project, bool assigned) =>
+        await SendAsync([leader], NotifyType.ProjectOwner, assigned ? $"Dự án {project} giao cho nhóm bạn phụ trách" : $"Dự án {project} không còn do nhóm bạn phụ trách",
+            $"bởi {Actor}", "/Planning/ProjectLeads?as=me");
 
     /// <summary>Được chọn / không còn là Leader dự án → NV (người nhận thấy dự án ở "Thông tin dự án").</summary>
     public async Task ProjectLeadAsync(int emp, string project, bool chosen) =>

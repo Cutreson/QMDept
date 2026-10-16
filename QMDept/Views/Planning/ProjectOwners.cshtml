@@ -1,0 +1,38 @@
+@model PlanningOwnersVm
+@* TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án — giống tab "Leader dự án" của Leader. Leader được chọn sẽ thấy dự án ở tab "Leader dự án"
+   để tiếp tục chọn người làm Leader dự án trong nhóm mình. *@
+@{
+    var req = Context.Request;
+}
+@Ui.Head(0, "Leader phụ trách dự án", $"{Model.Total} dự án đang triển khai · {Model.Unassigned} chưa có Leader phụ trách")
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("f", null)), $"Tất cả ({Model.Total})", Model.Filter == "all", 0),
+    (Ui.Here(req, ("f", "none")), "Chưa có Leader", Model.Filter == "none", Model.Unassigned),
+})
+@if (Model.Projects.Count == 0)
+{
+    <div class="empty">@(Model.Filter == "none" ? "Mọi dự án đã có Leader phụ trách." : "Chưa có dự án đang triển khai.")</div>
+    return;
+}
+@foreach (var p in Model.Projects)
+{
+    var owner = p.OwnerLeaderId is int oid ? D.P(oid) : null;
+    <form class="card sec" method="post" action="/Planning/SetProjectOwner" asp-antiforgery="true">
+        @Ui.ReturnField(req)
+        <input type="hidden" name="projectId" value="@p.Id">
+        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.SubLine(p)</div></div>
+            <span class="note" style="margin-left:auto">@(owner is null ? "Chưa có Leader phụ trách" : "Leader phụ trách: " + owner.Name)</span></div>
+        <label class="f" for="po@(p.Id)">Leader phụ trách</label>
+        <div class="row" style="gap:8px">
+            <select class="in" id="po@(p.Id)" name="leaderId" style="flex:1;min-width:0">
+                <option value="" selected="@(owner is null)">— Chưa chọn —</option>
+                @foreach (var l in Model.Leaders)
+                {
+                    <option value="@l.Id" selected="@(owner?.Id == l.Id)">@l.Name · nhóm @D.Team(l.Id).Count người</option>
+                }
+            </select>
+            <button class="btn btn-primary">Lưu</button>
+        </div>
+    </form>
+}

@@ -123,3 +123,13 @@ public sealed class PlanningProposalsVm
     public required List<CalendarProposal> Pending { get; init; }
     public required List<CalendarProposal> Recent { get; init; }
 }
+
+/// <summary>TP chọn Leader (nhóm) phụ trách dự án: dự án đang triển khai + danh sách Leader + bộ lọc (all | none).</summary>
+public sealed class PlanningOwnersVm
+{
+    public required List<Project> Projects { get; init; }
+    public required List<Person> Leaders { get; init; }
+    public required string Filter { get; init; }
+    public int Total { get; init; }
+    public int Unassigned { get; init; }
+}

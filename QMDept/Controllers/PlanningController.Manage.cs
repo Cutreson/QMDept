@@ -359,6 +359,39 @@ public partial class PlanningController
         Toast(approve ? "Đã duyệt đề xuất — việc đã vào lịch" : "Đã từ chối đề xuất");
     });
 
+    /// <summary>GET /Planning/ProjectOwners — TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án (?f=none: chỉ dự án chưa có Leader phụ trách).</summary>
+    [HttpGet]
+    public async Task<IActionResult> ProjectOwners(string? f)
+    {
+        if (!Scope.IsManager) return Redirect("/");
+        await D.EnsureAsync(Date, Date);
+        ViewData["Title"] = "Leader phụ trách dự án";
+        var all = D.ActivePj();
+        var none = f == "none";
+        return View(new PlanningOwnersVm
+        {
+            Projects = none ? all.Where(p => p.OwnerLeaderId is null).ToList() : all, Leaders = D.Leaders(), Filter = none ? "none" : "all",
+            Total = all.Count, Unassigned = all.Count(p => p.OwnerLeaderId is null),
+        });
+    }
+
+    /// <summary>POST: chọn (hoặc bỏ chọn khi leaderId trống) Leader nhóm phụ trách một dự án. Người được chọn / người cũ nhận thông báo.</summary>
+    [HttpPost]
+    public Task<IActionResult> SetProjectOwner(int projectId, int? leaderId) => Do(async () =>
+    {
+        RequireManager();
+        var pj = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
+        if (leaderId is int lid && !await Db.People.AnyAsync(p => p.Id == lid && p.Role == Role.Leader && !p.IsDeleted)) throw new BizException("Leader không hợp lệ");
+        var old = pj.OwnerLeaderId;
+        if (old == leaderId) { Toast("Không có thay đổi"); return; }
+        pj.OwnerLeaderId = leaderId;
+        await Db.SaveChangesAsync();
+        await D.EnsureAsync(Date, Date);
+        if (leaderId is int nl) await Notify.ProjectOwnerAsync(nl, pj.Name, assigned: true);
+        if (old is int ol) await Notify.ProjectOwnerAsync(ol, pj.Name, assigned: false);
+        Toast(leaderId is int n2 ? $"Đã giao dự án {pj.Name} cho nhóm {D.PName(n2)} phụ trách" : $"Đã bỏ Leader phụ trách dự án {pj.Name}");
+    });
+
     // ======================= Phân công (ldAssign) =======================
 
     /// <summary>GET /Planning/Assign — giao việc 1 NV, việc đã giao gần đây, phân công theo NV / theo dự án.</summary>

@@ -357,3 +357,9 @@ và kiểm tra khớp 100% (so từng dự án + hạng mục; thêm một lư�
 - Hiển thị: mã · nhà máy – địa điểm ở thẻ / tiêu đề dự án; mục "Thông tin dự án" có Mã, Số lượng, Leader phụ trách, Loại, Cấp độ, PO, Giao hàng, Ghi chú; hạng mục hiện PIC, ngày KH, ghi chú; danh sách > 12 dự án dùng
   ô chọn có tìm kiếm thay hàng nút; Leader chỉ thấy ở tab "Leader dự án" các dự án do mình phụ trách (+ dự án chưa có Leader phụ trách).
 - **Nạp lại 2026-10-16**: xóa 88 dự án cũ rồi nạp lại **chỉ sheet "Dự án chế tạo"** (48 dự án, 355 hạng mục), đã kiểm khớp 100% (`verify … chetao` + đối chiếu độc lập). Dự án demo / nội bộ đã xóa khỏi DB.
+
+## 19. Trưởng phòng chọn Leader phụ trách dự án (yêu cầu 2026-10-16)
+
+TP / Quản trị: trang Dự án → nút **"Leader phụ trách dự án"** (`/Planning/ProjectOwners`, giống tab "Leader dự án" của Leader): mỗi dự án đang triển khai có một ô chọn Leader (nhóm) phụ trách (hoặc "Chưa chọn"),
+bộ lọc "Chưa có Leader" + đếm. Lưu `projects.OwnerLeaderId`; Leader được chọn / người cũ nhận thông báo `ProjectOwner` ("Dự án giao nhóm phụ trách"). Leader được giao sẽ thấy dự án ở tab "Leader dự án"
+(Leader chỉ thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách) để chọn người làm Leader dự án trong nhóm mình. Chỉ TP / Quản trị đổi được (Leader gọi POST bị chặn).

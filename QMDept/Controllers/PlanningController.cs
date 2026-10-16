@@ -19,7 +19,9 @@ public partial class PlanningController : AppController
         // TP / Quản trị tạo + sửa dự án và đầu mục (trang /Manager/Projects chỉ xem; nút "＋ Dự án mới" dẫn tới đây)
         "Projects", "SaveProject", "AddItem", "SetItemStatus", "DeleteItem",
         // chọn Leader dự án (Leader: tab con "Leader dự án"; TP / Quản trị: nút ở trang Dự án)
-        "ProjectLeads", "SetProjectLead" };
+        "ProjectLeads", "SetProjectLead",
+        // TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án — nút ở trang Dự án
+        "ProjectOwners", "SetProjectOwner" };
 
     protected override Role[] UiRoles(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext ctx) =>
         LeaderManagerActions.Contains(ctx.RouteData.Values["action"]?.ToString() ?? "") ? [Role.Leader, Role.Manager] : [Role.Leader];
