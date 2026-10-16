@@ -69,9 +69,14 @@ else
             // Leader dự án của từng dự án: chọn dự án → nhãn vai trò tự đổi (khóa), ô tích để trắng (data-leads + site.js).
             var leadMap = D.ActivePj().Select(x => (x.Id, Lead: D.ProjectLead(x.Id)?.Id)).Where(x => x.Lead is not null).ToDictionary(x => x.Id.ToString(), x => x.Lead!.Value);
             var leadDefault = pj0 is int pl ? D.ProjectLead(pl)?.Id : null;
-            <form id="calAssignForm" class="card sec ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" asp-antiforgery="true" data-leads="@System.Text.Json.JsonSerializer.Serialize(leadMap)">
+            // Form ẩn: chỉ mở bảng trượt khi bấm nút (yêu cầu 2026-10-16), giống "Đề xuất công việc" của NV.
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm ro-ok" data-sheet="calAssignTpl">＋ Giao thêm việc</button></div>
+            <template id="calAssignTpl">
+            <form id="calAssignForm" class="ro-ok" method="post" action="@($"/Staff/AssignTask?d={Fmt.Key(sel)}&as=all")" data-leads="@System.Text.Json.JsonSerializer.Serialize(leadMap)">
+                @Html.AntiForgeryToken()
                 @Ui.ReturnField(req)
-                <h2>Giao thêm việc · @Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</h2>
+                <h3>Giao thêm việc</h3>
+                <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
                 <label class="f" for="calP" style="margin-top:0">Dự án</label>
                 @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
                 <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
@@ -86,8 +91,10 @@ else
                             <span class="pill @(p.Role == Role.Leader || leadDefault == p.Id ? "p-mgr" : "p-info")" data-role-tag="@p.Id"@(p.Role == Role.Leader ? " data-group-leader" : "")>@(p.Role == Role.Leader ? "Leader" : leadDefault == p.Id ? "Leader dự án" : "Hỗ trợ")</span></div>
                     }
                 </div>
-                <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc cho người đã chọn</button>
+                <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
+                    <button class="btn btn-primary">Giao việc cho người đã chọn</button></div>
             </form>
+            </template>
         }
     }
 }

@@ -367,3 +367,8 @@ bộ lọc "Chưa có Leader" + đếm. Lưu `projects.OwnerLeaderId`; Leader đ
   việc chọn Leader dự án chỉ của Leader nhóm. TP / Quản trị chỉ chọn **Leader (nhóm) phụ trách** dự án (§19).
 - **Tab "Leader dự án" chia 2 mục nhỏ (2026-10-16)**: "Đã có Leader dự án (N)" (`?f=has`) và "Chưa chọn Leader dự án (M)" (`?f=none`); mặc định mở mục đầu có dự án (đã có → chưa chọn).
   Chọn xong một dự án thì dự án chuyển từ mục "Chưa chọn" sang "Đã có".
+
+### 19b. Giao thêm việc của Leader/TP thu gọn (yêu cầu 2026-10-16)
+Ở "Lịch nhóm" / "Lịch của phòng" form "Giao thêm việc" không còn hiện sẵn: chỉ có nút **＋ Giao thêm việc**; bấm mới mở bảng trượt
+(`<template id="calAssignTpl">` trong `Views/Staff/Month.cshtml`, cùng cơ chế `data-sheet` với "Đề xuất công việc" của NV). Nội dung form và
+POST `/Staff/AssignTask` giữ nguyên (nhãn Leader dự án/Hỗ trợ tự đổi theo dự án, ô tích để trắng). CSS chỉ-xem: `[data-sheet]:not(.ro-ok)`.

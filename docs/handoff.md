@@ -239,3 +239,5 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ### Việc tiếp theo
 - Khi chủ dự án ghép connection string: chạy app (tự migrate) trên DB thật, tạo tài khoản TP đầu tiên, kiểm thử từng màn hình.
+
+- (2026-10-16) Form "Giao thêm việc" ở lịch nhóm/lịch phòng chuyển thành nút + bảng trượt (như Đề xuất công việc của NV) — Month.cshtml, site.css. Đã kiểm tra Leader 9/10/26, TP, mobile 375px, giao việc thật rồi xóa dữ liệu thử.

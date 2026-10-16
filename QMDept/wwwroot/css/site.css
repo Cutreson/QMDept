@@ -404,7 +404,7 @@ main.no-tabs,body.no-side main{padding-bottom:24px}
    Ẩn mọi nút gửi / mở hộp thoại trong form POST; ô nhập bị khóa (site.js). Lọc GET vẫn dùng được. Server cũng chặn mọi POST. */
 body.readonly #app form[method="post" i]:not(.ro-ok) button,
 body.readonly #app form[method="post" i]:not(.ro-ok) input[type=submit],
-body.readonly #app [data-sheet],
+body.readonly #app [data-sheet]:not(.ro-ok),
 body.readonly #app button[form]{display:none!important}
 body.readonly #app form[method="post" i]:not(.ro-ok) .segr,
 body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none;opacity:.75}
