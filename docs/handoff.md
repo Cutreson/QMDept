@@ -20,6 +20,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   Leader có tab con mới "Leader dự án" (`/Planning/ProjectLeads`, POST `SetProjectLead`) để chọn người làm Leader dự án cho từng dự án; TP / Quản trị
   có nút "Chọn Leader dự án" ở trang Dự án; thông báo mới `NotifyType.ProjectLead`.
   Đề xuất lịch của NV chỉ cho dự án mình là Leader dự án (server kiểm tra trong `WorkflowService.ProposeAsync`).
+  Ô chọn có tìm kiếm trong chính ô (1 ô thay vì 2) — docs/nghiep-vu.md §17.
   Số lượng dự án (N · đang triển khai · hoàn thành) ở mọi màn hình thông tin dự án (docs/nghiep-vu.md §16).
   Công cụ `tools/web.sh` (restart/start/stop/health) + `tools/web-watch.sh` (tự chạy lại web khi lỗi) — AGENTS.md quy tắc 22.
   2026-10-16: thứ tự tab con Leader: Kế hoạch, Lịch tuần, Phân công, Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.

@@ -280,22 +280,60 @@
     b.setAttribute('aria-label', label);
     return b;
   }
+  // Ô chọn có tìm kiếm trong CHÍNH ô chọn (một ô duy nhất, không còn ô lọc riêng phía trên — yêu cầu 2026-10-16): <select> gốc vẫn nằm trong form
+  // (ẩn, giữ giá trị / kiểm tra required); người dùng gõ chữ cái vào ô → danh sách mục chứa chữ đó, chọn bằng chuột / ↑ ↓ Enter.
   function enhanceSelect(sel) {
     if (sel.dataset.searchOn || sel.multiple || sel.options.length < MIN_SEARCH) return;
-    if (sel.matches('.mono,[data-autosubmit],[data-nosearch]') || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
+    if (sel.matches('.mono,[data-autosubmit],[data-nosearch],[data-pick-into]') || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
     sel.dataset.searchOn = '1';
-    const box = searchBox('Gõ chữ cái để lọc danh sách');
-    sel.parentNode.insertBefore(box, sel);
-    let all = null;
-    const snap = () => { all = [...sel.options].map(o => ({ v: o.value, t: o.textContent, d: o.disabled })); };
-    box.addEventListener('input', () => {
-      if (!box.dataset.live) { snap(); box.dataset.live = '1'; }
-      const q = fold(box.value.trim()), cur = sel.value;
-      const keep = all.filter(o => !(o.d && o.v !== '') && (!q || o.v === cur || fold(o.t).includes(q)));
-      sel.innerHTML = keep.map(o => `<option value="${esc(o.v)}"${o.d ? ' disabled' : ''}>${esc(o.t)}</option>`).join('');
-      sel.value = cur;
-      if (!q) delete box.dataset.live;
+    const wrap = document.createElement('div'); wrap.className = 'combo';
+    sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+    sel.classList.add('combo-native'); sel.tabIndex = -1;
+    const input = document.createElement('input');
+    input.type = 'text'; input.className = 'in combo-input'; input.autocomplete = 'off';
+    input.setAttribute('role', 'combobox'); input.setAttribute('aria-expanded', 'false');
+    const lbl = sel.id && document.querySelector('label[for="' + sel.id + '"]');
+    input.setAttribute('aria-label', (lbl && lbl.textContent.trim()) || 'Chọn');
+    input.disabled = sel.disabled;
+    const list = document.createElement('div'); list.className = 'combo-list'; list.hidden = true; list.setAttribute('role', 'listbox');
+    wrap.insertBefore(input, sel); wrap.appendChild(list);
+    let active = -1, shown = [];
+    const label = () => { const o = sel.options[sel.selectedIndex]; return o ? o.textContent.trim() : ''; };
+    const sync = () => { input.value = label(); input.classList.toggle('ph', !sel.value); };
+    // Gán sel.value bằng mã (staff.js khôi phục bản nháp…) cũng làm ô hiển thị đổi theo.
+    const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    Object.defineProperty(sel, 'value', { configurable: true, get() { return desc.get.call(this); }, set(v) { desc.set.call(this, v); sync(); } });
+    const render = q => {
+      shown = [...sel.options].filter(o => !o.disabled && !o.hidden && (!q || fold(o.textContent).includes(q)));
+      list.innerHTML = shown.length
+        ? shown.map((o, i) => `<div class="combo-item${o.value === sel.value ? ' sel' : ''}" role="option" data-i="${i}">${esc(o.textContent.trim())}</div>`).join('')
+        : '<div class="combo-empty">Không có mục phù hợp</div>';
+      active = -1;
+    };
+    const open = q => { render(q); list.hidden = false; input.setAttribute('aria-expanded', 'true'); };
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); sync(); };
+    const choose = o => {
+      sel.value = o.value; list.hidden = true; input.setAttribute('aria-expanded', 'false');
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('on', i === active));
+    input.addEventListener('focus', () => { input.select(); open(''); });
+    input.addEventListener('click', () => { if (list.hidden) open(''); });
+    input.addEventListener('input', () => open(fold(input.value.trim())));
+    input.addEventListener('blur', () => setTimeout(close, 120));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); if (list.hidden) open('');
+        active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % Math.max(shown.length, 1); mark();
+        const el = list.children[active]; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') { if (!list.hidden) { e.preventDefault(); choose(shown[active >= 0 ? active : 0] || shown[0]); } }
+      else if (e.key === 'Escape') { close(); }
     });
+    list.addEventListener('mousedown', e => {
+      const it = e.target.closest('.combo-item'); if (!it) return;
+      e.preventDefault(); choose(shown[+it.dataset.i]);
+    });
+    sync();
   }
   function enhanceList(box) {
     if (box.dataset.searchOn) return;

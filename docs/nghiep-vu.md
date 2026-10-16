@@ -332,3 +332,10 @@ Kế hoạch → Lịch tuần → Phân công → Báo cáo → Đề xuất l�
 
 Dòng "N dự án · X đang triển khai · Y đã hoàn thành" (`Dept.PjCountText`; đang triển khai = chưa bàn giao và chưa 100%): NV → Thông tin dự án (dưới tiêu đề; chỉ đếm dự án mình là Leader dự án),
 TP → Dự án, Leader / TP → Dự án & đầu mục, bảng "Tình hình dự án" (Leader Tổng quan) và "Tiến độ dự án" (TP Tổng quan).
+
+## 17. Ô chọn có tìm kiếm trong chính ô (sửa mục 11, yêu cầu 2026-10-16)
+
+Không còn ô gõ riêng phía trên ô chọn (trước đây hiện 2 ô, vd. "Tỉnh / thành công tác"). Mọi `<select>` có ≥ 7 mục (tỉnh / thành, danh sách nhân viên…) thành **một ô duy nhất**:
+bấm / gõ chữ cái ngay trong ô → danh sách chỉ còn mục chứa chữ đó (không phân biệt hoa / dấu), chọn bằng chuột hoặc ↑ ↓ Enter, Esc để đóng (`site.js: enhanceSelect`, lớp `.combo`).
+`<select>` gốc vẫn nằm trong form (ẩn) nên giá trị / kiểm tra bắt buộc không đổi; danh sách < 7 mục vẫn là ô chọn thường; ô chọn người hỗ trợ (`data-pick-into`) giữ ô chọn thường.
+Danh sách tích chọn nhiều người (`.optbox` ≥ 7 dòng) vẫn có ô lọc phía trên vì là danh sách tích.

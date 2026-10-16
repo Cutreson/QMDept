@@ -423,3 +423,13 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .pick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pick-chip{display:inline-flex;align-items:center;gap:6px;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:4px 6px 4px 10px;font-size:13px;font-weight:600}
 .pick-chip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:12px;padding:0 2px}
+/* Ô chọn có tìm kiếm trong chính ô (site.js: enhanceSelect) */
+.combo{position:relative}
+.combo-native{position:absolute;left:0;bottom:0;width:100%;height:1px;opacity:0;pointer-events:none}
+.combo-input{cursor:pointer;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.combo-input.ph{color:var(--faint)}
+.combo-list{position:absolute;z-index:90;left:0;right:0;top:calc(100% + 4px);max-height:260px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 24px rgba(15,23,42,.14)}
+.combo-item{padding:9px 12px;cursor:pointer;font-size:14px}
+.combo-item.on,.combo-item:hover{background:var(--brand-soft);color:var(--brand)}
+.combo-item.sel{font-weight:700}
+.combo-empty{padding:10px 12px;color:var(--faint);font-size:13px}
