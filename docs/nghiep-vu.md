@@ -393,3 +393,5 @@ Header Leader: nút "Kế hoạch" duy nhất (gộp "Lịch của tôi" và "L�
 Trang "Trạng thái làm việc" của Leader (`/Staff/Morning?as=mine`) dùng đúng form của nhân viên: 1. Nội dung công việc (việc trong lịch, "＋ Thêm công việc ngoài kế hoạch" chọn dự án + nội dung + giờ, nhân sự hỗ trợ trong nhóm mình, ghi chú), 2. Trạng thái & báo cơm (công tác tự điền địa điểm + khách hàng theo dự án). Vẫn không có báo cáo cuối ngày. Trưởng phòng duyệt ở Phê duyệt → Của Leader (có bảng việc).
 
 Cập nhật 2026-10-16: trang Trạng thái làm việc của Leader bỏ phần Nhân sự hỗ trợ và Ghi chú (chỉ còn nội dung công việc + trạng thái & báo cơm).
+
+Cập nhật 2026-10-16: tab "Trạng thái làm việc" của Leader nằm trong thanh tab của Màn hình của tôi (giữa Tổng quan và Kế hoạch & duyệt); nút "Kế hoạch" chỉ còn lịch tháng (Lịch của tôi | Lịch nhóm).
