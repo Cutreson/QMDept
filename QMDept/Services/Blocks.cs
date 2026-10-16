@@ -74,7 +74,7 @@ public static class Blocks
     {
         var a = new List<string> { $"<span class=\"pill {(LeaveRules.IsLeave(p.Status) ? "p-warn" : "p-info")}\">{Labels.Of(p.Status)}</span>" };
         if (LeaveRules.IsLeave(p.Status) && p.LeaveType is not null) a.Add($"<span>{LeaveText(p)}</span>");
-        if (LeaveRules.IsTrip(p.Status) && p.TripProvince is not null) a.Add($"<span>Công tác: <b>{E(p.TripProvince)}</b> · {E(p.TripCustomer)}</span>");
+        if (LeaveRules.IsTrip(p.Status) && (p.TripProvince is not null || p.TripCustomer is not null)) a.Add($"<span>Công tác: <b>{E(p.TripProvince ?? "—")}</b> · {E(p.TripCustomer ?? "—")}</span>");
         a.Add($"<span>Báo cơm: <b>{Labels.Of(p.Meal)}</b></span>");
         return H($"<div class=\"pmeta\">{string.Concat(a)}</div>{SupCmt(p)}");
     }

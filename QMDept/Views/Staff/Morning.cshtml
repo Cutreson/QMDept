@@ -71,9 +71,9 @@
         {
             <div class="leave-line">Thời gian nghỉ: @Html.Raw(Blocks.LeaveText(plan))</div>
         }
-        @if (LeaveRules.IsTrip(plan.Status) && plan.TripProvince is not null)
+        @if (LeaveRules.IsTrip(plan.Status) && (plan.TripProvince is not null || plan.TripCustomer is not null))
         {
-            <div class="leave-line">Địa điểm công tác: <b>@plan.TripProvince</b> · Khách hàng: <b>@plan.TripCustomer</b></div>
+            <div class="leave-line">Địa điểm công tác: <b>@(plan.TripProvince ?? "—")</b> · Khách hàng: <b>@(plan.TripCustomer ?? "—")</b></div>
         }
     </section>
     <section class="card sec">
@@ -107,41 +107,18 @@
     var isLeave = f.Status is WorkStatus w0 && LeaveRules.IsLeave(w0);
     var isTrip = f.Status is WorkStatus w1 && LeaveRules.IsTrip(w1);
     var dis = ro ? "disabled" : null;
-    var customers = D.Projects.Select(p => p.Factory).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).Distinct()
-        .OrderBy(x => x, Fmt.ViCompare).ToList();
-    // Khách hàng chọn trong danh sách (giống Tỉnh / thành); kế hoạch cũ đã lưu khách hàng ngoài danh sách vẫn hiện được.
-    if (!string.IsNullOrWhiteSpace(f.Customer) && !customers.Contains(f.Customer)) customers.Add(f.Customer);
 }
 <form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")">
     @Ui.ReturnField(req)
     <section class="card sec">
-        <h2>1. Trạng thái &amp; báo cơm</h2>
-        <div class="pick2">
-            <div><label class="f" for="pStatus" style="margin-top:0">Trạng thái làm việc</label>@Ui.Select("status", Ui.EnumOpts<WorkStatus>(), f.Status?.ToString(), "Chọn trạng thái…", id: "pStatus", extraAttrs: dis)</div>
-            <div><label class="f" for="pMeal" style="margin-top:0">Báo cơm</label>@Ui.Select("meal", Ui.EnumOpts<Meal>(), f.Meal?.ToString(), "Chọn…", id: "pMeal", extraAttrs: dis)</div>
-        </div>
-        <div id="leaveWrap" hidden="@(!isLeave)">@if (isLeave)
-            {
-                @StaffReports.LeaveBox(f.Status!.Value, leaveNow, ro)
-            }</div>
-        <input type="hidden" name="leaveType" value="@(f.Leave?.Type.ToString())">
-        <input type="hidden" name="leaveSession" value="@(f.Leave?.Session?.ToString())">
-        <input type="hidden" name="leaveFrom" value="@(f.Leave?.From)">
-        <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
-        <div class="pick2 eq" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">
-            <div><label class="f" for="pProvince" style="margin-top:0">Tỉnh / thành công tác</label>@Ui.Select("province", Fmt.Provinces.Select(x => (x, x)), f.Province, "Chọn tỉnh / thành…", id: "pProvince", extraAttrs: dis)</div>
-            <div><label class="f" for="pCustomer" style="margin-top:0">Khách hàng</label>@Ui.Select("customer", customers.Select(x => (x, x)), f.Customer, "Chọn khách hàng…", id: "pCustomer", extraAttrs: (dis is null ? "" : dis + " ") + "data-combo")</div>
-        </div>
-    </section>
-    <section class="card sec">
-        <h2>2. Nội dung công việc</h2>
+        <h2>1. Nội dung công việc</h2>
         @if (Model.List.Count > 0)
         {
             foreach (var t in Model.List)
             {
                 var src = Labels.Of(t.Source);
                 var hit = leaveNow is not null && LeaveRules.Overlaps(t, leaveNow.From, leaveNow.To);
-                <label class="trow"><input type="checkbox" name="picks" value="@t.Id" data-start="@t.Start" data-end="@t.End" checked="@Model.IsOn(t)" disabled="@ro"><div><div class="t">@t.Title</div><div class="s">@D.PjName(t.ProjectId)@(src.Length > 0 ? " · " + src : "")<span data-leave-hit hidden="@(!hit)"> · <span class="warn-t">Trùng giờ nghỉ</span></span></div></div><span class="tm">@t.Start – @t.End</span></label>
+                <label class="trow"><input type="checkbox" name="picks" value="@t.Id" data-start="@t.Start" data-end="@t.End" data-place="@D.PJ(t.ProjectId)?.Location" data-customer="@D.PJ(t.ProjectId)?.Factory" checked="@Model.IsOn(t)" disabled="@ro"><div><div class="t">@t.Title</div><div class="s">@D.PjName(t.ProjectId)@(src.Length > 0 ? " · " + src : "")<span data-leave-hit hidden="@(!hit)"> · <span class="warn-t">Trùng giờ nghỉ</span></span></div></div><span class="tm">@t.Start – @t.End</span></label>
             }
         }
         else
@@ -203,6 +180,23 @@
         }
         <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Lý do xin người hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="1500" disabled="@ro">@f.SupportText</textarea></div>
         <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
+    </section>
+    <section class="card sec">
+        <h2>2. Trạng thái &amp; báo cơm</h2>
+        <div class="pick2">
+            <div><label class="f" for="pStatus" style="margin-top:0">Trạng thái làm việc</label>@Ui.Select("status", Ui.EnumOpts<WorkStatus>(), f.Status?.ToString(), "Chọn trạng thái…", id: "pStatus", extraAttrs: dis)</div>
+            <div><label class="f" for="pMeal" style="margin-top:0">Báo cơm</label>@Ui.Select("meal", Ui.EnumOpts<Meal>(), f.Meal?.ToString(), "Chọn…", id: "pMeal", extraAttrs: dis)</div>
+        </div>
+        <div id="leaveWrap" hidden="@(!isLeave)">@if (isLeave)
+            {
+                @StaffReports.LeaveBox(f.Status!.Value, leaveNow, ro)
+            }</div>
+        <input type="hidden" name="leaveType" value="@(f.Leave?.Type.ToString())">
+        <input type="hidden" name="leaveSession" value="@(f.Leave?.Session?.ToString())">
+        <input type="hidden" name="leaveFrom" value="@(f.Leave?.From)">
+        <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
+        @* Công tác: địa điểm + khách hàng tự lấy theo dự án của các việc đã chọn (staff.js đổ vào #tripInfo; máy chủ ghi lại khi gửi) — NV không phải chọn (yêu cầu 2026-10-16). *@
+        <div class="leave-line" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">Địa điểm công tác: <b id="tripPlace"></b> · Khách hàng: <b id="tripCustomer"></b></div>
     </section>
     @if (!ro)
     {

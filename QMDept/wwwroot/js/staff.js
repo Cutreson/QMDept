@@ -37,7 +37,7 @@
 
   function morning(f, cfg) {
     const SESSIONS = cfg.sessions || {}, UNPAID_FROM = cfg.unpaidFrom || [], UNPAID_TO = cfg.unpaidTo || [];
-    const statusSel = $('#pStatus', f), mealSel = $('#pMeal', f), supportSel = $('#pSupport', f), provinceSel = $('#pProvince', f);
+    const statusSel = $('#pStatus', f), mealSel = $('#pMeal', f), supportSel = $('#pSupport', f);
     const hid = n => f.querySelector(`input[type=hidden][name=${n}]`);
     const picks = () => $$('input[name=picks]', f);
     const paidLeave = s => { const [, a, b] = SESSIONS[s], full = s === 'FullDay'; return { type: 'Paid', session: s, from: a, to: b, hours: full ? 8 : 4, days: full ? 1 : 0.5 }; };
@@ -54,9 +54,9 @@
     let dr = store.get(cfg.key);
     if (dr && typeof dr === 'object') {
       const setSel = (sel, v) => { if (sel && v != null) sel.value = v; };
-      setSel(statusSel, dr.status); setSel(mealSel, dr.meal); setSel(supportSel, dr.support || 'None'); setSel(provinceSel, dr.province || '');
+      setSel(statusSel, dr.status); setSel(mealSel, dr.meal); setSel(supportSel, dr.support || 'None');
       if (dr.supportPick != null && $('#pSupportPick', f)) $('#pSupportPick', f).value = dr.supportPick;
-      $('#pNote', f).value = dr.note || ''; $('#pSupportText', f).value = dr.supportText || ''; $('#pCustomer', f).value = dr.customer || '';
+      $('#pNote', f).value = dr.note || ''; $('#pSupportText', f).value = dr.supportText || '';
       if (dr.checks) picks().forEach(x => { if (x.value in dr.checks) x.checked = !!dr.checks[x.value]; });
       dr.leaveOff = dr.leaveOff || [];
       if (dr.leave === undefined) dr.leave = leaveFromForm();
@@ -69,7 +69,7 @@
       const checks = {}; picks().forEach(x => checks[x.value] = x.checked);
       Object.assign(dr, {
         status: statusSel.value || '', meal: mealSel.value || '', note: $('#pNote', f).value, support: supportSel.value || 'None',
-        province: provinceSel ? provinceSel.value || '' : '', customer: $('#pCustomer', f).value, supportText: $('#pSupportText', f).value, checks,
+        supportText: $('#pSupportText', f).value, checks,
         supportPick: ($('#pSupportPick', f) || {}).value || '',
       });
     }
@@ -122,13 +122,18 @@
       const ln = leaveNow(), wrap = $('#leaveWrap', f);
       wrap.hidden = !isLeave(dr.status);
       wrap.innerHTML = wrap.hidden ? '' : leaveBox(dr.status, ln);
-      $('#tripWrap', f).hidden = !isTrip(dr.status);
+      // Công tác: địa điểm + khách hàng tự lấy theo dự án của các việc đang chọn (data-place / data-customer trên ô tích việc)
+      const trip = $('#tripWrap', f); trip.hidden = !isTrip(dr.status);
+      if (!trip.hidden) {
+        const uniq = k => [...new Set(picks().filter(x => x.checked).map(x => (x.dataset[k] || '').trim()).filter(Boolean))];
+        $('#tripPlace', f).textContent = uniq('place').join('; ') || '—'; $('#tripCustomer', f).textContent = uniq('customer').join(', ') || '—';
+      }
       $('#supportWrap', f).hidden = !SUPPORT_SCOPES.includes(supportSel.value);
       picks().forEach(x => {
         const m = x.closest('label').querySelector('[data-leave-hit]');
         if (m) m.hidden = !(ln && x.dataset.start >= ln.from && x.dataset.end <= ln.to);
       });
-      [statusSel, mealSel, provinceSel].forEach(s => s && s.classList.toggle('ph', !s.value));
+      [statusSel, mealSel].forEach(s => s && s.classList.toggle('ph', !s.value));
     }
 
     // applyLeave(dr, leave): chọn lại việc đã bỏ chọn trước đó, bỏ chọn việc nằm trọn trong khung nghỉ, báo cơm theo số giờ nghỉ
@@ -213,12 +218,12 @@
     }
 
     // onMorningInput
-    const draftFields = '[name=picks],#pMeal,#pNote,#pSupport,#pSupportText,#pProvince,#pCustomer';
+    const draftFields = '[name=picks],#pMeal,#pNote,#pSupport,#pSupportText';
     f.addEventListener('input', e => { if (e.target.matches && e.target.matches(draftFields)) saveDraft(); });
     f.addEventListener('change', e => {
       const t = e.target;
       if (t === statusSel) { onStatusChange(); return; }
-      if (t.matches && t.matches(draftFields)) { saveDraft(); if (t === supportSel) $('#supportWrap', f).hidden = !SUPPORT_SCOPES.includes(supportSel.value); }
+      if (t.matches && t.matches(draftFields)) { saveDraft(); if (t.name === 'picks') render(); if (t === supportSel) $('#supportWrap', f).hidden = !SUPPORT_SCOPES.includes(supportSel.value); }
     });
     // leaveTime: nút "Chọn giờ nghỉ" / "Đổi"
     f.addEventListener('click', e => {
@@ -237,8 +242,6 @@
       const status = dr.status, leave = isLeave(status) ? dr.leave : null;
       if (!status) return stop('Chọn trạng thái làm việc', '#pStatus');
       if (isLeave(status) && (!leave || leave.type !== LEAVE_TYPE[status])) { stop('Chọn thời gian nghỉ'); openLeave(status); return; }
-      if (isTrip(status) && !dr.province) return stop('Chọn tỉnh / thành công tác', '#pProvince');
-      if (isTrip(status) && !dr.customer.trim()) return stop('Chọn khách hàng', '#pCustomer');
       if (!dr.meal) return stop('Chọn báo cơm', '#pMeal');
       if (!picks().some(x => x.checked) && !(leave && leave.hours >= 8)) return stop('Chọn ít nhất 1 công việc');
       if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập lý do xin người hỗ trợ', '#pSupportText');

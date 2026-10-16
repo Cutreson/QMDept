@@ -372,3 +372,9 @@ bộ lọc "Chưa có Leader" + đếm. Lưu `projects.OwnerLeaderId`; Leader đ
 Ở "Lịch nhóm" / "Lịch của phòng" form "Giao thêm việc" không còn hiện sẵn: chỉ có nút **＋ Giao thêm việc**; bấm mới mở bảng trượt
 (`<template id="calAssignTpl">` trong `Views/Staff/Month.cshtml`, cùng cơ chế `data-sheet` với "Đề xuất công việc" của NV). Nội dung form và
 POST `/Staff/AssignTask` giữ nguyên (nhãn Leader dự án/Hỗ trợ tự đổi theo dự án, ô tích để trắng). CSS chỉ-xem: `[data-sheet]:not(.ro-ok)`.
+
+### 19c. Báo cáo đầu ngày: đảo thứ tự + công tác tự điền (yêu cầu 2026-10-16)
+Form kế hoạch đầu ngày: **1. Nội dung công việc** (việc trong lịch, thêm việc ngoài kế hoạch, nhân sự hỗ trợ, ghi chú) rồi **2. Trạng thái & báo cơm**.
+NV chỉ chọn trạng thái (kể cả "Công tác trong ngày / dài ngày") và báo cơm; **Địa điểm công tác + Khách hàng không phải chọn nữa** — tự lấy từ
+`Project.Location` / `Project.Factory` của các dự án có việc đang tích (staff.js đổ vào #tripPlace / #tripCustomer; `SubmitPlan` ghi lại vào
+`TripProvince` / `TripCustomer` bằng `StaffReports.TripPlace`, nhiều dự án thì nối bằng "; " / ", ").

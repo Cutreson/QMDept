@@ -154,6 +154,18 @@ public static class StaffReports
         if (!await db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Chọn dự án");
     }
 
+    /// <summary>Địa điểm + khách hàng công tác từ các dự án của việc đã chọn (không trùng, cắt cho vừa cột; rỗng → null).</summary>
+    public static (string? Place, string? Customer) TripPlace(IEnumerable<Project> pjs)
+    {
+        static string? Join(IEnumerable<string?> xs, string sep, int max)
+        {
+            var s = string.Join(sep, xs.Select(x => x?.Trim()).Where(x => !string.IsNullOrEmpty(x)).Distinct(StringComparer.OrdinalIgnoreCase));
+            return s.Length == 0 ? null : s.Length > max ? s[..max] : s;
+        }
+        var l = pjs.ToList();
+        return (Join(l.Select(p => p.Location), "; ", 100), Join(l.Select(p => p.Factory), ", ", 200));
+    }
+
     /// <summary>Cắt khoảng trắng; rỗng → null; quá dài → lỗi.</summary>
     public static string? Clip(string? s, int max)
     {

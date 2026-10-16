@@ -49,13 +49,6 @@ public partial class StaffController
             StaffReports.RequireEditable(plan);
             var status = StaffReports.ParseEnum<WorkStatus>(input.Status) ?? throw new BizException("Chọn trạng thái làm việc");
             var leave = LeaveRules.TypeOf(status) is LeaveType lt ? StaffReports.ReadLeave(lt, input) : null;
-            string? province = null, customer = null;
-            if (LeaveRules.IsTrip(status))
-            {
-                province = input.Province?.Trim();
-                if (string.IsNullOrEmpty(province) || !Fmt.Provinces.Contains(province)) throw new BizException("Chọn tỉnh / thành công tác");
-                customer = StaffReports.Clip(input.Customer, 200) ?? throw new BizException("Chọn khách hàng");
-            }
             var meal = StaffReports.ParseEnum<Meal>(input.Meal) ?? throw new BizException("Chọn báo cơm");
 
             var all = await Db.WorkTasks.Where(t => t.Date == Date && t.EmployeeId == me.Id).ToListAsync();
@@ -63,6 +56,15 @@ public partial class StaffController
             var shown = all.Where(t => t.Source != TaskSource.CarryOver || t.CarryOk).Select(t => t.Id).ToHashSet();
             var picks = input.Picks.Where(shown.Contains).ToHashSet();
             if (picks.Count == 0 && !(leave is not null && leave.Hours >= 8)) throw new BizException("Chọn ít nhất 1 công việc");
+
+            // Công tác: địa điểm + khách hàng lấy theo dự án của các việc đã chọn, NV không phải chọn (yêu cầu 2026-10-16).
+            string? province = null, customer = null;
+            if (LeaveRules.IsTrip(status))
+            {
+                var pids = all.Where(t => picks.Contains(t.Id)).Select(t => t.ProjectId).Distinct().ToList();
+                var pjs = await Db.Projects.Where(p => pids.Contains(p.Id)).ToListAsync();
+                (province, customer) = StaffReports.TripPlace(pids.Select(i => pjs.FirstOrDefault(p => p.Id == i)).OfType<Project>());
+            }
 
             // Nhân sự hỗ trợ (cùng thiết kế với đề xuất công việc): chỉ chỉ định người trong nhóm mình; phòng ban / nhóm khác xin theo số lượng.
             // Phạm vi suy ra từ lựa chọn: có phòng ban → OtherDept, có nhóm khác → OtherTeam, chỉ người trong nhóm → Team (Leader duyệt).
