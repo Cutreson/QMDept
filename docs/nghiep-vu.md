@@ -319,3 +319,7 @@ giờ (`.mono`), `data-autosubmit`, `data-nosearch`.
 - **Cập nhật (yêu cầu 2026-10-15, "mọi NV có tính năng như Vũ Văn Lực")**: bỏ ràng buộc "chỉ Leader dự án mới xin hỗ trợ". Mọi NV có nhóm, ở dự án đang triển khai bất kỳ, đều dùng đủ:
   "Tôi thực hiện", xin người hỗ trợ trong nhóm / phòng ban / nhóm khác theo số lượng + lý do; Leader nhóm duyệt. (Phần phụ thuộc DỮ LIỆU — dự án hiện ở "Thông tin dự án",
   mục "Việc của người hỗ trợ trong dự án bạn phụ trách" — vẫn theo việc ai được chọn làm Leader dự án.)
+- **Đảo lại (yêu cầu 2026-10-16)**: NV **chỉ xem và đề xuất những dự án mình được giao làm Leader dự án** — form đề xuất chỉ liệt kê các dự án đó, NV không là Leader dự án nào thì
+  không có nút "＋ Đề xuất công việc"; máy chủ cũng chặn (`WorkflowService.ProposeAsync`). Trong dự án được giao, mọi NV đều dùng đủ "Tôi thực hiện" + xin người hỗ trợ / phòng ban / nhóm khác + lý do.
+  (Thay cho mục "mở rộng cho mọi thành viên" phía trên về phạm vi dự án.) Đã kiểm tra 6 NV: Lực [Dây truyền dây, Máy kiểm tra tấm, Băng tải 1], Tài [Chiller], Hùng [Máy ép vòng bi],
+  Hòa / Đoàn / Vinh không có dự án → không có nút.

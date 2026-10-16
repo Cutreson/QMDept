@@ -142,8 +142,9 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (t0.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
 
-        // MỌI thành viên trong nhóm có cùng tính năng (yêu cầu 2026-10-15): đề xuất công việc của mình ở dự án bất kỳ, kèm xin người hỗ trợ
-        // (người trong nhóm / phòng ban / nhóm khác theo số lượng) + lý do; Leader nhóm duyệt. Không còn gắn với việc là Leader dự án.
+        // NV chỉ xem / đề xuất công việc của dự án mình được giao làm Leader dự án (yêu cầu 2026-10-16) — cả việc của chính mình lẫn xin hỗ trợ.
+        if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
+            throw new BizException("Chỉ đề xuất được công việc của dự án bạn được giao làm Leader dự án");
         var ids = people.Distinct().ToList();
         // Người đề xuất (Leader dự án) mặc định cùng thực hiện; bỏ tích thì chỉ những người được chỉ định trong nhóm làm.
         if (includeSelf && !ids.Contains(proposerId)) ids.Insert(0, proposerId);

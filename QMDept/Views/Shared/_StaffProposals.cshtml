@@ -12,14 +12,14 @@
             var ledPj = D.Assigns.Where(a => a.EmployeeId == me.Id && a.Role == ProjectRole.Lead).Select(a => D.PJ(a.ProjectId)).OfType<Project>().Where(x => !x.Closed).ToList();
             var action = Ui.To(req, "/Staff/ProposeCalendar", ("d", Fmt.Key(sel)));
             <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap">
-                @if (me.LeaderId is not null && D.ActivePj().Count > 0) { <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button> }
+                @if (me.LeaderId is not null && ledPj.Count > 0) { <button type="button" class="btn btn-sm" data-sheet="propTask">＋ Đề xuất công việc</button> }
             </div>
                 // Chỉ chỉ định được người trong nhóm của mình (NV cùng Leader + Leader của mình); nhóm khác / phòng ban chỉ xin theo số lượng.
                 var cands = me.LeaderId is int gl
                     ? D.Active.Where(x => x.Id != me.Id && ((x.Role == Role.Staff && x.LeaderId == gl) || x.Id == gl)).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
                     : new List<Person>();
                 var otherGroups = D.Leaders().Where(l => l.Id != me.LeaderId).ToList();
-            <partial name="_ProposalSheet" model="@(new ProposalSheetVm { TemplateId = "propTask", Projects = D.ActivePj().OrderByDescending(p => ledPj.Any(l => l.Id == p.Id)).ToList(), People = cands, OtherGroups = otherGroups, LedProjectIds = ledPj.Select(x => x.Id).ToList(), Action = action })" />
+            <partial name="_ProposalSheet" model="@(new ProposalSheetVm { TemplateId = "propTask", Projects = ledPj, People = cands, OtherGroups = otherGroups, LedProjectIds = ledPj.Select(x => x.Id).ToList(), Action = action })" />
             @if (Model.Proposals.Count > 0)
             {
                 <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2>

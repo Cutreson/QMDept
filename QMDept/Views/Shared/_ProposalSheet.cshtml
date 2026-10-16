@@ -1,6 +1,6 @@
 @model ProposalSheetVm
 @* Đề xuất công việc phát sinh của NV ở lịch tháng (yêu cầu 2026-10-15): <template> chứa form; mở bằng <button type="button" data-sheet="@Model.TemplateId">.
-   MỌI thành viên trong nhóm đề xuất được công việc của mình (dự án bất kỳ đang triển khai). Riêng dự án mình làm Leader dự án thì hiện thêm phần
+   NV chỉ chọn được các dự án mình ĐƯỢC GIAO làm Leader dự án (yêu cầu 2026-10-16); mỗi NV đều có phần
    "Tôi thực hiện" + xin người hỗ trợ (người trong nhóm → thẻ ✕; phòng ban / nhóm khác theo số lượng) + lý do (site.js: select[data-led]).
    POST /Staff/ProposeCalendar. Leader nhóm duyệt thì việc mới vào lịch. *@
 @{
@@ -15,7 +15,7 @@
         <h3>Đề xuất công việc</h3>
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
         <label class="f" for="@(id)P">Dự án</label>
-        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name + (led.Contains(p.Id) ? " · Leader dự án" : ""))), pid?.ToString(),
+        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(),
             id: id + "P")
         <label class="f" for="@(id)T">Nội dung công việc phát sinh</label>
         <input class="in" id="@(id)T" name="title" maxlength="300">
