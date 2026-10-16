@@ -54,7 +54,7 @@ public partial class StaffController
             {
                 province = input.Province?.Trim();
                 if (string.IsNullOrEmpty(province) || !Fmt.Provinces.Contains(province)) throw new BizException("Chọn tỉnh / thành công tác");
-                customer = StaffReports.Clip(input.Customer, 200) ?? throw new BizException("Nhập khách hàng");
+                customer = StaffReports.Clip(input.Customer, 200) ?? throw new BizException("Chọn khách hàng");
             }
             var meal = StaffReports.ParseEnum<Meal>(input.Meal) ?? throw new BizException("Chọn báo cơm");
 

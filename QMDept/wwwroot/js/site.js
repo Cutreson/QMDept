@@ -299,7 +299,7 @@
   // Ô chọn có tìm kiếm trong CHÍNH ô chọn (một ô duy nhất, không còn ô lọc riêng phía trên — yêu cầu 2026-10-16): <select> gốc vẫn nằm trong form
   // (ẩn, giữ giá trị / kiểm tra required); người dùng gõ chữ cái vào ô → danh sách mục chứa chữ đó, chọn bằng chuột / ↑ ↓ Enter.
   function enhanceSelect(sel) {
-    if (sel.dataset.searchOn || sel.multiple || sel.options.length < MIN_SEARCH) return;
+    if (sel.dataset.searchOn || sel.multiple || (sel.options.length < MIN_SEARCH && !sel.hasAttribute('data-combo'))) return;
     if (sel.matches('.mono,[data-autosubmit],[data-nosearch],[data-pick-into]') || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
     sel.dataset.searchOn = '1';
     const wrap = document.createElement('div'); wrap.className = 'combo';

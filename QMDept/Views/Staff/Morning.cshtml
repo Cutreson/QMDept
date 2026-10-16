@@ -109,6 +109,8 @@
     var dis = ro ? "disabled" : null;
     var customers = D.Projects.Select(p => p.Factory).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).Distinct()
         .OrderBy(x => x, Fmt.ViCompare).ToList();
+    // Khách hàng chọn trong danh sách (giống Tỉnh / thành); kế hoạch cũ đã lưu khách hàng ngoài danh sách vẫn hiện được.
+    if (!string.IsNullOrWhiteSpace(f.Customer) && !customers.Contains(f.Customer)) customers.Add(f.Customer);
 }
 <form id="planForm" method="post" action="@Ui.To(req, "/Staff/SubmitPlan", ("d", dkey))" asp-antiforgery="true" data-ro="@(ro ? "1" : "0")">
     @Ui.ReturnField(req)
@@ -128,10 +130,7 @@
         <input type="hidden" name="leaveTo" value="@(f.Leave?.To)">
         <div class="pick2 eq" id="tripWrap" style="margin-top:10px" hidden="@(!isTrip)">
             <div><label class="f" for="pProvince" style="margin-top:0">Tỉnh / thành công tác</label>@Ui.Select("province", Fmt.Provinces.Select(x => (x, x)), f.Province, "Chọn tỉnh / thành…", id: "pProvince", extraAttrs: dis)</div>
-            <div><label class="f" for="pCustomer" style="margin-top:0">Khách hàng</label><input class="in" id="pCustomer" name="customer" list="customerList" maxlength="200" value="@f.Customer" disabled="@ro"><datalist id="customerList">@foreach (var c in customers)
-                    {
-                        <option value="@c"></option>
-                    }</datalist></div>
+            <div><label class="f" for="pCustomer" style="margin-top:0">Khách hàng</label>@Ui.Select("customer", customers.Select(x => (x, x)), f.Customer, "Chọn khách hàng…", id: "pCustomer", extraAttrs: (dis is null ? "" : dis + " ") + "data-combo")</div>
         </div>
     </section>
     <section class="card sec">

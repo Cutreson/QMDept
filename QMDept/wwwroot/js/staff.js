@@ -238,7 +238,7 @@
       if (!status) return stop('Chọn trạng thái làm việc', '#pStatus');
       if (isLeave(status) && (!leave || leave.type !== LEAVE_TYPE[status])) { stop('Chọn thời gian nghỉ'); openLeave(status); return; }
       if (isTrip(status) && !dr.province) return stop('Chọn tỉnh / thành công tác', '#pProvince');
-      if (isTrip(status) && !dr.customer.trim()) return stop('Nhập khách hàng', '#pCustomer');
+      if (isTrip(status) && !dr.customer.trim()) return stop('Chọn khách hàng', '#pCustomer');
       if (!dr.meal) return stop('Chọn báo cơm', '#pMeal');
       if (!picks().some(x => x.checked) && !(leave && leave.hours >= 8)) return stop('Chọn ít nhất 1 công việc');
       if (SUPPORT_SCOPES.includes(dr.support) && !dr.supportText.trim()) return stop('Nhập lý do xin người hỗ trợ', '#pSupportText');
