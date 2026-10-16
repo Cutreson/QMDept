@@ -61,7 +61,7 @@
         <div class="me" id="me">
             @if (chrome is not null)
             {
-                <div class="acc"><b>@chrome.Account.Name @Ui.LevelPill(chrome.Account)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
+                <div class="acc"><b>@chrome.Account.Name @Ui.LevelPill(chrome.Account, false)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
                 @Ui.Av(chrome.Account.Name, chrome.Account.Role == Role.Manager)
                 <a class="btn btn-sm" href="/Settings?as=me" title="Cài đặt thông báo" aria-label="Cài đặt">⚙</a>
                 <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>

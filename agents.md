@@ -152,3 +152,8 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
   Không đặt field nào khác tên `d` trong form POST.
 - Thực thể trong `Dept` là chỉ đọc (AsNoTracking); ghi qua `AppDbContext`.
 - Đổi entity ⇒ tạo migration mới; không sửa migration đã áp lên DB thật.
+
+23. **Định dạng ngày & cách gọi người** (yêu cầu 2026-10-16): mọi ngày hiển thị cho người dùng đều **dd/MM/yyyy** (`Fmt.Dmy`; `Fmt.Dm` / `Fmt.Short` / `Fmt.DayLabel` cũng ra đủ năm;
+    ô chọn ngày dùng `Ui.DateInput` — ô chữ dd/MM/yyyy + nút lịch, **không dùng `<input type=date>`** vì trình duyệt tự đổi theo ngôn ngữ máy). Server đọc ngày nhập bằng
+    `Fmt.ParseInput` (dd/MM/yyyy hoặc yyyy-MM-dd). Khóa ISO `yyyy-MM-dd` chỉ dùng trong URL / field ẩn. Danh sách gồm cả Leader nhóm và NV gọi là **"nhân sự"**
+    (không gọi "nhân viên", vì Leader không phải nhân viên) và Leader nhóm hiện pill **"Leader"** thay cho cấp bậc Tech (`Ui.LevelPill`).

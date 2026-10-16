@@ -355,3 +355,25 @@
   enhanceSearch(document);
   document.addEventListener('qm:sheet-open', e => enhanceSearch(e.target));
 })();
+
+// ---------- ô nhập ngày dd/MM/yyyy (Ui.DateInput) ----------
+// Luôn hiển thị dd/MM/yyyy (không phụ thuộc ngôn ngữ trình duyệt): ô chữ tự chèn dấu "/", nút lịch mở bộ chọn ngày gốc rồi ghi lại theo dd/MM/yyyy.
+(function () {
+  function mask(el) {
+    const v = el.value.replace(/\D/g, '').slice(0, 8);
+    el.value = v.length > 4 ? v.slice(0, 2) + '/' + v.slice(2, 4) + '/' + v.slice(4) : v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v;
+  }
+  document.addEventListener('input', e => { const t = e.target; if (t.matches && t.matches('input[data-date]') && !(e.inputType || '').startsWith('delete')) mask(t); });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-date-pick]'); if (!b) return;
+    const wrap = b.closest('.dateinp'), txt = wrap.querySelector('input[data-date]'), nat = wrap.querySelector('.dp-native');
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(txt.value); nat.value = m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+    if (nat.showPicker) { try { nat.showPicker(); return; } catch (err) { /* rơi xuống focus */ } }
+    nat.focus(); nat.click();
+  });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!(t.matches && t.matches('.dp-native')) || !t.value) return;
+    const [y, mo, d] = t.value.split('-'); const txt = t.closest('.dateinp').querySelector('input[data-date]');
+    txt.value = `${d}/${mo}/${y}`; txt.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();

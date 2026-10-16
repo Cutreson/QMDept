@@ -5,6 +5,6 @@
 }
 <div class="daybar">
     <a class="icon-btn" href="@Ui.Here(req, ("w", Fmt.Key(m.AddDays(-7))))" aria-label="Tuần trước">‹</a>
-    <span class="date">@Fmt.Dm(m) – @Fmt.Dmy(m.AddDays(6))</span>
+    <span class="date">@Fmt.Dmy(m) – @Fmt.Dmy(m.AddDays(6))</span>
     <a class="icon-btn" href="@Ui.Here(req, ("w", Fmt.Key(m.AddDays(7))))" aria-label="Tuần sau">›</a>
 </div>

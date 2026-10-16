@@ -11,7 +11,7 @@ namespace QMDept.Services;
 ///   Quản trị dùng giao diện TP (đủ quyền TP) + tab "Tài khoản" (ScopeResolver.UiRoleOf).
 /// - Cấp trên có combobox "Xem màn hình" để chọn bất kỳ cấp dưới nào (Quản trị: TP + Leader + NV; TP: Leader + NV;
 ///   Leader: NV trong nhóm) → thấy đúng các màn hình của người đó, CHỈ XEM (server chặn mọi POST — AppController).
-/// - Lựa chọn "Tất cả nhân viên" (AllStaff) = lịch tháng cả nhóm (nvMonth all mode) + form giao thêm việc như artifact.
+/// - Lựa chọn "Tất cả nhân sự" (AllStaff) = lịch tháng cả nhóm (nvMonth all mode) + form giao thêm việc như artifact.
 /// Lựa chọn được nhớ trong cookie qm_view (?as=&lt;id&gt; | ?as=all | ?as=me).
 /// </summary>
 public sealed class ViewScope
@@ -24,7 +24,7 @@ public sealed class ViewScope
     /// <summary>Người đang được xem (chính mình, hoặc cấp dưới được chọn). Khi AllStaff: NV đầu tiên của Pool (có thể null).</summary>
     public Person? Me { get; set; }
     public int? MeId => Me?.Id;
-    /// <summary>Đang xem lịch tháng cả nhóm ("Tất cả nhân viên").</summary>
+    /// <summary>Đang xem lịch tháng cả nhóm ("Tất cả nhân sự").</summary>
     public bool AllStaff { get; set; }
     /// <summary>Ngày đang chọn (?d=), mặc định hôm nay theo giờ VN.</summary>
     public DateOnly Date { get; set; }

@@ -8,7 +8,7 @@ namespace QMDept.Controllers;
 
 /// <summary>
 /// Giao diện Nhân viên — Kế hoạch tháng (nvMonth, teamDayList, calAssignForm) và Thông tin dự án (nvProjects, projectDetail).
-/// Leader/TP xem các trang này ở chế độ chỉ xem; riêng chế độ "Tất cả nhân viên" có form Giao thêm việc (AssignTask).
+/// Leader/TP xem các trang này ở chế độ chỉ xem; riêng chế độ "Tất cả nhân sự" có form Giao thêm việc (AssignTask).
 /// </summary>
 public partial class StaffController
 {

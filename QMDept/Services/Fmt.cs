@@ -19,6 +19,9 @@ public static class Fmt
     public static string Key(DateOnly d) => d.ToString("yyyy-MM-dd", Inv);
     public static DateOnly? ParseKey(string? s) =>
         DateOnly.TryParseExact(s, "yyyy-MM-dd", Inv, DateTimeStyles.None, out var d) ? d : null;
+    /// <summary>Đọc ngày người dùng nhập: dd/MM/yyyy (chính) hoặc yyyy-MM-dd; sai → null.</summary>
+    public static DateOnly? ParseInput(string? s) =>
+        DateOnly.TryParseExact(s?.Trim(), new[] { "dd/MM/yyyy", "d/M/yyyy", "yyyy-MM-dd" }, Inv, DateTimeStyles.None, out var d) ? d : null;
 
     public static int Wday(DateOnly d) => (int)d.DayOfWeek;                        // 0 = Chủ nhật
     public static DateOnly Monday(DateOnly d) => d.AddDays(-(((int)d.DayOfWeek + 6) % 7));
@@ -30,13 +33,13 @@ public static class Fmt
     /// <summary>Ngày làm việc liền trước (bỏ qua Chủ nhật) — prevWD.</summary>
     public static DateOnly PrevWorkDay(DateOnly d) { var p = d.AddDays(-1); if (p.DayOfWeek == DayOfWeek.Sunday) p = p.AddDays(-1); return p; }
 
-    /// <summary>dd/MM</summary>
-    public static string Dm(DateOnly? d) => d is null ? "" : d.Value.ToString("dd/MM", Inv);
+    /// <summary>Mọi ngày hiển thị cho người dùng đều dd/MM/yyyy (yêu cầu 2026-10-16) — Dm giữ lại làm tên cũ của Dmy.</summary>
+    public static string Dm(DateOnly? d) => Dmy(d);
     /// <summary>dd/MM/yyyy</summary>
     public static string Dmy(DateOnly? d) => d is null ? "" : d.Value.ToString("dd/MM/yyyy", Inv);
     /// <summary>"Thứ 2, 13/10/2026"</summary>
     public static string DayLabel(DateOnly d) => $"{WD[Wday(d)]}, {Dmy(d)}";
-    /// <summary>"T2 13/10"</summary>
+    /// <summary>"T2 13/10/2026"</summary>
     public static string Short(DateOnly d) => $"{WDS[Wday(d)]} {Dm(d)}";
 
     /// <summary>num(): số làm tròn 2 chữ số, dấu phẩy thập phân.</summary>

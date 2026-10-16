@@ -4,7 +4,7 @@ using QMDept.Services;
 
 namespace QMDept.ViewModels;
 
-/// <summary>Model của /Staff/Month (nvMonth): tháng đang xem, chế độ chỉ xem / "Tất cả nhân viên", danh sách người (poolFor('nv')).</summary>
+/// <summary>Model của /Staff/Month (nvMonth): tháng đang xem, chế độ chỉ xem / "Tất cả nhân sự", danh sách người (poolFor('nv')).</summary>
 public sealed class StaffMonthVm
 {
     /// <summary>Ngày 1 của tháng đang xem (S.month || đầu tháng của S.date).</summary>
@@ -17,7 +17,7 @@ public sealed class StaffMonthVm
     public Person? Me { get; init; }
     /// <summary>Đề xuất lịch của chính NV trong ngày đang chọn (nvMonth, chế độ một người, đang ở màn hình của mình).</summary>
     public List<CalendarProposal> Proposals { get; init; } = [];
-    /// <summary>ppl = poolFor('nv') (chỉ dùng ở chế độ "Tất cả nhân viên").</summary>
+    /// <summary>ppl = poolFor('nv') (chỉ dùng ở chế độ "Tất cả nhân sự").</summary>
     public List<Person> People { get; init; } = [];
 
     public int Days => Fmt.DaysInMonth(MonthStart);
@@ -55,7 +55,7 @@ public static class StaffCalendar
         return isToday ? ("var(--brand)", "#fff") : ("var(--brand-soft)", "var(--brand)");
     }
 
-    /// <summary>Màu ô ngày ở chế độ "Tất cả nhân viên": không ai có việc / có việc chậm / hôm nay / còn lại.</summary>
+    /// <summary>Màu ô ngày ở chế độ "Tất cả nhân sự": không ai có việc / có việc chậm / hôm nay / còn lại.</summary>
     public static (string Bg, string Fg) TeamCellColor(int busy, bool late, bool isToday)
     {
         if (busy == 0) return ("var(--surface-2)", "var(--faint)");

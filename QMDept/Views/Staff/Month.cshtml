@@ -1,5 +1,5 @@
 @model StaffMonthVm
-@* nvMonth(): Kế hoạch tháng. Chế độ "Tất cả nhân viên" (Leader/TP, ?as=all): teamDayList + calAssignForm (Giao thêm việc). *@
+@* nvMonth(): Kế hoạch tháng. Chế độ "Tất cả nhân sự" (Leader/TP, ?as=all): teamDayList + calAssignForm (Giao thêm việc). *@
 @{
     var req = Context.Request;
     var ms = Model.MonthStart;
@@ -15,7 +15,7 @@
 }
 @if (Model.AllMode)
 {
-    @Ui.Head(0, (Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm") + " · Tất cả nhân viên", $"{ppl.Count} nhân viên")
+    @Ui.Head(0, (Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm") + " · Tất cả nhân sự", $"{ppl.Count} nhân sự")
 }
 else
 {
@@ -87,7 +87,7 @@ else
                     {
                         var n = D.TasksOn(sel, p.Id).Count(D.OkCal);
                         var leave = D.OnLeave(sel, p.Id);
-                        <div class="trow"><input type="checkbox" id="calW_@p.Id" name="emp" value="@p.Id"><label for="calW_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LevelPill(p)</div><div class="s">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
+                        <div class="trow"><input type="checkbox" id="calW_@p.Id" name="emp" value="@p.Id"><label for="calW_@p.Id" style="cursor:pointer;min-width:0"><div class="t">@p.Name @Ui.LevelPill(p, false)</div><div class="s">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@n việc trong ngày</div></label>
                             <span class="pill @(p.Role == Role.Leader || leadDefault == p.Id ? "p-mgr" : "p-info")" data-role-tag="@p.Id"@(p.Role == Role.Leader ? " data-group-leader" : "")>@(p.Role == Role.Leader ? "Leader" : leadDefault == p.Id ? "Leader dự án" : "Hỗ trợ")</span></div>
                     }
                 </div>

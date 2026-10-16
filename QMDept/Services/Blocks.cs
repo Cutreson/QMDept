@@ -128,7 +128,7 @@ public static class Blocks
         {
             var inW = it.Where(i => i.EndDate is DateOnly e && e >= m && e <= m.AddDays(6)).ToList();
             var dn = inW.Count(i => i.Status == TaskState.Done);
-            data.Add(($"Tuần {k + 1}", $"{Fmt.Dm(m < ps ? ps : m)}–{Fmt.Dm(m.AddDays(6) > pe ? pe : m.AddDays(6))}",
+            data.Add(($"Tuần {k + 1}", $"{Fmt.Dmy(m < ps ? ps : m)}<br>{Fmt.Dmy(m.AddDays(6) > pe ? pe : m.AddDays(6))}",
                 inW.Count > 0 ? (int)Math.Round(dn * 100.0 / inW.Count, MidpointRounding.AwayFromZero) : null,
                 today >= m && today <= m.AddDays(6), m.AddDays(6) < today));
         }

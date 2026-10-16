@@ -69,11 +69,11 @@ public static class PlanningManage
     /// <summary>Vai trò tài khoản theo thứ tự của TITLE.</summary>
     public static readonly Role[] Roles = [Role.Staff, Role.Leader, Role.Manager];
 
-    /// <summary>Giá trị cho &lt;input type="date"&gt; (null = bỏ thuộc tính).</summary>
-    public static string? Iso(DateOnly? d) => d is DateOnly x ? Fmt.Key(x) : null;
+    /// <summary>Giá trị cho ô nhập ngày (dd/MM/yyyy; null = rỗng).</summary>
+    public static string? Iso(DateOnly? d) => d is DateOnly x ? Fmt.Dmy(x) : null;
 
-    /// <summary>Đọc ngày "yyyy-MM-dd" từ form; rỗng / sai → null.</summary>
-    public static DateOnly? Date(string? s) => string.IsNullOrWhiteSpace(s) ? null : Fmt.ParseKey(s.Trim());
+    /// <summary>Đọc ngày dd/MM/yyyy (hoặc yyyy-MM-dd) từ form; rỗng / sai → null.</summary>
+    public static DateOnly? Date(string? s) => string.IsNullOrWhiteSpace(s) ? null : Fmt.ParseInput(s);
 
     /// <summary>Cắt khoảng trắng; rỗng → null; dài quá → BizException.</summary>
     public static string? Text(string? s, int max, string label)

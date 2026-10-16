@@ -28,7 +28,7 @@
         <div class="trow">
             @Ui.Av(p.Name, p.Role == Role.Manager)
             <div>
-                <div class="t">@p.Name <span class="mono note">@p.Code</span> @Ui.LevelPill(p) <span class="pill @(p.IsDeleted ? "p-idle" : "p-ok")">@(p.IsDeleted ? "Đã xóa" : "Đang hoạt động")</span></div>
+                <div class="t">@p.Name <span class="mono note">@p.Code</span> @Ui.LevelPill(p, false) <span class="pill @(p.IsDeleted ? "p-idle" : "p-ok")">@(p.IsDeleted ? "Đã xóa" : "Đang hoạt động")</span></div>
                 <div class="s">@Labels.Title(p.Role)@(p.Role == Role.Staff ? " · " + D.GroupText(p) : "")@(!p.IsDeleted && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "")</div>
             </div>
             <span class="tm">

@@ -38,8 +38,11 @@ public static class Ui
     /// <summary>pill(map, k)</summary>
     public static IHtmlContent Pill(Enum e) => new HtmlString(Labels.PillHtml(e));
     public static IHtmlContent Pill(string text, string cls) => new HtmlString($"<span class=\"pill {cls}\">{E(text)}</span>");
-    /// <summary>lvPill(p): pill cấp bậc (Tech 1/2/3) hoặc rỗng.</summary>
-    public static IHtmlContent LevelPill(Person? p) => p?.Level is Level l ? Pill(l) : HtmlString.Empty;
+    /// <summary>lvPill(p): pill cấp bậc (Tech 1/2/3); Leader nhóm hiện pill "Leader" thay cho cấp bậc (leader = true; yêu cầu 2026-10-16); không có thì rỗng.</summary>
+    public static IHtmlContent LevelPill(Person? p, bool leader = true) =>
+        p is null ? HtmlString.Empty
+        : p.Role == Role.Leader ? (leader ? Pill("Leader", "p-mgr") : HtmlString.Empty)
+        : p.Level is Level l ? Pill(l) : HtmlString.Empty;
     /// <summary>bar(pct, color)</summary>
     public static IHtmlContent Bar(int pct, string? color = null) => new HtmlString(
         $"<div class=\"barrow\"><div class=\"bar\"><span style=\"width:{Math.Clamp(pct, 0, 100)}%;--bc:{color ?? "var(--ok)"}\"></span></div><span class=\"mono\">{pct}%</span></div>");
@@ -86,6 +89,14 @@ public static class Ui
         foreach (var x in end ? Fmt.EndTimes : Fmt.StartTimes)
             sb.Append($"<option value=\"{x}\"{(x == value ? " selected" : "")}>{x}</option>");
         return new HtmlString(sb.Append("</select>").ToString());
+    }
+
+    /// <summary>Ô nhập ngày dd/MM/yyyy (chữ, tự chèn dấu /) + nút lịch; luôn hiển thị theo định dạng này, không phụ thuộc ngôn ngữ trình duyệt (site.js: input[data-date]).</summary>
+    public static IHtmlContent DateInput(string name, DateOnly? value, string? id = null)
+    {
+        var i = E(id ?? name);
+        return new HtmlString($"<span class=\"dateinp\"><input class=\"in mono\" type=\"text\" inputmode=\"numeric\" maxlength=\"10\" autocomplete=\"off\" data-date name=\"{E(name)}\" id=\"{i}\" value=\"{E(Fmt.Dmy(value))}\">"
+            + $"<button type=\"button\" class=\"dp\" data-date-pick aria-label=\"Chọn ngày\">📅</button><input type=\"date\" class=\"dp-native\" tabindex=\"-1\" aria-hidden=\"true\"></span>");
     }
 
     /// <summary>select từ danh sách (value, label); placeholder != null → thêm option rỗng disabled (selectField).</summary>

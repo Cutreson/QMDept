@@ -433,3 +433,9 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .combo-item.on,.combo-item:hover{background:var(--brand-soft);color:var(--brand)}
 .combo-item.sel{font-weight:700}
 .combo-empty{padding:10px 12px;color:var(--faint);font-size:13px}
+
+/* Ô nhập ngày dd/MM/yyyy (Ui.DateInput) */
+.dateinp{position:relative;display:flex;align-items:center}
+.dateinp .in{padding-right:40px}
+.dateinp .dp{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:17px;line-height:1;padding:6px;cursor:pointer}
+.dateinp .dp-native{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
