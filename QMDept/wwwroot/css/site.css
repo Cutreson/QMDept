@@ -292,8 +292,8 @@ details.prow-d[open] .chev{transform:rotate(90deg)}
 .pchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
 
 /* hộp thoại kiểu bảng trượt */
-.dlg{position:fixed;inset:0;background:rgb(10 14 26 / .5);display:flex;align-items:flex-end;justify-content:center;z-index:50}
-.dlg>.card{width:100%;max-width:620px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.dlg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgb(10 14 26 / .5);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.dlg>.card{width:100%;max-width:620px;max-height:min(88vh,calc(var(--vvh,100vh) - 12px));overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
 .dlg h3{margin:0 0 4px;font-size:17px}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .choice{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:9px 10px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
@@ -439,3 +439,7 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .dateinp .in{padding-right:40px}
 .dateinp .dp{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:17px;line-height:1;padding:6px;cursor:pointer}
 .dateinp .dp-native{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+
+/* Bảng trượt trên điện thoại: danh sách của ô chọn mở TRONG bảng (đẩy bảng nở lên trên) thay vì thả xuống dưới bàn phím (yêu cầu 2026-10-16) */
+.dlg .combo-list{position:static;margin-top:4px;max-height:min(260px,calc(var(--vvh,100vh) * .45))}
+.dlg>.card{overscroll-behavior:contain}

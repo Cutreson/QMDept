@@ -244,3 +244,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 - (2026-10-16) Đồng bộ ngày dd/MM/yyyy toàn web: `Fmt.Dm` = đủ năm, `Fmt.ParseInput`, `Ui.DateInput` thay mọi `<input type=date>` (Assign, Projects), biểu đồ tuần dự án 2 dòng, thanh tuần `dd/MM/yyyy – dd/MM/yyyy`.
   Đã quét ~1.000 trang (NV 11/27, Leader 9/10, TP 8, Admin 5) không còn ngày dd/MM hoặc yyyy-MM-dd hiển thị. Lịch nhóm: "Tất cả nhân sự", "N nhân sự", Leader có pill "Leader" (`Ui.LevelPill(p, leader)`).
+- (2026-10-16) Bàn phím điện thoại che danh sách dự án trong bảng trượt: bảng bám visualViewport + danh sách ô chọn nằm trong bảng (site.js/site.css). Kiểm tra bằng mô phỏng --vvh=420px.

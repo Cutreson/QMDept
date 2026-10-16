@@ -59,6 +59,21 @@
     return form;
   }
   window.qmOpenSheet = openSheet;
+  // Bàn phím ảo: bảng trượt luôn nằm gọn trong phần nhìn thấy (visualViewport) — bảng nở lên phía trên bàn phím, không bị che (yêu cầu 2026-10-16).
+  const vv = window.visualViewport;
+  const fitViewport = () => {
+    const r = document.documentElement.style;
+    if (vv) { r.setProperty('--vvh', vv.height + 'px'); r.setProperty('--vvt', vv.offsetTop + 'px'); }
+    window.qmRevealOpen && window.qmRevealOpen();
+  };
+  if (vv) { vv.addEventListener('resize', fitViewport); vv.addEventListener('scroll', fitViewport); fitViewport(); }
+  // Cuộn để phần đáy của el (danh sách đang mở) nằm trên bàn phím nhưng không đẩy ô nhập khỏi màn hình.
+  window.qmReveal = (el, anchor) => {
+    const top0 = vv ? vv.offsetTop : 0, bottom = top0 + (vv ? vv.height : innerHeight);
+    let over = el.getBoundingClientRect().bottom - bottom + 8; if (over <= 0) return;
+    over = Math.min(over, Math.max(anchor.getBoundingClientRect().top - top0 - 8, 0));
+    const sc = el.closest('.dlg>.card'); if (sc) sc.scrollTop += over; else window.scrollBy(0, over);
+  };
   if (dlg) {
     dlg.addEventListener('click', e => { if (e.target === dlg) closeSheet(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
@@ -311,8 +326,9 @@
         : '<div class="combo-empty">Không có mục phù hợp</div>';
       active = -1;
     };
-    const open = q => { render(q); list.hidden = false; input.setAttribute('aria-expanded', 'true'); };
-    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); sync(); };
+    const reveal = () => { if (!list.hidden && window.qmReveal) window.qmReveal(list, input); };
+    const open = q => { render(q); list.hidden = false; input.setAttribute('aria-expanded', 'true'); window.qmRevealOpen = reveal; requestAnimationFrame(reveal); setTimeout(reveal, 350); };
+    const close = () => { if (window.qmRevealOpen === reveal) window.qmRevealOpen = null; list.hidden = true; input.setAttribute('aria-expanded', 'false'); sync(); };
     const choose = o => {
       sel.value = o.value; list.hidden = true; input.setAttribute('aria-expanded', 'false');
       sel.dispatchEvent(new Event('change', { bubbles: true }));

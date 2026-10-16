@@ -204,3 +204,7 @@ Theo yêu cầu chủ dự án (2026-10-13) giao diện phải dùng tốt cả 
   (ngày luôn lấy từ server qua `?d=` / dữ liệu trang); chỉ dùng `new Date()` cho việc thuần hiển thị (vd giờ của thông báo thử).
 - Thông báo người dùng bằng tiếng Việt, giữ nguyên câu chữ của artifact khi có.
 - Không thêm thư viện JS/CSS ngoài. Không dùng Bootstrap trong view (file lib/ của template còn để nguyên, không tham chiếu).
+
+### Bảng trượt & bàn phím ảo trên điện thoại (2026-10-16)
+`site.js` đặt biến CSS `--vvh` / `--vvt` theo `visualViewport` → `.dlg` luôn nằm gọn phần nhìn thấy (trên bàn phím), thẻ bảng cao tối đa `--vvh - 12px` và nở lên phía trên.
+Trong bảng, danh sách của ô chọn (`.combo-list`) hiện **trong dòng chảy** (không thả đè xuống dưới); ngoài bảng thì cuộn trang (`qmReveal`) để danh sách không bị bàn phím che.
