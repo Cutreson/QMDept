@@ -135,15 +135,15 @@
         {
             <button type="button" class="link" data-sheet="tplAddOut" style="margin-top:10px">＋ Thêm công việc ngoài kế hoạch</button>
         }
+        @if (!lead)
+        {
         @* Nhân sự hỗ trợ — cùng thiết kế với "Đề xuất công việc" ở lịch tháng: ô chọn người trong nhóm / phòng ban / nhóm khác (số lượng) → thẻ ✕;
            lý do bên dưới. JSON lựa chọn nằm ở #pSupportPick; phạm vi (#pSupport) do staff.js / máy chủ suy ra. *@
-        @{
             var supGid = me.Role == Role.Leader ? me.Id : me.LeaderId;   // Leader: chỉ định được NV trong nhóm của chính mình
             var supCands = supGid is int sgl
                 ? D.Active.Where(x => x.Id != me.Id && ((x.Role == Role.Staff && x.LeaderId == sgl) || (x.Id == sgl && me.Role != Role.Leader))).OrderBy(x => x.Role).ThenBy(x => x.Name, Fmt.ViCompare).ToList()
                 : new List<Person>();
             var supGroups = D.Leaders().Where(l => l.Id != supGid && l.Id != me.Id).ToList();
-        }
         <label class="f" for="pSupportPicker" style="margin-top:14px">Nhân sự hỗ trợ</label>
         <input type="hidden" id="pSupport" name="support" value="@f.Support">
         <input type="hidden" id="pSupportPick" name="supportPick" value="@f.SupportPick">
@@ -187,6 +187,15 @@
         }
         <div id="supportWrap" hidden="@(f.Support == SupportScope.None)"><label class="f" for="pSupportText">Lý do xin người hỗ trợ</label><textarea class="in" id="pSupportText" name="supportText" maxlength="1500" disabled="@ro">@f.SupportText</textarea></div>
         <label class="f" for="pNote">Ghi chú (nếu có)</label><textarea class="in" id="pNote" name="note" maxlength="2000" disabled="@ro">@f.Note</textarea>
+        }
+        else
+        {
+            @* staff.js vẫn đọc các ô này → giữ ô ẩn (Leader không có hỗ trợ / ghi chú — yêu cầu 2026-10-16) *@
+            <input type="hidden" id="pSupport" name="support" value="None">
+            <input type="hidden" id="pSupportPick" name="supportPick" value="">
+            <textarea id="pNote" name="note" hidden></textarea>
+            <div id="supportWrap" hidden><textarea id="pSupportText" name="supportText" hidden></textarea></div>
+        }
     </section>
     <section class="card sec">
         <h2>2. Trạng thái &amp; báo cơm</h2>
