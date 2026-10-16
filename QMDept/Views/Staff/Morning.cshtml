@@ -11,6 +11,7 @@
     var plan = Model.Plan;
     // Leader (chế độ cá nhân ?as=mine): trang này chỉ khai báo "Trạng thái làm việc trong ngày" + báo cơm (yêu cầu 2026-10-16), không có việc / hỗ trợ / báo cáo cuối ngày
     var lead = me is not null && me.Role == Role.Leader;
+    if (lead) ViewData["Title"] = "Trạng thái làm việc";
 }
 @section Scripts {
     <script src="~/js/staff.js" asp-append-version="true"></script>
