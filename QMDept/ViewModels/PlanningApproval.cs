@@ -27,7 +27,7 @@ public sealed class PlanningApprovalsVm
     /// <summary>ldApprove(): tính các danh sách như artifact.</summary>
     public static PlanningApprovalsVm Build(Dept d, DateOnly date, string? ap, int? pj)
     {
-        var all = d.Plans.Where(p => p.Date == date && d.InScope(p.EmployeeId)).ToList();
+        var all = d.Plans.Where(p => p.Date == date && d.IsTeamStaff(p.EmployeeId)).ToList();
         var filt = all.Where(p => pj is null || Dept.TaskIdsOf(p).Any(id => d.Task(id)?.ProjectId == pj)).ToList();
         var pend = filt.Where(p => Dept.PlanSt(p) == PlanState.Pending).ToList();
         var mode = ap == "pending" ? "pending" : "all";
@@ -70,7 +70,7 @@ public sealed class PlanningReportsVm
     public static PlanningReportsVm Build(Dept d, DateOnly date)
     {
         var carries = d.CarriesFrom(date).OrderBy(t => t.CarryOk ? 1 : 0).ThenBy(t => d.PName(t.EmployeeId), Fmt.ViCompare).ToList();
-        var reports = d.Reports.Where(r => r.Date == date && d.InScope(r.EmployeeId))
+        var reports = d.Reports.Where(r => r.Date == date && d.IsTeamStaff(r.EmployeeId))
             .OrderBy(r => Ord(Dept.EodSt(r))).ThenBy(r => d.PName(r.EmployeeId), Fmt.ViCompare).ToList();
         var sheets = new Dictionary<int, WorkTask>();
         foreach (var n in carries.Where(t => !t.CarryOk)) sheets.TryAdd(n.Id, n);

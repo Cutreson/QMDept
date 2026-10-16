@@ -5,9 +5,9 @@
     var d = Scope.Date;
     var k = D.Kpis(d);
     var xs = D.ExtrasOn(d);
-    var pend = D.Plans.Count(p => p.Date == d && Dept.PlanSt(p) == PlanState.Pending && D.InScope(p.EmployeeId));
+    var pend = D.Plans.Count(p => p.Date == d && Dept.PlanSt(p) == PlanState.Pending && D.IsTeamStaff(p.EmployeeId));
     var xp = xs.Count(x => x.Status == ExtraStatus.Pending);
-    var rp = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.InScope(r.EmployeeId));
+    var rp = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.IsTeamStaff(r.EmployeeId));
 }
 @Ui.Head(1, "Tổng quan dự án")
 <partial name="_DayBar" />

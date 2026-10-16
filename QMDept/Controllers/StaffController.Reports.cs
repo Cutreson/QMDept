@@ -124,13 +124,14 @@ public partial class StaffController
         var pick = StaffSupportPick.Parse(input.SupportPick);
         var reason = StaffReports.Clip(input.SupportText, 1500);
         if (pick is null) return (SupportScope.None, null, null);
+        var gid = me.Role == Role.Leader ? me.Id : me.LeaderId;   // Leader: nhóm của chính mình
         var emp = pick.Emp.Distinct().Where(x => x != me.Id).ToList();
         var qd = pick.Qd.Where(kv => kv.Value > 0 && int.TryParse(kv.Key, out var k) && k >= 0 && k < Fmt.SupportDepartments.Length).ToDictionary(kv => kv.Key, kv => Math.Min(kv.Value, 50));
-        var leaders = await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted && p.Id != me.LeaderId).ToListAsync();
+        var leaders = await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted && p.Id != gid && p.Id != me.Id).ToListAsync();
         var qg = pick.Qg.Where(kv => kv.Value > 0 && int.TryParse(kv.Key, out var k) && leaders.Any(l => l.Id == k)).ToDictionary(kv => kv.Key, kv => Math.Min(kv.Value, 50));
         if (emp.Count == 0 && qd.Count == 0 && qg.Count == 0) return (SupportScope.None, null, null);
         var staff = await Db.People.AsNoTracking().Where(p => emp.Contains(p.Id) && !p.IsDeleted
-            && ((p.Role == Role.Staff && p.LeaderId == me.LeaderId) || p.Id == me.LeaderId)).ToListAsync();
+            && ((p.Role == Role.Staff && p.LeaderId == gid) || (p.Id == me.LeaderId && me.Role != Role.Leader))).ToListAsync();
         if (staff.Count != emp.Count) throw new BizException("Chỉ được chỉ định người hỗ trợ trong nhóm của mình");
         if (reason is null) throw new BizException("Nhập lý do xin người hỗ trợ");
         var parts = new List<string>();
@@ -223,7 +224,7 @@ public partial class StaffController
                     if (!(cur.Date == nd && cur.Start == ns && cur.End == ne && cur.Title == nt))
                     {
                         cur.Date = nd; cur.Start = ns; cur.End = ne; cur.Title = nt;
-                        cur.CarryOk = false; cur.EditedBy = null;
+                        cur.CarryOk = me.Role == Role.Leader; cur.EditedBy = null;   // Leader tự duyệt việc chuyển tiếp của mình (Trưởng phòng duyệt cả báo cáo)
                         await Flow.SyncCarryToPlanAsync(cur);
                         proposed = true;
                     }
@@ -234,7 +235,7 @@ public partial class StaffController
                     var n = new WorkTask
                     {
                         Date = nd, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = nt,
-                        Start = ns, End = ne, Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = false,
+                        Start = ns, End = ne, Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = me.Role == Role.Leader,
                         CarriedFromId = t.Id, FromDate = t.Date, Selected = false, CreatedAt = VnTime.UtcNow,
                     };
                     Db.WorkTasks.Add(n);
@@ -268,7 +269,7 @@ public partial class StaffController
             await tx.CommitAsync();
         }
         // Báo cáo cuối ngày đã được duyệt thì Leader không nhận thông báo gửi báo cáo nữa → báo riêng đề xuất chuyển tiếp.
-        if (proposed && await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == t.EmployeeId && r.LeaderDecision == Decision.Ok))
+        if (proposed && me.Role != Role.Leader && await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == t.EmployeeId && r.LeaderDecision == Decision.Ok))
             await Notify.CarryProposedAsync(t.EmployeeId, t.Date, nt, nd);
     }, "Đã cập nhật");
 
@@ -303,7 +304,7 @@ public partial class StaffController
         StaffReports.Clip(input.Desc, 2000);
         await Flow.CreateExtraAsync(Date, Scope.Me!.Id, input.ProjectId, input.Title ?? "", input.Desc,
             string.IsNullOrEmpty(input.Start) ? null : input.Start, input.End,
-            byLeader: false, Scope.ActorName, Role.Staff);
+            byLeader: Scope.Me!.Role == Role.Leader, Scope.ActorName, Scope.Me!.Role == Role.Leader ? Role.Leader : Role.Staff);   // Leader: phát sinh của mình tự được duyệt
     }, "Đã gửi đề xuất phát sinh");
 
     /// <summary>submit eodForm: chặn nếu còn việc chưa xong chưa có kế hoạch tiếp; gửi lại = Leader duyệt lại.</summary>

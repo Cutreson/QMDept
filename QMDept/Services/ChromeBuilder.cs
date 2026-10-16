@@ -101,17 +101,19 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         // Thanh tab: giao diện của người đang xem; ở lịch cả nhóm (AllStaff) → tab của chính tài khoản (kèm as=me để thoát).
         var controller = ctx.GetRouteValue("controller")?.ToString();
         var action = ctx.GetRouteValue("action")?.ToString();
-        var tabRole = scope.AllStaff || scope.OwnCalendar ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
+        var tabRole = scope.AllStaff ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         // Leader xem nhân viên: chỉ có lịch tháng của người đó (xem AppController).
         if (scope.IsViewingOther && acc.Role == Role.Leader) defs = defs.Where(t => t.Id == "month");
+        // Leader ở "Lịch của tôi": lịch tháng + báo cáo đầu ngày + báo cáo cuối ngày của chính mình (kiểu nhân viên; Trưởng phòng duyệt).
+        if (scope.OwnCalendar) defs = defs.Where(t => t.Id is "month" or "morning" or "evening");
         var tabs = defs.Any()
-            ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff || scope.OwnCalendar ? "me" : null),
-                (!(scope.AllStaff || scope.OwnCalendar) || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+            ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, scope.AllStaff ? "me" : scope.OwnCalendar ? "mine" : null),
+                (!scope.AllStaff || acc.Role == Role.Staff) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
-                scope.AllStaff || scope.OwnCalendar ? 0 : Badge(t.Id))).ToList()
+                scope.AllStaff ? 0 : Badge(t.Id))).ToList()
             : [];
 
         // Combobox "Xem màn hình": chỉ cấp dưới theo nhóm vai trò. "Màn hình của tôi" (HomeHref) và lịch cả nhóm (TeamHref) là hai nút riêng cạnh combobox.
@@ -157,7 +159,10 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         int Badge(string id)
         {
             if (scope.Role == Role.Leader && id == "planning") return d.LeaderPending(date) + (scope.MeId is int lid ? d.ProposalsFor(lid).Count : 0);
-            if (scope.Role == Role.Manager && id == "approvals") return d.Plans.Count(p => p.Date == date && Dept.PlanSt(p) == PlanState.PendingManager);
+            if (scope.Role == Role.Manager && id == "approvals")
+                return d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
+                    + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending)
+                    + d.Reports.Count(r => r.Date == date && d.P(r.EmployeeId) is { Role: Role.Leader } && Dept.EodSt(r) == EodState.Pending);
             if (id == "overtime") return scope.Role == Role.Staff ? 0 : d.OtPending(date).Count(x => x.Status == OtStatus.Pending);
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
                 return d.ExtrasOn(date).Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);

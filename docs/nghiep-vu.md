@@ -378,3 +378,9 @@ Form kế hoạch đầu ngày: **1. Nội dung công việc** (việc trong l�
 NV chỉ chọn trạng thái (kể cả "Công tác trong ngày / dài ngày") và báo cơm; **Địa điểm công tác + Khách hàng không phải chọn nữa** — tự lấy từ
 `Project.Location` / `Project.Factory` của các dự án có việc đang tích (staff.js đổ vào #tripPlace / #tripCustomer; `SubmitPlan` ghi lại vào
 `TripProvince` / `TripCustomer` bằng `StaffReports.TripPlace`, nhiều dự án thì nối bằng "; " / ", ").
+
+### 19d. Leader có báo cáo đầu ngày / cuối ngày như nhân viên (yêu cầu 2026-10-16)
+- Nút "Lịch & báo cáo của tôi" (header Leader) → `/Staff/Month?as=mine` + thanh tab: Kế hoạch tháng, Báo cáo đầu ngày, Báo cáo cuối ngày — dùng lại đúng các trang / form của nhân viên (StaffController), `RequireSelfStaff` cho phép Leader ở chế độ này.
+- Người duyệt là **Trưởng phòng**: tab "Phê duyệt" → "Của Leader" (`?mode=leader`): kế hoạch đầu ngày (Duyệt / Từ chối + lý do) và báo cáo cuối ngày (Duyệt / Yêu cầu bổ sung) của các Leader; có Hoàn tác. Thông báo đẩy `PlanSubmitted` / `ReportSubmitted` gửi tới Trưởng phòng.
+- Chỉ định người hỗ trợ: Leader chọn được NV trong nhóm của mình (không chọn chính mình); nhóm khác / phòng ban xin theo số lượng như NV. Việc chuyển tiếp và phát sinh của Leader tự được duyệt (không có cấp duyệt riêng).
+- Phần duyệt của Leader (kế hoạch, báo cáo, số chờ duyệt) không còn tính Leader — chỉ NV trong nhóm (`Dept.IsTeamStaff`).

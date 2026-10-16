@@ -88,13 +88,14 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         if (sel == "all" && scope.TeamPeople.Count > 0 && (acc.Role != Role.Staff || explicitSel)) allStaff = true;
         else if (int.TryParse(sel, out var vid) && vid != acc.Id) viewed = subs.Find(p => p.Id == vid);
 
-        // Leader xem lịch riêng của mình (?as=mine): chỉ trang /Staff/Month, chỉ GET, không ghi nhớ vào cookie.
-        var ownCal = !allStaff && explicitSel && sel == "mine" && acc.Role == Role.Leader && HttpMethods.IsGet(http.Request.Method)
-            && http.Request.Path.Value?.TrimEnd('/').Equals("/Staff/Month", StringComparison.OrdinalIgnoreCase) == true;
+        // Leader dùng các trang cá nhân kiểu nhân viên của chính mình (?as=mine: lịch tháng, báo cáo đầu ngày, báo cáo cuối ngày) — chỉ ở /Staff/*.
+        // Ghi nhớ vào cookie để các POST của form (không có ?as=) vẫn chạy đúng; sang trang Leader thì tự về "me".
+        var ownCal = !allStaff && sel == "mine" && acc.Role == Role.Leader
+            && (http.Request.Path.Value ?? "").StartsWith("/Staff/", StringComparison.OrdinalIgnoreCase);
 
         if (explicitSel || (sel == "me" && http.Request.Cookies[ViewCookie] is { } c && c != "me"))
         {
-            var val = allStaff ? "all" : viewed is not null ? viewed.Id.ToString() : "me";
+            var val = allStaff ? "all" : ownCal ? "mine" : viewed is not null ? viewed.Id.ToString() : "me";
             http.Response.Cookies.Append(ViewCookie, val, new CookieOptions { HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, Expires = DateTimeOffset.UtcNow.AddDays(30) });
         }
 

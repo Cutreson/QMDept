@@ -26,7 +26,7 @@ public sealed class ViewScope
     public int? MeId => Me?.Id;
     /// <summary>Đang xem lịch tháng cả nhóm ("Tất cả nhân sự").</summary>
     public bool AllStaff { get; set; }
-    /// <summary>Leader đang xem lịch tháng riêng của mình (nút "Lịch của tôi", ?as=mine, chỉ /Staff/Month, chỉ xem) — yêu cầu 2026-10-16.</summary>
+    /// <summary>Leader đang dùng các trang cá nhân kiểu nhân viên của chính mình (nút "Lịch của tôi", ?as=mine; /Staff/*: lịch tháng, báo cáo đầu / cuối ngày; Trưởng phòng duyệt) — yêu cầu 2026-10-16.</summary>
     public bool OwnCalendar { get; set; }
     /// <summary>Ngày đang chọn (?d=), mặc định hôm nay theo giờ VN.</summary>
     public DateOnly Date { get; set; }
@@ -41,7 +41,7 @@ public sealed class ViewScope
     /// <summary>Đang xem màn hình của một cấp dưới (không phải chính mình, không phải lịch cả nhóm).</summary>
     public bool IsViewingOther => !AllStaff && Me is not null && Me.Id != Account.Id;
     /// <summary>Chỉ xem: đang xem cấp dưới, hoặc lịch cả nhóm (ở đó chỉ form giao việc được phép ghi).</summary>
-    public bool IsReadOnly => IsViewingOther || AllStaff || OwnCalendar;
+    public bool IsReadOnly => IsViewingOther || AllStaff;
     /// <summary>Đang ở màn hình của chính mình.</summary>
     public bool IsSelf => !AllStaff && Me is not null && Me.Id == Account.Id;
     /// <summary>Tài khoản có quyền TP (Trưởng phòng, hoặc Quản trị — Quản trị bao trùm mọi chức năng TP).</summary>

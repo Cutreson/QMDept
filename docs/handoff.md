@@ -249,3 +249,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-16) Dưới mọi ô chọn dự án (thêm việc ngoài kế hoạch, báo cáo cuối ngày phát sinh, đề xuất công việc, giao việc Leader, lịch tuần, lịch nhóm) hiện dòng "Leader dự án: …" đổi theo dự án đang chọn (`Ui.ProjectLeadHint` + site.js, class `.pj-lead`).
 - (2026-10-16) Báo cáo đầu ngày: đảo thứ tự 2 mục; công tác tự điền địa điểm + khách hàng theo dự án của việc đã chọn (bỏ ô Tỉnh / Khách hàng). Đã thử gửi kế hoạch thật cho NV 11 ngày 27/10 rồi xóa day_plans thử.
 - (2026-10-16) Leader: thêm nút / thanh chọn "Lịch của tôi" (?as=mine) xem lịch tháng riêng như NV; hàng nút Xem màn hình tự xuống dòng trên điện thoại. Đã kiểm tra Leader 9/10/26.
+- (2026-10-16) Leader có báo cáo đầu ngày / cuối ngày (chế độ ?as=mine, cookie mine, /Staff/*); Trưởng phòng duyệt ở Phê duyệt → Của Leader. Đã thử trọn luồng với Leader Tân (kế hoạch → TP duyệt → cập nhật việc → báo cáo → TP duyệt) rồi xóa dữ liệu thử.

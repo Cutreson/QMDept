@@ -135,7 +135,8 @@ public abstract class AppController : Controller
     /// <summary>Ném lỗi nếu đang ở chế độ chỉ xem trang NV của người khác.</summary>
     protected void RequireSelfStaff()
     {
-        if (Scope.Role != Role.Staff || !Scope.IsSelf || Scope.Account.Role != Role.Staff)
+        // Leader dùng được trang cá nhân kiểu NV của chính mình (báo cáo đầu / cuối ngày — Trưởng phòng duyệt) khi ở chế độ ?as=mine.
+        if (Scope.Role != Role.Staff || !Scope.IsSelf || !(Scope.Account.Role == Role.Staff || (Scope.Account.Role == Role.Leader && Scope.OwnCalendar)))
             throw new BizException("Chế độ xem: không sửa được trang của nhân viên");
     }
 

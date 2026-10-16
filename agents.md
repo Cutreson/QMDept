@@ -157,5 +157,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     ô chọn ngày dùng `Ui.DateInput` — ô chữ dd/MM/yyyy + nút lịch, **không dùng `<input type=date>`** vì trình duyệt tự đổi theo ngôn ngữ máy). Server đọc ngày nhập bằng
     `Fmt.ParseInput` (dd/MM/yyyy hoặc yyyy-MM-dd). Khóa ISO `yyyy-MM-dd` chỉ dùng trong URL / field ẩn. Danh sách gồm cả Leader nhóm và NV gọi là **"nhân sự"**
     (không gọi "nhân viên", vì Leader không phải nhân viên) và Leader nhóm hiện pill **"Leader"** thay cho cấp bậc Tech (`Ui.LevelPill`).
-24. **Leader có nút "Lịch của tôi"** (yêu cầu 2026-10-16): cạnh "Màn hình của tôi" / "Lịch nhóm" (và thanh chuyển "Lịch của tôi | Lịch nhóm" trong trang lịch tháng) —
-    lịch tháng riêng của Leader, chỉ xem, `/Staff/Month?as=mine` (`ViewScope.OwnCalendar`, chỉ GET trang `/Staff/Month`, không lưu cookie; `ScopeResolver`, `ChromeBuilder.OwnHref`).
+24. **Leader có "Lịch & báo cáo của tôi"** (yêu cầu 2026-10-16): nút cạnh "Màn hình của tôi" / "Lịch nhóm" → các trang cá nhân kiểu nhân viên của Leader: lịch tháng riêng, **báo cáo đầu ngày**, **báo cáo cuối ngày**
+    (`/Staff/Month?as=mine`, `/Staff/Morning`, `/Staff/Evening`; `ViewScope.OwnCalendar` = chế độ cá nhân của Leader, ghi nhớ bằng cookie `qm_view=mine`, chỉ áp dụng ở đường dẫn `/Staff/*`; sang trang Leader tự về `me`).
+    **Người duyệt báo cáo của Leader là Trưởng phòng** (Quản trị cũng được): `Manager/Approvals?mode=leader` ("Của Leader"), quyết định ghi vào các trường `Leader*` của `DayPlan` / `DayReport` (kế hoạch xin nhóm khác / phòng ban khác ghi thêm `Manager*` = Ok); việc chuyển tiếp và phát sinh của Leader tự được duyệt; phần duyệt của Leader (`Dept.IsTeamStaff`) chỉ tính nhân viên, không tính Leader.

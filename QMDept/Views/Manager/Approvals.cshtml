@@ -9,6 +9,7 @@
 {
     (Ui.Here(req, ("mode", "plan")), "Hỗ trợ nhân sự", Model.Mode == "plan", Model.PendingManager),
     (Ui.Here(req, ("mode", "extra")), "Phát sinh", Model.Mode == "extra", 0),
+    (Ui.Here(req, ("mode", "leader")), "Của Leader", Model.Mode == "leader", Model.PendingLeader),
 })
 <form method="get" action="@req.Path">
     @foreach (var kv in req.Query.Where(k => k.Key != "f"))
@@ -72,7 +73,7 @@
         </section>
     }
 }
-else
+else if (Model.Mode == "extra")
 {
     if (Model.Extras.Count == 0)
     {
@@ -103,6 +104,129 @@ else
             @if (x.Status == ExtraStatus.Pending)
             {
                 <p class="note" style="margin:0">Chờ Leader duyệt.</p>
+            }
+        </section>
+    }
+}
+else if (Model.Mode == "leader")
+{
+    @* Kế hoạch đầu ngày + báo cáo cuối ngày của Leader (Leader tự gửi → Trưởng phòng duyệt) — yêu cầu 2026-10-16 *@
+    <partial name="_DayBar" />
+    if (Model.LeaderNotSentPlan.Count > 0 && Model.Filter != "approved" && Model.Filter != "rejected")
+    {
+        <p class="note">Chưa gửi kế hoạch đầu ngày: @string.Join(", ", Model.LeaderNotSentPlan.Select(p => p.Name))</p>
+    }
+    if (Model.LeaderNotSentReport.Count > 0 && Model.Filter != "approved" && Model.Filter != "rejected")
+    {
+        <p class="note">Chưa gửi báo cáo cuối ngày: @string.Join(", ", Model.LeaderNotSentReport.Select(p => p.Name))</p>
+    }
+    if (Model.LeaderPlans.Count == 0 && Model.LeaderReports.Count == 0)
+    {
+        <div class="empty">Không có kế hoạch / báo cáo của Leader phù hợp bộ lọc.</div>
+    }
+    foreach (var p in Model.LeaderPlans)
+    {
+        var st = Dept.PlanSt(p);
+        var name = D.PName(p.EmployeeId);
+        <section class="card apv">
+            <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">kế hoạch đầu ngày · gửi @VnTime.Hm(p.SentAt)</span></b>@Ui.Pill(st)</div>
+            @Blocks.PlanMeta(p)
+            @D.PlanTable(p)
+            @if (!string.IsNullOrEmpty(p.Note))
+            {
+                <div class="cmt"><b>Leader ghi chú:</b> @p.Note</div>
+            }
+            @if (!string.IsNullOrEmpty(p.LeaderNote))
+            {
+                <div class="cmt"><b>Ý kiến TP:</b> @p.LeaderNote</div>
+            }
+            @if (p.LeaderDecision is null)
+            {
+                <div class="btn-row">
+                    <form method="post" action="/Manager/DecideLeaderPlan" asp-antiforgery="true"
+                          data-prompt="Từ chối kế hoạch của @name" data-prompt-label="Lý do / hướng dẫn sửa" data-prompt-required
+                          data-prompt-name="note">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id"><input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">Từ chối</button>
+                    </form>
+                    <form method="post" action="/Manager/DecideLeaderPlan" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id"><input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">Duyệt</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="row" style="justify-content:space-between">
+                    <span class="note">@(p.LeaderDecision == Decision.Ok ? "Đã duyệt" : "Đã từ chối") lúc @VnTime.Hm(p.LeaderAt)</span>
+                    <form method="post" action="/Manager/UndoLeaderPlan" class="inline" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id">
+                        <button class="btn btn-sm">Hoàn tác</button>
+                    </form>
+                </div>
+            }
+        </section>
+    }
+    foreach (var r in Model.LeaderReports)
+    {
+        var st = Dept.EodSt(r);
+        var name = D.PName(r.EmployeeId);
+        var ts = D.Chosen(Scope.Date, r.EmployeeId);
+        var c = Dept.Count(ts);
+        <section class="card apv">
+            <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">báo cáo cuối ngày · gửi @VnTime.Hm(r.SentAt)</span></b>@Ui.Pill(st)</div>
+            <div class="pmeta">
+                <span>Hoàn thành <b class="mono">@c.Done/@ts.Count</b></span>
+                @if (c.Late > 0) { <span class="pill p-bad">@c.Late chậm</span> }
+                @if (r.Blocked) { <span class="pill p-bad">Có vướng mắc</span> }
+            </div>
+            @if (ts.Count == 0) { <p class="note">Không có việc nào được chọn.</p> }
+            @foreach (var t in ts)
+            {
+                @D.TaskRow(t)
+                if (!string.IsNullOrEmpty(t.Note))
+                {
+                    <div class="note" style="margin:-4px 0 6px 44px">@(t.Status == TaskState.Done ? "Kết quả" : "Lý do chưa hoàn thành"): @t.Note</div>
+                }
+            }
+            @if (!string.IsNullOrEmpty(r.Note))
+            {
+                <div class="cmt" style="margin-top:8px"><b>Leader ghi chú:</b> @r.Note</div>
+            }
+            @if (!string.IsNullOrEmpty(r.LeaderNote))
+            {
+                <div class="cmt"><b>Ý kiến TP:</b> @r.LeaderNote</div>
+            }
+            @if (r.LeaderDecision is null)
+            {
+                <div class="btn-row" style="margin-top:8px">
+                    <form method="post" action="/Manager/DecideLeaderReport" asp-antiforgery="true"
+                          data-prompt="Yêu cầu @name bổ sung báo cáo" data-prompt-label="Nội dung cần bổ sung" data-prompt-required
+                          data-prompt-name="note">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@r.Id"><input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">Yêu cầu bổ sung</button>
+                    </form>
+                    <form method="post" action="/Manager/DecideLeaderReport" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@r.Id"><input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">✓ Duyệt</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="row" style="justify-content:space-between;margin-top:8px">
+                    <span class="note">@(st == EodState.Approved ? "Đã duyệt" : "Yêu cầu bổ sung") lúc @VnTime.Hm(r.LeaderAt)</span>
+                    <form method="post" action="/Manager/UndoLeaderReport" class="inline" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@r.Id">
+                        <button class="btn btn-sm">Hoàn tác</button>
+                    </form>
+                </div>
             }
         </section>
     }

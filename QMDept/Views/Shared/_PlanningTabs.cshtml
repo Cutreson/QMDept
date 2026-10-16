@@ -4,7 +4,7 @@
 @{
     var req = Context.Request;
     var d = Scope.Date;
-    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.InScope(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk);
+    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.IsTeamStaff(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk);
     var propCount = Scope.MeId is int pl ? D.ProposalsFor(pl).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {

@@ -120,6 +120,8 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// (artifact: người bị xóa biến khỏi S.people nên inScope = false).
     public bool InScope(int emp) => P(emp) is { IsDeleted: false } p0 && (scope.Role != Role.Leader
         || (scope.MeId is int id && (emp == id || p0.LeaderId == id)));
+    /// <summary>Chỉ NV (không tính Leader) trong phạm vi — dùng cho phần duyệt của Leader (Leader tự báo cáo thì Trưởng phòng duyệt).</summary>
+    public bool IsTeamStaff(int emp) => P(emp) is { Role: Role.Staff } && InScope(emp);
     /// <summary>Leader (còn hoạt động, đúng vai trò Leader) của NV; null = "Chưa xếp nhóm".</summary>
     public Person? LeaderOf(Person a) => a.LeaderId is int l && P(l) is { IsDeleted: false, Role: Role.Leader } x ? x : null;
     /// <summary>"Nhóm X" / "Chưa xếp nhóm".</summary>
@@ -350,8 +352,8 @@ public sealed class Dept(ViewScope scope, DataCache cache)
 
     /// <summary>Số mục chờ Leader xử lý trong ngày (badge tab Kế hoạch &amp; duyệt).</summary>
     public int LeaderPending(DateOnly d) =>
-        _plans.Values.Count(p => p.Date == d && PlanSt(p) == PlanState.Pending && InScope(p.EmployeeId))
+        _plans.Values.Count(p => p.Date == d && PlanSt(p) == PlanState.Pending && IsTeamStaff(p.EmployeeId))
         + ExtrasOn(d).Count(x => x.Status == ExtraStatus.Pending)
-        + _reports.Values.Count(r => r.Date == d && EodSt(r) == EodState.Pending && InScope(r.EmployeeId))
+        + _reports.Values.Count(r => r.Date == d && EodSt(r) == EodState.Pending && IsTeamStaff(r.EmployeeId))
         + CarriesFrom(d).Count(t => !t.CarryOk);
 }

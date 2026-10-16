@@ -37,8 +37,8 @@ public static class NotifyCatalog
 
     public static readonly Item[] All =
     [
-        new(NotifyType.PlanSubmitted, "Kế hoạch đầu ngày mới", "Nhân viên trong nhóm gửi / gửi lại kế hoạch đầu ngày", [Role.Leader]),
-        new(NotifyType.ReportSubmitted, "Báo cáo cuối ngày mới", "Nhân viên trong nhóm gửi báo cáo cuối ngày", [Role.Leader]),
+        new(NotifyType.PlanSubmitted, "Kế hoạch đầu ngày mới", "Nhân viên trong nhóm (hoặc Leader, với Trưởng phòng) gửi / gửi lại kế hoạch đầu ngày", [Role.Leader, Role.Manager]),
+        new(NotifyType.ReportSubmitted, "Báo cáo cuối ngày mới", "Nhân viên trong nhóm (hoặc Leader, với Trưởng phòng) gửi báo cáo cuối ngày", [Role.Leader, Role.Manager]),
         new(NotifyType.ExtraProposed, "Đề xuất phát sinh mới", "Nhân viên trong nhóm đề xuất công việc phát sinh", [Role.Leader]),
         new(NotifyType.SupportNeedsManager, "Yêu cầu hỗ trợ nhân sự", "Kế hoạch cần Trưởng phòng duyệt hỗ trợ nhân sự nhóm khác / phòng ban khác", [Role.Manager]),
         new(NotifyType.LeaderReportSent, "Báo cáo ngày của Leader", "Leader gửi báo cáo ngày cho Trưởng phòng", [Role.Manager]),
@@ -109,13 +109,18 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     async Task<int?> LeaderOf(int emp) => (await People()).Find(p => p.Id == emp)?.LeaderId;
     // Quản trị bao trùm chức năng TP → cũng nhận thông báo của TP.
     async Task<List<int?>> Managers() => (await People()).Where(p => (p.Role == Role.Manager || p.Role == Role.Admin) && !p.IsDeleted).Select(p => (int?)p.Id).ToList();
+    async Task<bool> IsLeader(int id) => (await People()).Find(p => p.Id == id)?.Role == Role.Leader;
     async Task<string> Name(int id) => (await People()).Find(p => p.Id == id)?.Name ?? "—";
 
     // ======================= Sự kiện nghiệp vụ =======================
 
     /// <summary>NV gửi / gửi lại kế hoạch đầu ngày → Leader nhóm.</summary>
-    public async Task PlanSubmittedAsync(int emp, DateOnly d) =>
+    public async Task PlanSubmittedAsync(int emp, DateOnly d)
+    {
+        // Leader nhóm tự gửi kế hoạch của mình → Trưởng phòng duyệt (yêu cầu 2026-10-16).
+        if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.PlanSubmitted, $"{await Name(emp)} (Leader) gửi kế hoạch ngày {Fmt.Dm(d)}", "Kế hoạch đầu ngày của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
         await SendAsync([await LeaderOf(emp)], NotifyType.PlanSubmitted, $"{await Name(emp)} gửi kế hoạch ngày {Fmt.Dm(d)}", "Kế hoạch đầu ngày đang chờ bạn duyệt.", Q("/Planning/Approvals?ap=pending", d));
+    }
 
     /// <summary>Kết quả kế hoạch (what: "đã duyệt", "từ chối", "góp ý"…) → NV (+ Leader nhóm nếu do TP quyết định).</summary>
     public async Task PlanDecidedAsync(int emp, DateOnly d, string what, string? note = null, bool alsoLeader = false)
@@ -130,8 +135,11 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync(await Managers(), NotifyType.SupportNeedsManager, $"{await Name(emp)} cần hỗ trợ nhân sự ngày {Fmt.Dm(d)}", "Leader đã duyệt, đang chờ Trưởng phòng duyệt.", Q("/Manager/Approvals", d));
 
     /// <summary>NV gửi báo cáo cuối ngày → Leader nhóm.</summary>
-    public async Task ReportSubmittedAsync(int emp, DateOnly d) =>
+    public async Task ReportSubmittedAsync(int emp, DateOnly d)
+    {
+        if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.ReportSubmitted, $"{await Name(emp)} (Leader) gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
         await SendAsync([await LeaderOf(emp)], NotifyType.ReportSubmitted, $"{await Name(emp)} gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo đang chờ bạn duyệt.", Q("/Planning/Reports", d));
+    }
 
     /// <summary>Kết quả báo cáo cuối ngày → NV.</summary>
     public async Task ReportDecidedAsync(int emp, DateOnly d, bool ok, string? note = null) =>
