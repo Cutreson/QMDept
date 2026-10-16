@@ -3,14 +3,7 @@
 @{
     var req = Context.Request;
 }
-@if (Scope.Role == Role.Manager)
-{
-    @Ui.Head(0, "Leader dự án")
-}
-else
-{
-    <partial name="_PlanningTabs" model="@("leads")" />
-}
+<partial name="_PlanningTabs" model="@("leads")" />
 @if (Model.Projects.Count == 0)
 {
     <div class="empty">Chưa có dự án đang triển khai.</div>

@@ -363,3 +363,5 @@ và kiểm tra khớp 100% (so từng dự án + hạng mục; thêm một lư�
 TP / Quản trị: trang Dự án → nút **"Leader phụ trách dự án"** (`/Planning/ProjectOwners`, giống tab "Leader dự án" của Leader): mỗi dự án đang triển khai có một ô chọn Leader (nhóm) phụ trách (hoặc "Chưa chọn"),
 bộ lọc "Chưa có Leader" + đếm. Lưu `projects.OwnerLeaderId`; Leader được chọn / người cũ nhận thông báo `ProjectOwner` ("Dự án giao nhóm phụ trách"). Leader được giao sẽ thấy dự án ở tab "Leader dự án"
 (Leader chỉ thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách) để chọn người làm Leader dự án trong nhóm mình. Chỉ TP / Quản trị đổi được (Leader gọi POST bị chặn).
+- **Đính chính (2026-10-16)**: Trưởng phòng / Quản trị **không** chọn Leader dự án — đã bỏ nút "Chọn Leader dự án" ở trang Dự án và chặn `/Planning/ProjectLeads` + `SetProjectLead` với TP / Quản trị;
+  việc chọn Leader dự án chỉ của Leader nhóm. TP / Quản trị chỉ chọn **Leader (nhóm) phụ trách** dự án (§19).

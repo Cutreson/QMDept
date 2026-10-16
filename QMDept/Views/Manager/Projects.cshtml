@@ -21,7 +21,6 @@ else
             <a class="btn btn-primary" href="@Ui.To(req, "/Planning/Projects", ("pj", "new"))">＋ Dự án mới</a>
             <a class="btn" href="@Ui.To(req, "/Planning/Projects", ("pj", Model.Pid.ToString()))">Sửa dự án &amp; đầu mục</a>
             <a class="btn" href="@Ui.To(req, "/Planning/ProjectOwners")">Leader phụ trách dự án</a>
-            <a class="btn" href="@Ui.To(req, "/Planning/ProjectLeads")">Chọn Leader dự án</a>
         </div>
     }
     <p class="note" style="margin:14px 0 0"><b>@D.PjCountText(Model.Projects, Scope.Date)</b></p>
