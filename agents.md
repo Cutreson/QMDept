@@ -73,8 +73,11 @@
     Quản trị (`Services/DevSwitch.cs`, `Controllers/DevController.cs`, đầu `_Layout.cshtml`). Production không bao giờ bật (`/Dev/*` trả 404) — **không
     được bật cờ này trên web thật**.
 
-22. **Luôn chạy lại trình duyệt sau mỗi yêu cầu** (yêu cầu 2026-10-15): xử lý xong một yêu cầu → build, chạy lại app (`http://localhost:5125`) và mở lại
-    trình duyệt (khung Browser) để chủ dự án xem ngay kết quả — không đợi chủ dự án nhắc.
+22. **Tự chạy lại web, không để chủ dự án phải nhắc** (yêu cầu 2026-10-15, bổ sung 2026-10-16): xử lý xong MỖI yêu cầu → `bash tools/web.sh restart`
+    (dừng → build → chạy lại `http://localhost:5125`) rồi mở lại trình duyệt (khung Browser). Web lỗi / chết / trả 500 cũng tự chạy lại ngay
+    (`bash tools/web.sh start`), rồi báo ngắn gọn. Trình canh `tools/web-watch.sh` chạy nền (20 giây/lần, lỗi 2 lần liên tiếp thì tự chạy lại; tự tạm nghỉ khi
+    `tools/.web-lock` có mặt lúc đang build): đầu mỗi phiên làm việc kiểm tra `bash tools/web.sh health`, nếu chưa có trình canh thì chạy
+    `nohup bash tools/web-watch.sh &`. Sau khi xóa dữ liệu thử bằng SQL phải chạy lại web (bộ nhớ đệm ~60 giây).
 
 ## 2. Tổng quan kỹ thuật
 
@@ -100,6 +103,7 @@ Script kiểm thử / bảo trì ở `tools/` (chạy ở thư mục gốc repo;
 ```bash
 bash tools/smoke.sh                            # đăng nhập từng vai trò, GET mọi trang, báo lỗi 500 / exception
 node tools/perf.mjs                            # đo thời gian tải trang
+bash tools/web.sh restart                      # dừng → build → chạy lại web chạy thử (health / start / stop) — xem quy tắc 22
 dotnet run tools/dbquery.cs <file.sql>         # chạy SQL (mỗi câu một dòng) trên DB thật
 dotnet run tools/dblatency.cs                  # đo độ trễ DB / kiểm tra DB có kết nối được không
 # tools/e2e-lib.mjs: thư viện Node cho kịch bản E2E (Client.login/get/post, forms(), toast(), sql()) — xem chú thích đầu file

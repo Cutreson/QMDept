@@ -367,3 +367,6 @@ appsettings.Local.json
 # Tài liệu chỉ để trên máy (mật khẩu thử…) — không commit
 *.local.md
 .playwright-mcp/
+tools/.web-lock
+tools/.web.log
+tools/.web-watch.log
