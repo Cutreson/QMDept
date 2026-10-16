@@ -17,6 +17,7 @@
         <label class="f" for="@(id)P">Dự án</label>
         @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(),
             id: id + "P")
+        @Ui.ProjectLeadHint(D, Model.Projects, id + "P", pid)
         <label class="f" for="@(id)T">Nội dung công việc phát sinh</label>
         <input class="in" id="@(id)T" name="title" maxlength="300">
         <div class="pick2 eq">

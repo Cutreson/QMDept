@@ -393,3 +393,23 @@
     txt.value = `${d}/${mo}/${y}`; txt.dispatchEvent(new Event('change', { bubbles: true }));
   });
 })();
+
+// ---------- dòng "Leader dự án" dưới ô chọn dự án (Ui.ProjectLeadHint) ----------
+(function () {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function paint(h, sel) {
+    let m = {}; try { m = JSON.parse(h.dataset.map) || {}; } catch (e) { return; }
+    const n = sel ? m[sel.value] : '';
+    h.innerHTML = n ? 'Leader dự án: <b>' + esc(n) + '</b>' : 'Chưa có Leader dự án';
+  }
+  const init = root => (root || document).querySelectorAll('.pj-lead[data-pj-lead-for]').forEach(h => {
+    const f = h.closest('form') || document; paint(h, f.querySelector('#' + CSS.escape(h.dataset.pjLeadFor)));
+  });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t.id || !t.matches || !t.matches('select')) return;
+    const f = t.closest('form') || document;
+    f.querySelectorAll('.pj-lead[data-pj-lead-for="' + CSS.escape(t.id) + '"]').forEach(h => paint(h, t));
+  });
+  document.addEventListener('qm:sheet-open', e => init(e.target));
+  init(document);
+})();

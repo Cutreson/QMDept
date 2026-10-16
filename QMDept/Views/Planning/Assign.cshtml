@@ -25,7 +25,8 @@
             @Ui.Select("emp", list.Select(p => (p.Id.ToString(), p.Name + (p.Level is Level level ? " · " + Labels.Of(level) : ""))), null, placeholder: "Chọn nhân viên", id: "asgW")</div>
         <div><label class="f" for="asgD" style="margin-top:0">Ngày làm</label>@Ui.DateInput("date", Scope.Date, "asgD")</div>
         <div><label class="f" for="asgP">Dự án</label>
-            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "asgP")</div></div>
+            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "asgP")
+            @Ui.ProjectLeadHint(D, pjs, "asgP", pj0)</div></div>
     <label class="f" for="asgT">Nội dung công việc phát sinh</label><input class="in" id="asgT" name="title" maxlength="300">
     <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "asgE")</div></div>
     <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc</button>

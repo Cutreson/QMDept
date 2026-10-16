@@ -91,6 +91,16 @@ public static class Ui
         return new HtmlString(sb.Append("</select>").ToString());
     }
 
+    /// <summary>Dòng "Leader dự án: …" dưới ô chọn dự án (id = <paramref name="forId"/>): site.js cập nhật theo dự án đang chọn (yêu cầu 2026-10-16).</summary>
+    public static IHtmlContent ProjectLeadHint(Dept d, IEnumerable<Project> pjs, string forId, int? current)
+    {
+        var map = pjs.ToDictionary(p => p.Id.ToString(), p => d.ProjectLead(p.Id)?.Name ?? "");
+        var json = System.Text.Json.JsonSerializer.Serialize(map, new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        var name = current is int c && map.TryGetValue(c.ToString(), out var n) ? n : "";
+        return new HtmlString($"<div class=\"pj-lead\" data-pj-lead-for=\"{E(forId)}\" data-map=\"{E(json)}\">{LeadText(name)}</div>");
+    }
+    static string LeadText(string name) => name.Length == 0 ? "Chưa có Leader dự án" : $"Leader dự án: <b>{E(name)}</b>";
+
     /// <summary>Ô nhập ngày dd/MM/yyyy (chữ, tự chèn dấu /) + nút lịch; luôn hiển thị theo định dạng này, không phụ thuộc ngôn ngữ trình duyệt (site.js: input[data-date]).</summary>
     public static IHtmlContent DateInput(string name, DateOnly? value, string? id = null)
     {

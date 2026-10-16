@@ -443,3 +443,7 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 /* Bảng trượt trên điện thoại: danh sách của ô chọn mở TRONG bảng (đẩy bảng nở lên trên) thay vì thả xuống dưới bàn phím (yêu cầu 2026-10-16) */
 .dlg .combo-list{position:static;margin-top:4px;max-height:min(260px,calc(var(--vvh,100vh) * .45))}
 .dlg>.card{overscroll-behavior:contain}
+
+/* Dòng "Leader dự án" dưới ô chọn dự án */
+.pj-lead{margin-top:4px;font-size:12.5px;color:var(--muted)}
+.pj-lead b{color:var(--fg)}

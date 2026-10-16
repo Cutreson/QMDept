@@ -79,6 +79,7 @@ else
                 <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
                 <label class="f" for="calP" style="margin-top:0">Dự án</label>
                 @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
+                @Ui.ProjectLeadHint(D, D.ActivePj(), "calP", pj0)
                 <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
                 <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "calE")</div></div>
                 <label class="f">Người tham gia</label>
