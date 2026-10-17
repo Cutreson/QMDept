@@ -399,3 +399,5 @@ Cập nhật 2026-10-16: tab "Trạng thái làm việc" của Leader nằm tron
 Cập nhật 2026-10-16: Leader chọn nhân viên để xem màn hình ở trang Kế hoạch (ô "Xem màn hình" dưới thanh Lịch của tôi | Lịch nhóm), không còn ở thanh trên. TP / Quản trị giữ ô ở thanh trên.
 
 Cập nhật 2026-10-17: Leader — Kế hoạch tháng là tab con của Kế hoạch & duyệt (sau tab Kế hoạch); bỏ tab Lịch tuần và Phân công (giao việc làm ở Kế hoạch tháng → Lịch nhóm → Giao thêm việc); thanh trên của Leader không còn nút.
+
+Cập nhật 2026-10-17: Leader ở Lịch của tôi có "＋ Cập nhật kế hoạch cá nhân" — thêm việc của chính mình vào ngày đang chọn (như Giao thêm việc nhưng chỉ cho mình; `TaskSource.Planned`), có thể xóa việc đã thêm.

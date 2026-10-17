@@ -56,6 +56,31 @@ public partial class StaffController
         });
     }
 
+
+    /// <summary>
+    /// POST /Staff/AddOwnTask — Leader (ở "Lịch của tôi", ?as=mine) cập nhật kế hoạch cá nhân: thêm việc của CHÍNH MÌNH vào ngày ?d=
+    /// (nguồn Planned — không gắn nhãn, vào lịch ngay; yêu cầu 2026-10-17).
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> AddOwnTask(int projectId, int? itemId, string? title, string? start, string? end) => await Do(async () =>
+    {
+        RequireSelfStaff(leaderOk: true);
+        var me = Scope.Me!;
+        if (me.Role != Role.Leader) throw new BizException("Chỉ Leader dùng mục này");
+        await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", [me.Id], Scope.ActorName, TaskSource.Planned);
+    }, "Đã thêm công việc vào kế hoạch cá nhân");
+
+    /// <summary>POST /Staff/DeleteOwnTask — Leader xóa việc kế hoạch cá nhân của chính mình (chỉ việc nguồn Planned do mình thêm).</summary>
+    [HttpPost]
+    public async Task<IActionResult> DeleteOwnTask(int id) => await Do(async () =>
+    {
+        RequireSelfStaff(leaderOk: true);
+        var me = Scope.Me!;
+        if (me.Role != Role.Leader) throw new BizException("Chỉ Leader dùng mục này");
+        var t = await Db.WorkTasks.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.EmployeeId == me.Id && x.Source == TaskSource.Planned)
+            ?? throw new BizException("Không tìm thấy công việc");
+        await Flow.DeleteTaskAsync(t.Id);
+    }, "Đã xóa công việc");
     /// <summary>
     /// POST /Staff/ProposeCalendar — NV đề xuất ở lịch tháng (ngày = ngày đang chọn): công việc của mình (không có "emp"), hoặc người hỗ trợ /
     /// Leader hỗ trợ (field "emp" nhiều giá trị) cho dự án mình là Leader dự án. Leader nhóm duyệt thì mới ghi vào lịch.

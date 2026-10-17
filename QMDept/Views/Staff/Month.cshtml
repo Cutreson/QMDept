@@ -136,10 +136,45 @@ else
     @if (inM)
     {
         var t = D.TasksOn(sel, me.Id).Where(D.OkCal).ToList();
+        var ownLead = Scope.OwnCalendar && me.Role == Role.Leader;   // Leader ở "Lịch của tôi": cập nhật kế hoạch cá nhân (yêu cầu 2026-10-17)
         <section class="card wday"><h3>@Fmt.WD[Fmt.Wday(sel)] – @Fmt.Dm(sel) (@t.Count công việc)@(D.OnLeave(sel, me.Id) is not null ? " · Nghỉ" : "")</h3>
-            @if (t.Count > 0) { foreach (var x in t) { @D.TaskRow(x) } }
+            @if (t.Count > 0)
+            {
+                foreach (var x in t)
+                {
+                    @D.TaskRow(x)
+                    @if (ownLead && x.Source == TaskSource.Planned)
+                    {
+                        <form method="post" action="@Ui.To(req, "/Staff/DeleteOwnTask", ("d", Fmt.Key(sel)))" asp-antiforgery="true" class="inline" data-confirm="Xóa “@x.Title” khỏi kế hoạch cá nhân?" data-confirm-label="Xóa" style="display:block;text-align:right;margin:-2px 12px 6px">
+                            @Ui.ReturnField(req)
+                            <input type="hidden" name="id" value="@x.Id">
+                            <button class="link" style="color:var(--bad)">Xóa</button>
+                        </form>
+                    }
+                }
+            }
             else { <p class="note" style="padding:8px 12px;margin:0">Ngày này chưa có công việc.</p> }
         </section>
+        @if (ownLead)
+        {
+            @* Cập nhật kế hoạch cá nhân: thêm việc của chính Leader vào ngày đang chọn (giống "Giao thêm việc" nhưng chỉ cho mình) *@
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-sheet="ownTaskTpl">＋ Cập nhật kế hoạch cá nhân</button></div>
+            <template id="ownTaskTpl">
+                <form method="post" action="@Ui.To(req, "/Staff/AddOwnTask", ("d", Fmt.Key(sel)))">
+                    @Html.AntiForgeryToken()
+                    @Ui.ReturnField(req)
+                    <h3>Cập nhật kế hoạch cá nhân</h3>
+                    <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
+                    <label class="f" for="ownP" style="margin-top:0">Dự án</label>
+                    @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), StaffCalendar.DefaultProject(D, sel)?.ToString(), id: "ownP")
+                    @Ui.ProjectLeadHint(D, D.ActivePj(), "ownP", StaffCalendar.DefaultProject(D, sel))
+                    <label class="f" for="ownT">Nội dung công việc</label><input class="in" id="ownT" name="title" maxlength="300">
+                    <div class="pick2 eq"><div><label class="f" for="ownS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "ownS")</div><div><label class="f" for="ownE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "ownE")</div></div>
+                    <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
+                        <button class="btn btn-primary">Lưu vào kế hoạch</button></div>
+                </form>
+            </template>
+        }
         <partial name="_StaffProposals" model="Model" />
     }
 }
