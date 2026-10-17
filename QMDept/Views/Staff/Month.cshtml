@@ -13,7 +13,12 @@
     string DayHref(DateOnly d) => Ui.Here(req, ("d", Fmt.Key(d)), ("m", Fmt.Key(Fmt.MonthStart(d))), ("w", null));
     string DayCls(DateOnly d) => (d == today ? "today " : "") + (d == sel ? "sel" : "");
 }
-@if (Model.AllMode)
+@if (Scope.Account.Role == Role.Leader)
+{
+    @* Leader: Kế hoạch tháng là tab con của "Kế hoạch & phê duyệt" (yêu cầu 2026-10-16) *@
+    <partial name="_PlanningTabs" model="@("month")" />
+}
+else if (Model.AllMode)
 {
     @Ui.Head(0, (Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm") + " · Tất cả nhân sự", $"{ppl.Count} nhân sự")
 }

@@ -4,14 +4,17 @@
 @{
     var req = Context.Request;
     var d = Scope.Date;
-    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.IsTeamStaff(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk);
-    var propCount = Scope.MeId is int pl ? D.ProposalsFor(pl).Count : 0;
+    // Đếm theo TÀI KHOẢN Leader (không theo người đang xem): trang Kế hoạch tháng cũng dùng thanh tab này ở chế độ lịch nhóm / xem nhân viên.
+    var lid = Scope.Account.Role == Role.Leader ? Scope.Account.Id : (int?)null;
+    bool InTeam(int emp) => lid is int l ? D.P(emp) is { Role: Role.Staff } pe && pe.LeaderId == l : D.IsTeamStaff(emp);
+    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId))
+        + (lid is int l2 ? D.CarriesFromTeam(d, l2).Count(t => !t.CarryOk) : D.CarriesFrom(d).Count(t => !t.CarryOk));
+    var propCount = lid is int pl ? D.ProposalsFor(pl).Count : Scope.MeId is int pm ? D.ProposalsFor(pm).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {
-        // Thứ tự theo yêu cầu 2026-10-16: Kế hoạch, Lịch tuần, Phân công, Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
+        // Thứ tự theo yêu cầu 2026-10-16 (sửa lại): Kế hoạch, Kế hoạch tháng (đã gồm giao việc → bỏ Lịch tuần + Phân công), Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
         ("approvals", "/Planning/Approvals", "Kế hoạch"),
-        ("week", "/Planning/Week", "Lịch tuần"),
-        ("assign", "/Planning/Assign", "Phân công"),
+        ("month", "/Staff/Month?as=mine", "Kế hoạch tháng"),
         ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
         ("proposals", "/Planning/Proposals", "Đề xuất lịch" + (propCount > 0 ? $" ({propCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
@@ -20,4 +23,4 @@
     };
 }
 @Ui.Head(2, "Kế hoạch & phê duyệt")
-@Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))
+@Ui.Subtabs(tabs.Where(t => t.Key != "month" || Scope.Account.Role == Role.Leader).Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))

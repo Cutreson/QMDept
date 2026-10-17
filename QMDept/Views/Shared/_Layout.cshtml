@@ -67,7 +67,7 @@
                 <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
             }
         </div>
-        @if (chrome is not null && (chrome.ViewOptions.Count > 0 || chrome.OwnHref is not null))
+        @if (chrome is not null && !chrome.ViewInPlan && chrome.ViewOptions.Count > 0)   @* Leader không có hàng nút này: Kế hoạch tháng nằm trong tab Kế hoạch & duyệt (yêu cầu 2026-10-16) *@
         {
             @* Cấp trên chọn cấp dưới để xem màn hình của họ (chỉ xem) — xem ViewScope. *@
             <form method="get" action="@Context.Request.Path" class="row va viewas">

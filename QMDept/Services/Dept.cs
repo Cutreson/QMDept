@@ -253,6 +253,8 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     }
 
     /// <summary>carriesFrom(d): đề xuất chuyển tiếp phát sinh từ ngày d (trong phạm vi).</summary>
+    /// <summary>Việc chuyển tiếp từ ngày d của NV trong nhóm Leader (theo tài khoản Leader, không phụ thuộc người đang xem).</summary>
+    public List<WorkTask> CarriesFromTeam(DateOnly d, int leaderId) { Guard(d); return _tasks.Values.Where(t => t.Source == TaskSource.CarryOver && t.FromDate == d && P(t.EmployeeId) is { IsDeleted: false, Role: Role.Staff } p && p.LeaderId == leaderId).ToList(); }
     public List<WorkTask> CarriesFrom(DateOnly d) { Guard(d); return _tasks.Values.Where(t => t.Source == TaskSource.CarryOver && t.FromDate == d && InScope(t.EmployeeId)).ToList(); }
 
     // ======================= Trạng thái =======================

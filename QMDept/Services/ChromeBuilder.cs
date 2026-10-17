@@ -107,15 +107,14 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var controller = ctx.GetRouteValue("controller")?.ToString();
         var action = ctx.GetRouteValue("action")?.ToString();
         var onStatus = scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase);   // trang Trạng thái làm việc của Leader thuộc "Màn hình của tôi"
-        var away = scope.AllStaff || scope.OwnCalendar;   // lịch nhóm / chế độ cá nhân của Leader: hiện tab Leader (kèm as=me để thoát)
+        var away = scope.AllStaff || scope.OwnCalendar || (acc.Role == Role.Leader && scope.IsViewingOther);   // lịch nhóm / chế độ cá nhân / xem nhân viên của Leader: hiện tab Leader (kèm as=me để thoát)
+        var onPlanMonth = acc.Role == Role.Leader && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng thuộc tab "Kế hoạch & duyệt"
         var tabRole = away ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
-        // Leader xem nhân viên: chỉ có lịch tháng của người đó (xem AppController).
-        if (scope.IsViewingOther && acc.Role == Role.Leader) defs = defs.Where(t => t.Id == "month");
         var tabs = defs.Any()
             ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, t.Id == "status" ? "mine" : away ? "me" : null),
-                (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+                (t.Id == "planning" && onPlanMonth) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
                 away ? 0 : Badge(t.Id))).ToList()
