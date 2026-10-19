@@ -58,19 +58,19 @@ public abstract class AppController : Controller
             ctx.Result = Redirect("/Account/Login");
             return;
         }
+        // Xem màn hình người khác (TP / Quản trị / Leader): chỉ thấy KẾ HOẠCH THÁNG của người đó (yêu cầu 2026-10-20 — mở rộng quy tắc Leader xem NV của 2026-10-14);
+        // mọi trang GET khác tự chuyển về /Staff/Month?as=<người đó> (kể cả khi trang đó không dành cho vai trò của người được xem).
+        if (res != ScopeResult.Unauthenticated && HttpMethods.IsGet(Request.Method) && Scope.IsViewingOther
+            && !(ctx.RouteData.Values["controller"] is string sc0 && sc0.Equals("Staff", StringComparison.OrdinalIgnoreCase)
+                 && ctx.RouteData.Values["action"] is string sa0 && sa0.Equals("Month", StringComparison.OrdinalIgnoreCase)))
+        {
+            ctx.Result = Redirect($"/Staff/Month?as={Scope.MeId}" + (Date != Scope.Today ? "&d=" + Fmt.Key(Date) : ""));
+            return;
+        }
         if (res == ScopeResult.Forbidden)
         {
             if (HttpMethods.IsPost(Request.Method)) Toast("Màn hình đang chọn không có thao tác này — vui lòng mở lại trang và thử lại");
             ctx.Result = Redirect(ScopeResolver.HomeOf(Scope.Role));
-            return;
-        }
-        // Leader xem nhân viên trong nhóm: chỉ thấy LỊCH THÁNG của người đó (yêu cầu 2026-10-14), không thấy báo cáo / dự án / làm thêm.
-        // (TP / Quản trị xem cấp dưới vẫn thấy đủ màn hình — quy tắc 8.)
-        if (HttpMethods.IsGet(Request.Method) && Scope.IsViewingOther && Scope.Account.Role == Role.Leader
-            && !(ctx.RouteData.Values["controller"] is string sc && sc.Equals("Staff", StringComparison.OrdinalIgnoreCase)
-                 && ctx.RouteData.Values["action"] is string sa && sa.Equals("Month", StringComparison.OrdinalIgnoreCase)))
-        {
-            ctx.Result = Redirect($"/Staff/Month?as={Scope.MeId}" + (Date != Scope.Today ? "&d=" + Fmt.Key(Date) : ""));
             return;
         }
         // Lịch cả nhóm (?as=all): chỉ form "Giao thêm việc" được ghi.

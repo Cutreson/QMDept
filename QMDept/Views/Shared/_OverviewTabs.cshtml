@@ -12,17 +12,18 @@
 }
 @Ui.Head(1, "Tổng quan")
 @Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))
-@if (Scope.Subordinates.Count > 0)
+@* Ô "Xem màn hình" chỉ ở mục Kế hoạch tháng: chọn người nào thì xem KẾ HOẠCH THÁNG của người đó (chỉ xem) — yêu cầu 2026-10-20 *@
+@if (Model == "month" && Scope.Subordinates.Count > 0)
 {
     <form method="get" action="@req.Path" class="row" style="margin-bottom:12px">
         @if (!string.IsNullOrEmpty(req.Query["d"])) { <input type="hidden" name="d" value="@req.Query["d"]"> }
         <span class="note" style="white-space:nowrap">Xem màn hình:</span>
-        <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
-            <option value="" selected disabled hidden>Chọn người</option>
+        <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem kế hoạch tháng">
+            @if (!Scope.IsViewingOther) { <option value="" selected disabled hidden>Chọn người</option> }
             @foreach (var g in Scope.Subordinates.GroupBy(p => p.Role))
             {
                 <optgroup label="@Labels.Title(g.Key)">
-                    @foreach (var p in g) { <option value="@p.Id">@p.Name</option> }
+                    @foreach (var p in g) { <option value="@p.Id" selected="@(Scope.IsViewingOther && Scope.MeId == p.Id)">@p.Name</option> }
                 </optgroup>
             }
         </select>

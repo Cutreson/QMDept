@@ -103,7 +103,9 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
         scope.AllStaff = allStaff;
         scope.OwnCalendar = ownCal;
         scope.Me = allStaff ? scope.Pool.FirstOrDefault() ?? acc : viewed ?? acc;
-        scope.Role = allStaff || ownCal ? Role.Staff : UiRoleOf(scope.Me!.Role);
+        // Xem màn hình người khác (TP / Quản trị / Leader): chỉ xem KẾ HOẠCH THÁNG của họ (yêu cầu 2026-10-20) → ở /Staff/Month người được xem (Leader hay NV) dùng giao diện kiểu nhân viên.
+        var viewMonth = viewed is not null && HttpMethods.IsGet(http.Request.Method) && (http.Request.Path.Value ?? "").TrimEnd('/').Equals("/Staff/Month", StringComparison.OrdinalIgnoreCase);
+        scope.Role = allStaff || ownCal || viewMonth ? Role.Staff : UiRoleOf(scope.Me!.Role);
         scope.Resolved = true;
 
         // Trang riêng của Quản trị ([UiRole(Admin)]) chỉ mở ở màn hình của chính tài khoản Quản trị.

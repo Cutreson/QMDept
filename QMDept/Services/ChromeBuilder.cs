@@ -107,9 +107,9 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var controller = ctx.GetRouteValue("controller")?.ToString();
         var action = ctx.GetRouteValue("action")?.ToString();
         var onStatus = scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase);   // trang Trạng thái làm việc của Leader thuộc "Màn hình của tôi"
-        var away = scope.AllStaff || scope.OwnCalendar || (acc.Role == Role.Leader && scope.IsViewingOther);   // lịch nhóm / chế độ cá nhân / xem nhân viên của Leader: hiện tab Leader (kèm as=me để thoát)
+        var away = scope.AllStaff || scope.OwnCalendar || scope.IsViewingOther;   // lịch nhóm / chế độ cá nhân / xem nhân viên của Leader: hiện tab Leader (kèm as=me để thoát)
         var onPlanMonth = acc.Role == Role.Leader && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng thuộc tab "Kế hoạch & duyệt"
-        var onOverviewMonth = acc.Role is Role.Manager or Role.Admin && scope.AllStaff && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng của phòng thuộc tab "Tổng quan" của TP
+        var onOverviewMonth = acc.Role is Role.Manager or Role.Admin && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng của phòng thuộc tab "Tổng quan" của TP
         var tabRole = away ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);

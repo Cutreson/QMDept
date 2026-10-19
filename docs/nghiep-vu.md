@@ -416,3 +416,5 @@ Cập nhật 2026-10-19: Kế hoạch đề xuất chia 2 mục chính (Đề xu
 Cập nhật 2026-10-20: Leader chỉ thấy các dự án được TP giao cho nhóm phụ trách; TP có thống kê số dự án theo từng Leader và 2 mục Đã có Leader / Chưa có Leader.
 
 Cập nhật 2026-10-20: Tổng quan của Trưởng phòng có 3 mục: Dự án, Nhân sự (ai đang làm, làm ở đâu, việc từng người, nghỉ), Kế hoạch tháng của phòng.
+
+Cập nhật 2026-10-20: ô Xem màn hình chỉ có ở mục Kế hoạch tháng và chỉ xem được kế hoạch tháng của nhân sự được chọn (Leader hoặc nhân viên).
