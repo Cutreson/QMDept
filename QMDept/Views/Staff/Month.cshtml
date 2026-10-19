@@ -13,14 +13,9 @@
     string DayHref(DateOnly d) => Ui.Here(req, ("d", Fmt.Key(d)), ("m", Fmt.Key(Fmt.MonthStart(d))), ("w", null));
     string DayCls(DateOnly d) => (d == today ? "today " : "") + (d == sel ? "sel" : "");
 }
-@if (Scope.Account.Role == Role.Leader)
+@if (Scope.Account.Role == Role.Leader || (Scope.IsManager && (Model.AllMode || Scope.IsViewingOther || Scope.OwnCalendar)))
 {
-    @* Leader: Kế hoạch tháng là tab con của "Kế hoạch & phê duyệt" (yêu cầu 2026-10-16) *@
-    <partial name="_PlanningTabs" model="@("month")" />
-}
-else if (Scope.IsManager && (Model.AllMode || Scope.IsViewingOther || Scope.OwnCalendar))
-{
-    @* TP / Quản trị: Lịch của phòng là mục "Kế hoạch tháng" của Tổng quan (yêu cầu 2026-10-20) *@
+    @* Kế hoạch tháng là mục của Tổng quan: TP / Quản trị và Leader (yêu cầu 2026-10-20; Leader chuyển từ Kế hoạch & duyệt); ô "Xem màn hình" nằm trong _OverviewTabs *@
     <partial name="_OverviewTabs" model="@("month")" />
 }
 else if (Model.AllMode)
@@ -35,18 +30,6 @@ else
 {
     @* NV / Leader xem lịch của mình hoặc lịch cả nhóm — yêu cầu 2026-10-15 (NV), 2026-10-16 (Leader: ?as=mine, chỉ xem) *@
     @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Staff ? "me" : "mine")), "Lịch của tôi", !Model.AllMode && !Scope.IsViewingOther, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch phòng" : "Lịch nhóm", Model.AllMode, 0) })
-}
-@if (Scope.Account.Role == Role.Leader && Scope.Subordinates.Count > 0 && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther))
-{
-    @* Leader chọn nhân viên trong nhóm để xem màn hình (chỉ xem) — chuyển từ thanh trên vào mục Kế hoạch (yêu cầu 2026-10-16) *@
-    <form method="get" action="@req.Path" class="row" style="margin-bottom:12px">
-        @if (!string.IsNullOrEmpty(req.Query["d"])) { <input type="hidden" name="d" value="@req.Query["d"]"> }
-        <span class="note" style="white-space:nowrap">Xem màn hình:</span>
-        <select class="in" name="as" data-autosubmit aria-label="Chọn nhân sự để xem màn hình">
-            @if (!Scope.IsViewingOther) { <option value="" selected disabled hidden>Chọn nhân sự</option> }
-            @foreach (var p in Scope.Subordinates) { <option value="@p.Id" selected="@(Scope.IsViewingOther && Scope.MeId == p.Id)">@p.Name</option> }
-        </select>
-    </form>
 }
 <partial name="_MonthBar" />
 
@@ -163,29 +146,35 @@ else
         </section>
         @if (ownLead)
         {
-            @* Cập nhật kế hoạch cá nhân: thêm việc của chính Leader vào ngày đang chọn (giống "Giao thêm việc" nhưng chỉ cho mình) *@
-            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-sheet="ownTaskTpl">@(Scope.Account.Role == Role.Leader ? "＋ Cập nhật kế hoạch cá nhân / xin nghỉ" : "＋ Cập nhật kế hoạch cá nhân")</button></div>
-            @if (Scope.Account.Role == Role.Leader)
-            {
-                @* Leader xin nghỉ (trong Đề xuất công việc): bắt buộc nêu lý do, Trưởng phòng duyệt thì hiện Nghỉ trên lịch (yêu cầu 2026-10-20) *@
-                ViewData["workSheet"] = new[] { "leave", "ownTaskTpl", "leaveSheet", "Kế hoạch cá nhân" };
-                <partial name="_LeaveSheet" />
-                @if (Model.LeaveRequests.Count > 0) { <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2><partial name="_LeaveRequestRows" model="Model.LeaveRequests" /></section> }
-            }
+            @* Cập nhật kế hoạch cá nhân / xin nghỉ gộp MỘT sheet (yêu cầu 2026-10-20): Leader có ô "Loại" (xin nghỉ → Trưởng phòng duyệt; nghỉ nửa ngày / vài giờ thì hiện thêm phần công việc); TP / Quản trị chỉ cập nhật kế hoạch *@
+            var isLd = Scope.Account.Role == Role.Leader;
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-sheet="ownTaskTpl">@(isLd ? "＋ Cập nhật kế hoạch cá nhân / xin nghỉ" : "＋ Cập nhật kế hoạch cá nhân")</button></div>
+            @if (isLd && Model.LeaveRequests.Count > 0) { <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2><partial name="_LeaveRequestRows" model="Model.LeaveRequests" /></section> }
             <template id="ownTaskTpl">
                 <form method="post" action="@Ui.To(req, "/Staff/AddOwnTask", ("d", Fmt.Key(sel)))">
                     @Html.AntiForgeryToken()
                     @Ui.ReturnField(req)
-                    @if (Scope.Account.Role == Role.Leader) { <partial name="_SheetTabs" model="@(new[] { "work", "ownTaskTpl", "leaveSheet", "Kế hoạch cá nhân" })" /> }
-                    <h3>Cập nhật kế hoạch cá nhân</h3>
+                    <h3>@(isLd ? "Cập nhật kế hoạch cá nhân / xin nghỉ" : "Cập nhật kế hoạch cá nhân")</h3>
                     <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
+                    @if (isLd)
+                    {
+                        <label class="f" for="ownK" style="margin-top:0">Loại</label>
+                        <select class="in" id="ownK" name="kind" data-kind data-nosearch>
+                            <option value="work">Cập nhật kế hoạch cá nhân</option>
+                            <option value="leave">Xin nghỉ</option>
+                        </select>
+                        <partial name="_LeaveFields" model="@("own")" />
+                    }
+                    <div data-work-block>
+                    <h4 class="f" data-work-title hidden style="margin:14px 0 0">Công việc làm trong thời gian còn lại</h4>
                     <label class="f" for="ownP" style="margin-top:0">Dự án</label>
                     @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), StaffCalendar.DefaultProject(D, sel)?.ToString(), id: "ownP")
                     @Ui.ProjectLeadHint(D, D.ActivePj(), "ownP", StaffCalendar.DefaultProject(D, sel))
                     <label class="f" for="ownT">Nội dung công việc</label><input class="in" id="ownT" name="title" maxlength="300">
                     <div class="pick2 eq"><div><label class="f" for="ownS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "ownS")</div><div><label class="f" for="ownE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "ownE")</div></div>
+                    </div>
                     <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
-                        <button class="btn btn-primary">Lưu vào kế hoạch</button></div>
+                        <button class="btn btn-primary" data-lbl-leave="Gửi đề xuất xin nghỉ">Lưu vào kế hoạch</button></div>
                 </form>
             </template>
         }

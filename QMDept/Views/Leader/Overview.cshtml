@@ -9,8 +9,16 @@
     var xp = xs.Count(x => x.Status == ExtraStatus.Pending);
     var rp = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && D.IsTeamStaff(r.EmployeeId));
 }
-@Ui.Head(1, "Tổng quan dự án")
+<partial name="_OverviewTabs" model="@(ViewData["Section"] as string ?? "projects")" />
 <partial name="_DayBar" />
+@if (ViewData["Section"] as string == "people")
+{
+    @* Mục Nhân sự: bảng nhóm của Leader (Leader + nhân viên nhóm mình) — yêu cầu 2026-10-20 *@
+    var rows = new List<(Person P, string Group)> { (Scope.Account, "Leader") };
+    foreach (var s in D.Team(Scope.Account.Id)) rows.Add((s, "Nhóm " + Scope.Account.Name));
+    <partial name="_PeopleTable" model="rows" />
+    return;
+}
 <div class="kpis"><div class="kpi k-info"><b>@k.Projects</b><span>Dự án</span></div><div class="kpi k-info"><b>@k.Working/@k.Total</b><span>Nhân sự</span></div>
     <div class="kpi k-ok"><b>@k.C.Done</b><span>Hoàn thành</span></div><div class="kpi k-warn"><b>@k.C.InProgress</b><span>Đang làm</span></div><div class="kpi k-bad"><b>@k.C.Late</b><span>Chậm</span></div></div>
 @if (pend > 0 || xp > 0 || rp > 0)

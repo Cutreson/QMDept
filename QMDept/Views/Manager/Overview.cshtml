@@ -22,65 +22,7 @@
     }
     foreach (var s in D.Unassigned()) rows.Add((s, "Chưa xếp nhóm"));
 
-    // info: 0 = đã duyệt, 1 = chờ duyệt, 2 = bị từ chối, 3 = chưa báo, 4 = Leader ghi nghỉ (không qua duyệt), 9 = không áp dụng (TP)
-    (int Info, DayPlan? Plan, Leave? Lv) Get(Person p)
-    {
-        var plan = D.PlanOf(d, p.Id);
-        var lv = D.OnLeave(d, p.Id);
-        if (p.Role == Role.Manager) return (9, plan, lv);
-        var st = Dept.PlanSt(plan);
-        if (plan is not null && st == PlanState.Approved) return (0, plan, lv);
-        if (lv is not null) return (4, plan, lv);
-        return (plan is null ? 3 : st == PlanState.Rejected ? 2 : 1, plan, lv);
-    }
-    <section class="card sec"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
-        <div class="tbl-wrap"><table>
-            <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
-            <tbody>
-            @{ var no = 0; }
-            @foreach (var (p, group, g) in rows.Select(r => (r.P, r.Group, G: Get(r.P))))
-            {
-                no++;
-                var plan = g.Plan;
-                var ok = g.Info == 0 && plan is not null;
-                var onLeave = (ok && LeaveRules.IsLeave(plan!.Status)) || (g.Info is 0 or 4 && g.Lv is not null);
-                var trip = ok && !onLeave && LeaveRules.IsTrip(plan!.Status);
-                var ts = ok && !onLeave ? D.Chosen(d, p.Id) : new List<WorkTask>();
-                <tr>
-                    <td class="n">@no</td>
-                    <td style="white-space:nowrap">@if (p.Role == Role.Manager) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
-                    <td>@group</td>
-                    @* Trạng thái làm việc: tại công ty / công tác trong ngày / công tác dài ngày / nghỉ phép / nghỉ không lương (kèm thời gian nghỉ) *@
-                    <td>@if (g.Info == 9) { <span class="note">—</span> }
-                        else if (onLeave)
-                        {
-                            var lt = plan is not null && ok && plan.LeaveType is not null ? Blocks.LeaveText(plan) : null;
-                            <span class="pill p-bad">@(plan is not null && ok && LeaveRules.IsLeave(plan.Status) ? Labels.Of(plan.Status) : "Nghỉ")</span>
-                            <div class="note">@if (lt is not null) { @Html.Raw(lt) } else { @(g.Lv is not null ? Blocks.LeaveBrief(g.Lv) : "Cả ngày") }</div>
-                        }
-                        else if (trip) { <span class="pill p-info">Công tác @(plan!.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span> }
-                        else if (ok) { <span class="pill p-ok">Làm việc tại công ty</span> }
-                        else { <span class="note">—</span> }</td>
-                    <td>@if (trip) { <b>@(plan!.TripProvince ?? "—")</b><div class="note">@(plan.TripCustomer ?? "")</div> } else { <span class="note">—</span> }</td>
-                    <td>@if (ts.Count == 0) { <span class="note">—</span> }
-                        else foreach (var t in ts) { <div style="margin-bottom:3px"><b>@D.PjName(t.ProjectId)</b><div class="note">@t.Title · <span class="mono">@t.Start–@t.End</span></div></div> }</td>
-                    <td>@if (!ok || onLeave) { <span class="note">—</span> }
-                        else if (plan!.Meal is Meal.Rice or Meal.Noodle) { <b>@(plan.Meal == Meal.Noodle ? "Bún" : "Cơm")</b> }
-                        else { <span class="red">Cắt cơm</span> }</td>
-                    <td>@switch (g.Info)
-                        {
-                            case 0: <span class="pill p-ok">Đã duyệt</span> break;
-                            case 1: <span class="pill p-warn">Chờ duyệt</span> break;
-                            case 2: <span class="pill p-bad">Bị từ chối</span> break;
-                            case 3: <span class="pill p-idle">Chưa báo</span> break;
-                            case 4: <span class="pill p-info">Leader ghi nghỉ</span> break;
-                            default: <span class="note">—</span> break;
-                        }</td>
-                </tr>
-            }
-            </tbody></table></div>
-        <p class="note" style="margin-bottom:0">Chỉ hiện trạng thái, địa chỉ công tác, nội dung dự án và báo cơm của kế hoạch đã được Leader (hoặc TP, với Leader) duyệt.</p>
-    </section>
+    <partial name="_PeopleTable" model="rows" />
     return;
 }
 @{

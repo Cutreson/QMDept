@@ -22,10 +22,11 @@ public partial class LeaderController : AppController
 
     /// <summary>GET /Leader/Overview — ldOverview.</summary>
     [HttpGet]
-    public async Task<IActionResult> Overview()
+    public async Task<IActionResult> Overview(string? s)
     {
         await D.EnsureAsync(Date, Date.AddDays(1));
         ViewData["Title"] = "Tổng quan";
+        ViewData["Section"] = s == "people" ? "people" : "projects";   // Tổng quan có 3 mục Dự án / Nhân sự / Kế hoạch tháng (yêu cầu 2026-10-20)
         return View();
     }
 

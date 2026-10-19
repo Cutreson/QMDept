@@ -437,14 +437,30 @@
   });
 })();
 
-// ---------- Xin nghỉ (Views/Shared/_LeaveSheet): đổi loại nghỉ → hiện buổi (nghỉ phép) hoặc giờ (nghỉ không lương) ----------
+// ---------- Đề xuất công việc / xin nghỉ gộp một sheet (Views/Shared/_ProposalSheet, _LeaveFields, Staff/Month ownTaskTpl) ----------
+// Ô "Loại" = Xin nghỉ → hiện phần nghỉ (lý do bắt buộc); nghỉ nửa ngày / vài giờ → hiện thêm phần nội dung công việc; nghỉ cả ngày → ẩn phần công việc.
 (function () {
   const sync = f => {
-    const t = f.querySelector('[data-leave-type]'); if (!t) return;
-    const paid = t.value === 'Paid';
-    const p = f.querySelector('[data-leave-paid]'), u = f.querySelector('[data-leave-unpaid]');
-    if (p) p.hidden = !paid; if (u) u.hidden = paid;
+    const k = f.querySelector('[data-kind]'); if (!k) return;
+    const leave = k.value === 'leave';
+    const lf = f.querySelector('[data-leave-fields]'), wb = f.querySelector('[data-work-block]');
+    let partial = false;
+    if (lf) {
+      lf.hidden = !leave;
+      const t = f.querySelector('[data-leave-type]'), paid = !t || t.value === 'Paid';
+      const p = lf.querySelector('[data-leave-paid]'), u = lf.querySelector('[data-leave-unpaid]');
+      if (p) p.hidden = !paid; if (u) u.hidden = paid;
+      const r = lf.querySelector('textarea'); if (r) r.required = leave;
+      const s = lf.querySelector('[data-leave-session]'), a = lf.querySelector('[data-leave-from]'), b = lf.querySelector('[data-leave-to]');
+      partial = paid ? !!s && s.value !== 'FullDay' : !!a && !!b && !(a.value === '08:00' && b.value === '17:00');
+    }
+    if (wb) {
+      wb.hidden = leave && !partial;
+      const h = wb.querySelector('[data-work-title]'); if (h) h.hidden = !leave;
+    }
+    const ok = f.querySelector('[data-lbl-leave]');
+    if (ok) { if (!ok.dataset.lblWork) ok.dataset.lblWork = ok.textContent; ok.textContent = leave ? ok.dataset.lblLeave : ok.dataset.lblWork; }
   };
-  document.addEventListener('change', e => { const t = e.target; if (t.matches && t.matches('[data-leave-type]') && t.form) sync(t.form); });
-  document.addEventListener('qm:sheet-open', e => { if (e.target.querySelector && e.target.querySelector('[data-leave-type]')) sync(e.target); });
+  document.addEventListener('change', e => { const t = e.target; if (t.matches && t.matches('[data-kind],[data-leave-type],[data-leave-session],[data-leave-from],[data-leave-to]') && t.form) sync(t.form); });
+  document.addEventListener('qm:sheet-open', e => { if (e.target.querySelector && e.target.querySelector('[data-kind]')) sync(e.target); });
 })();

@@ -1,7 +1,0 @@
-@model string[]
-@* Hai thẻ "Công việc | Xin nghỉ" ở đầu bảng trượt (yêu cầu 2026-10-20: đề xuất công việc và xin nghỉ gộp một chỗ, vì có thể xin nghỉ 1–2 giờ rồi vẫn làm việc).
-   Model: [0] thẻ đang mở (work|leave), [1] id template công việc, [2] id template xin nghỉ, [3] nhãn thẻ công việc. Bấm thẻ kia → bảng trượt đổi sang template đó (site.js [data-sheet]). *@
-<div class="seg" style="margin:0 0 10px">
-    <button type="button" aria-pressed="@(Model[0] == "work" ? "true" : "false")" data-sheet="@Model[1]">@Model[3]</button>
-    <button type="button" aria-pressed="@(Model[0] == "leave" ? "true" : "false")" data-sheet="@Model[2]">Xin nghỉ</button>
-</div>

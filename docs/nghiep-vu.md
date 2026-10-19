@@ -426,3 +426,7 @@ Cập nhật 2026-10-20: Trưởng phòng — Dự án tổng hợp nhanh; Nhân
 - NV → Leader nhóm duyệt; Leader → Trưởng phòng duyệt; từ chối phải nêu lý do. Duyệt ⇒ ghi `Leave` (chi tiết loại / buổi / giờ) hiện trên lịch.
 - Nghỉ vài giờ / nửa ngày (đã duyệt) không loại người đó khỏi công việc trong ngày (`Dept.PartLeave`); chỉ nghỉ cả ngày mới là "Nghỉ" (`Dept.OnLeave`).
 - Báo cáo cuối ngày của Leader chia 2 mục Chờ duyệt / Đã duyệt; đề xuất chuyển kế hoạch hiện ngay trong thẻ báo cáo.
+
+## 21. Sheet gộp + Tổng quan Leader (yêu cầu 2026-10-20)
+- Đề xuất công việc và xin nghỉ nằm trong MỘT sheet (ô "Loại đề xuất"). Xin nghỉ nửa ngày / vài giờ thì có thể kèm nội dung công việc làm trong thời gian còn lại (cùng một lần gửi, vẫn là hai đề xuất do người duyệt quyết định riêng).
+- Tổng quan của Leader chia 3 mục: Dự án, Nhân sự (nhóm mình), Kế hoạch tháng (chuyển từ Kế hoạch & duyệt).

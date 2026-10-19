@@ -12,14 +12,27 @@
     <form method="post" action="@Model.Action">
         @Html.AntiForgeryToken()
         @Ui.ReturnField(Context.Request)
-        @if (Model.LeaveSheetId is not null) { <partial name="_SheetTabs" model="@(new[] { "work", id, Model.LeaveSheetId, "Đề xuất công việc" })" /> }
-        <h3>Đề xuất công việc</h3>
+        <h3>@(Model.AllowLeave ? (Model.AllowWork ? "Đề xuất công việc / xin nghỉ" : "Xin nghỉ") : "Đề xuất công việc")</h3>
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
+        @if (Model.AllowLeave && Model.AllowWork)
+        {
+            <label class="f" for="@(id)K" style="margin-top:0">Loại đề xuất</label>
+            <select class="in" id="@(id)K" name="kind" data-kind data-nosearch>
+                <option value="work">Đề xuất công việc</option>
+                <option value="leave">Xin nghỉ</option>
+            </select>
+        }
+        else if (Model.AllowLeave) { <input type="hidden" name="kind" value="leave" data-kind> }
+        @if (Model.AllowLeave) { <partial name="_LeaveFields" model="id" /> }
+        @if (Model.AllowWork)
+        {
+        <div data-work-block>
+        <h4 class="f" data-work-title hidden style="margin:14px 0 0">Công việc làm trong thời gian còn lại</h4>
         <label class="f" for="@(id)P">Dự án</label>
         @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(),
             id: id + "P")
         @Ui.ProjectLeadHint(D, Model.Projects, id + "P", pid)
-        <label class="f" for="@(id)T">Nội dung công việc phát sinh</label>
+        <label class="f" for="@(id)T">Nội dung công việc</label>
         <input class="in" id="@(id)T" name="title" maxlength="300">
         <div class="pick2 eq">
             <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
@@ -63,7 +76,9 @@
             <label class="f" for="@(id)R">Lý do xin người hỗ trợ</label>
             <textarea class="in" id="@(id)R" name="supportReason" maxlength="500"></textarea>
         </div>
+        </div>
+        }
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
-            <button class="btn btn-primary">Gửi đề xuất</button></div>
+            <button class="btn btn-primary" data-lbl-leave="Gửi đề xuất xin nghỉ">Gửi đề xuất</button></div>
     </form>
 </template>

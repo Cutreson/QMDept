@@ -74,8 +74,16 @@ public partial class StaffController
         RequireSelfStaff(leaderOk: true, managerOk: true);
         var me = Scope.Me!;
         if (me.Role is Role.Staff) throw new BizException("Chỉ Leader / Trưởng phòng dùng mục này");
-        await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", [me.Id], Scope.ActorName, TaskSource.Planned);
-    }, "Đã thêm công việc vào kế hoạch cá nhân");
+        // Ô "Loại" = Xin nghỉ (Leader): kiểm tra nghỉ trước; nghỉ nửa ngày / vài giờ + có nội dung công việc → thêm việc ngoài khung nghỉ; ghi đề xuất nghỉ sau cùng (không ghi dở khi lỗi).
+        var isLeave = Request.Form["kind"] == "leave";
+        if (isLeave && me.Role != Role.Leader) throw new BizException("Chỉ Leader xin nghỉ ở đây");
+        (LeaveRules.Leave Lv, string Why)? lv = isLeave ? await ReadLeaveFormAsync() : null;
+        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && !string.IsNullOrWhiteSpace(title));
+        if (isLeave && withWork) EnsureOutsideLeave(lv!.Value.Lv, start, end);
+        if (withWork) await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", [me.Id], Scope.ActorName, TaskSource.Planned);
+        if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
+        Toast(!isLeave ? "Đã thêm công việc vào kế hoạch cá nhân" : withWork ? "Đã thêm công việc và gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt" : "Đã gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt");
+    });
 
     /// <summary>POST /Staff/DeleteOwnTask — Leader xóa việc kế hoạch cá nhân của chính mình (chỉ việc nguồn Planned do mình thêm).</summary>
     [HttpPost]
@@ -90,41 +98,58 @@ public partial class StaffController
     }, "Đã xóa công việc");
 
     /// <summary>
-    /// POST /Staff/RequestLeave — xin nghỉ trong "Đề xuất công việc" ở lịch tháng (yêu cầu 2026-10-20): ngày = ngày đang chọn, loại nghỉ phép (buổi) / không lương (giờ),
-    /// BẮT BUỘC nêu lý do. NV → Leader nhóm duyệt; Leader → Trưởng phòng duyệt. Duyệt thì ghi nghỉ vào lịch (WorkflowService.DecideLeaveAsync).
+    /// Xin nghỉ nằm chung sheet "Đề xuất công việc / xin nghỉ" (yêu cầu 2026-10-20; ô kind=leave của ProposeCalendar / AddOwnTask): ngày = ngày đang chọn, nghỉ phép theo buổi /
+    /// không lương theo giờ, BẮT BUỘC nêu lý do. Đọc + kiểm tra toàn bộ field nghỉ trong form (chưa ghi gì) — trả loại nghỉ và lý do.
     /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> RequestLeave(string? type, string? session, string? from, string? to, string? reason) => await Do(async () =>
+    async Task<(LeaveRules.Leave Lv, string Why)> ReadLeaveFormAsync()
     {
-        RequireSelfStaff(leaderOk: true);
         var me = Scope.Me!;
         if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp nhóm trước khi xin nghỉ");
+        if (me.Role is not (Role.Staff or Role.Leader)) throw new BizException("Chỉ nhân viên / Leader xin nghỉ");
         if (Date < Scope.Today) throw new BizException("Chỉ xin nghỉ cho hôm nay trở đi");
-        var why = (reason ?? "").Trim();
+        var why = Request.Form["reason"].ToString().Trim();
         if (why.Length == 0) throw new BizException("Nhập lý do nghỉ (bắt buộc)");
         if (why.Length > 500) throw new BizException("Lý do tối đa 500 ký tự");
-        var lt = StaffReports.ParseEnum<LeaveType>(type) ?? throw new BizException("Chọn loại nghỉ");
+        var lt = StaffReports.ParseEnum<LeaveType>(Request.Form["type"].ToString()) ?? throw new BizException("Chọn loại nghỉ");
         LeaveRules.Leave lv;
         if (lt == LeaveType.Paid)
-            lv = StaffReports.ParseEnum<LeaveSession>(session) is LeaveSession s ? LeaveRules.Paid(s) : throw new BizException("Chọn buổi nghỉ");
+            lv = StaffReports.ParseEnum<LeaveSession>(Request.Form["session"].ToString()) is LeaveSession s ? LeaveRules.Paid(s) : throw new BizException("Chọn buổi nghỉ");
         else
         {
-            var (v, err) = LeaveRules.Unpaid(from, to);
+            var (v, err) = LeaveRules.Unpaid(Request.Form["from"].ToString(), Request.Form["to"].ToString());
             if (v is null) throw new BizException(err ?? "Chọn thời gian nghỉ");
             if (!LeaveRules.UnpaidFrom.Contains(v.From) || !LeaveRules.UnpaidTo.Contains(v.To)) throw new BizException("Chọn thời gian nghỉ");
             lv = v;
         }
         if (await Db.Leaves.AnyAsync(l => l.Date == Date && l.EmployeeId == me.Id)) throw new BizException("Ngày này đã được ghi nghỉ");
-        var x = await Db.LeaveRequests.FirstOrDefaultAsync(r => r.Date == Date && r.PersonId == me.Id);
+        var x = await Db.LeaveRequests.AsNoTracking().FirstOrDefaultAsync(r => r.Date == Date && r.PersonId == me.Id);
         if (x is not null && x.Status == ExtraStatus.Approved) throw new BizException("Đề xuất xin nghỉ ngày này đã được duyệt");
+        return (lv, why);
+    }
+
+    /// <summary>Nghỉ nửa ngày / vài giờ thì còn làm việc phần còn lại (Dept.IsFullDayLeave: nghỉ đủ 8 giờ = cả ngày).</summary>
+    static bool IsPartialLeave(LeaveRules.Leave lv) => lv.Hours < 8;
+
+    /// <summary>Việc làm trong phần thời gian còn lại không được trùng khung giờ nghỉ.</summary>
+    static void EnsureOutsideLeave(LeaveRules.Leave lv, string? start, string? end)
+    {
+        if (start is not null && end is not null && Fmt.IsHhmm(start) && Fmt.IsHhmm(end) && start.Lt(lv.To) && end.Gt(lv.From))
+            throw new BizException($"Công việc trùng giờ nghỉ ({lv.From}–{lv.To}) — chọn giờ làm việc ngoài khung nghỉ");
+    }
+
+    /// <summary>Ghi đề xuất xin nghỉ (chờ duyệt) + thông báo người duyệt.</summary>
+    async Task SaveLeaveRequestAsync(LeaveRules.Leave lv, string why)
+    {
+        var me = Scope.Me!;
+        var x = await Db.LeaveRequests.FirstOrDefaultAsync(r => r.Date == Date && r.PersonId == me.Id);
         var now = VnTime.UtcNow;
         if (x is null) { x = new LeaveRequest { Date = Date, PersonId = me.Id, CreatedAt = now }; Db.LeaveRequests.Add(x); }
         x.Role = me.Role; x.LeaveType = lv.Type; x.LeaveSession = lv.Session; x.LeaveFrom = lv.From; x.LeaveTo = lv.To;
         x.LeaveHours = lv.Hours; x.LeaveDays = lv.Days; x.Reason = why;
         x.Status = ExtraStatus.Pending; x.DecidedBy = null; x.DecidedAt = null; x.DecisionNote = null; x.UpdatedAt = now;
         await Db.SaveChangesAsync();
-        await Notify.LeaveRequestedAsync(me.Id, me.Role, Date, $"{(lt == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương")} {lv.From}–{lv.To} · {why}");
-    }, "Đã gửi đề xuất xin nghỉ, chờ duyệt");
+        await Notify.LeaveRequestedAsync(me.Id, me.Role, Date, $"{(lv.Type == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương")} {lv.From}–{lv.To} · {why}");
+    }
 
     /// <summary>POST /Staff/CancelLeaveRequest — rút lại đề xuất xin nghỉ của mình (chưa được duyệt).</summary>
     [HttpPost]
@@ -144,6 +169,12 @@ public partial class StaffController
     public async Task<IActionResult> ProposeCalendar(int projectId, int? itemId, string? title, string? start, string? end) => await Do(async () =>
     {
         RequireSelfStaff();
+        // Ô "Loại đề xuất" = Xin nghỉ: nghỉ nửa ngày / vài giờ + có nội dung công việc → đề xuất thêm công việc ngoài khung nghỉ (Leader nhóm duyệt cả hai).
+        var isLeave = Request.Form["kind"] == "leave";
+        (LeaveRules.Leave Lv, string Why)? lv = isLeave ? await ReadLeaveFormAsync() : null;
+        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && !string.IsNullOrWhiteSpace(title));
+        if (isLeave && !withWork) { await SaveLeaveRequestAsync(lv!.Value.Lv, lv.Value.Why); Toast("Đã gửi đề xuất xin nghỉ, chờ Leader duyệt"); return; }
+        if (isLeave) EnsureOutsideLeave(lv!.Value.Lv, start, end);
         var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
         // Xin người hỗ trợ theo số lượng: từng phòng ban (qd_<chỉ số>) và từng nhóm khác (qg_<Id Leader>) — không chỉ định người ngoài nhóm.
         var quotas = new List<(string Name, int Qty)>();
@@ -153,7 +184,8 @@ public partial class StaffController
             if (int.TryParse(Request.Form["qg_" + l.Id], out var qg) && qg > 0) quotas.Add(("Nhóm " + l.Name, qg));
         var includeSelf = Request.Form["self"].Count > 0;   // ô tích "Tôi thực hiện"
         await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, quotas, Request.Form["supportReason"].ToString(), includeSelf);
-        Toast("Đã gửi đề xuất — chờ Leader duyệt");
+        if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
+        Toast(isLeave ? "Đã gửi đề xuất xin nghỉ và công việc — chờ Leader duyệt" : "Đã gửi đề xuất — chờ Leader duyệt");
     });
 
     /// <summary>GET /Staff/Projects — nvProjects (?pt=active|done); có ?pj= → projectDetail(pj, 'nv') (?tab=overview|plan|people).</summary>

@@ -3,11 +3,14 @@
    Model = khóa mục đang chọn: projects | people | month. *@
 @{
     var req = Context.Request;
+    // Leader (yêu cầu 2026-10-20) cũng có 3 mục này: Dự án / Nhân sự (nhóm mình) / Kế hoạch tháng (đã chuyển từ Kế hoạch & duyệt)
+    var ld = Scope.Account.Role == Role.Leader;
+    var home = ld ? "/Leader/Overview" : "/Manager/Overview";
     var tabs = new (string Key, string Path, string Label)[]
     {
-        ("projects", "/Manager/Overview", "Dự án"),
-        ("people", "/Manager/Overview?s=people", "Nhân sự"),
-        ("month", "/Staff/Month?as=all", "Kế hoạch tháng"),
+        ("projects", home, "Dự án"),
+        ("people", home + "?s=people", "Nhân sự"),
+        ("month", ld ? "/Staff/Month?as=mine" : "/Staff/Month?as=all", "Kế hoạch tháng"),
     };
 }
 @Ui.Head(1, "Tổng quan")

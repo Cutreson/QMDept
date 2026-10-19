@@ -1,0 +1,28 @@
+@model string
+@* Phần "Xin nghỉ" trong sheet Đề xuất công việc / xin nghỉ (yêu cầu 2026-10-20): loại nghỉ (phép theo buổi / không lương theo giờ) + lý do BẮT BUỘC.
+   Chỉ hiện khi ô "Loại đề xuất" = Xin nghỉ; nghỉ nửa ngày / vài giờ thì sheet hiện thêm phần nội dung công việc (site.js: syncPropForm). Model = tiền tố id. *@
+<div data-leave-fields hidden>
+    <label class="f" for="@(Model)LT">Loại nghỉ</label>
+    <select class="in" id="@(Model)LT" name="type" data-leave-type>
+        <option value="Paid">Nghỉ phép</option>
+        <option value="Unpaid">Nghỉ không lương</option>
+    </select>
+    <div data-leave-paid>
+        <label class="f" for="@(Model)LS">Buổi nghỉ</label>
+        <select class="in" id="@(Model)LS" name="session" data-leave-session>
+            @foreach (var s in new[] { LeaveSession.Morning, LeaveSession.Afternoon, LeaveSession.FullDay })
+            {
+                var (label, a, b) = LeaveRules.Session(s);
+                <option value="@s" selected="@(s == LeaveSession.FullDay)">@label (@a–@b)</option>
+            }
+        </select>
+    </div>
+    <div data-leave-unpaid hidden>
+        <div class="pick2 eq">
+            <div><label class="f" for="@(Model)LF">Nghỉ từ</label><select class="in mono" id="@(Model)LF" name="from" data-leave-from>@foreach (var x in LeaveRules.UnpaidFrom) { <option value="@x">@x</option> }</select></div>
+            <div><label class="f" for="@(Model)LE">Đến</label><select class="in mono" id="@(Model)LE" name="to" data-leave-to>@foreach (var x in LeaveRules.UnpaidTo) { <option value="@x">@x</option> }</select></div>
+        </div>
+    </div>
+    <label class="f" for="@(Model)LR">Lý do nghỉ (bắt buộc)</label>
+    <textarea class="in" id="@(Model)LR" name="reason" maxlength="500"></textarea>
+</div>
