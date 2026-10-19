@@ -195,3 +195,5 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     (rủi ro lên đầu). **Nhân sự** = bảng + thống kê (cả TP): công tác / công ty, nghỉ, báo cơm / cắt cơm, ai chưa báo / chờ duyệt / bị từ chối để nhắc — **chỉ hiện địa điểm, nghỉ, báo cơm của kế hoạch đã được Leader duyệt**
     (Leader: TP duyệt; Leader ghi nghỉ hiện riêng). **Kế hoạch tháng** có 2 mục **Lịch của tôi** (`?as=mine`, TP thêm / xóa việc cá nhân như Leader) và **Lịch phòng** (`?as=all`).
     **Không giao việc vượt cấp**: ở Lịch phòng TP / Quản trị chỉ giao cho Leader (`AssignTask` chặn nhân viên); Leader giao tiếp cho nhân viên nhóm mình.
+35. **Tổng quan TP → Nhân sự chỉ là MỘT bảng** (yêu cầu 2026-10-20, thay phần thống kê của quy tắc 34): cột Họ tên, Nhóm, **Trạng thái làm việc** (Làm việc tại công ty / Công tác trong ngày / Công tác dài ngày / Nghỉ phép / Nghỉ không lương
+    kèm thời gian nghỉ), **Địa chỉ công tác** (tỉnh / thành + khách hàng), **Nội dung dự án** (dự án + việc + giờ của kế hoạch đã duyệt), Báo cơm, Thông tin (Đã duyệt / Chờ duyệt / Bị từ chối / Chưa báo). Không còn ô số và khung "Cần nhắc nhở".

@@ -11,7 +11,7 @@
 <partial name="_DayBar" />
 @if (people)
 {
-    // ================= NHÂN SỰ: bảng + thống kê — chỉ hiện thông tin đã được Leader phê duyệt =================
+    // ================= NHÂN SỰ: một bảng — chỉ hiện thông tin đã được Leader phê duyệt =================
     var leaders = D.Leaders();
     var rows = new List<(Person P, string Group)>();
     foreach (var m in D.Active.Where(x => x.Role == Role.Manager).OrderBy(x => x.SortOrder)) rows.Add((m, "Trưởng phòng"));
@@ -33,64 +33,39 @@
         if (lv is not null) return (4, plan, lv);
         return (plan is null ? 3 : st == PlanState.Rejected ? 2 : 1, plan, lv);
     }
-    bool IsLeaveRow(DayPlan? plan, Leave? lv, int info) => (info == 0 && plan is not null && LeaveRules.IsLeave(plan.Status)) || (info is 0 or 4 && lv is not null);
-    var data = rows.Select(r => (r.P, r.Group, G: Get(r.P))).ToList();
-    var counted = data.Where(x => x.G.Info != 9).ToList();
-    int known = counted.Count(x => x.G.Info is 0 or 4);
-    int nLeave = counted.Count(x => IsLeaveRow(x.G.Plan, x.G.Lv, x.G.Info));
-    int nTrip = counted.Count(x => x.G.Info == 0 && x.G.Plan is not null && LeaveRules.IsTrip(x.G.Plan.Status) && !IsLeaveRow(x.G.Plan, x.G.Lv, x.G.Info));
-    int nOffice = counted.Count(x => x.G.Info == 0 && x.G.Plan is not null && x.G.Plan.Status == WorkStatus.AtOffice && !IsLeaveRow(x.G.Plan, x.G.Lv, x.G.Info));
-    int nRice = counted.Count(x => x.G.Info == 0 && x.G.Plan is not null && !IsLeaveRow(x.G.Plan, x.G.Lv, x.G.Info) && x.G.Plan.Meal is Meal.Rice or Meal.Noodle);
-    int nCut = counted.Count(x => x.G.Info == 0 && x.G.Plan is not null && !IsLeaveRow(x.G.Plan, x.G.Lv, x.G.Info) && x.G.Plan.Meal == Meal.None);
-    var missing = counted.Where(x => x.G.Info == 3).ToList();
-    var waiting = counted.Where(x => x.G.Info == 1).ToList();
-    var rejected = counted.Where(x => x.G.Info == 2).ToList();
-    <div class="kpis k4">
-        <div class="kpi k-mgr"><b>@data.Count</b><span>Nhân sự (kể cả TP)</span></div>
-        <div class="kpi k-ok"><b>@known/@counted.Count</b><span>Đã có thông tin duyệt</span></div>
-        <div class="kpi k-info"><b>@nOffice</b><span>Ở công ty</span></div>
-        <div class="kpi k-info"><b>@nTrip</b><span>Công tác</span></div>
-    </div>
-    <div class="kpis k4">
-        <div class="kpi k-bad"><b>@nLeave</b><span>Nghỉ</span></div>
-        <div class="kpi k-ok"><b>@nRice</b><span>Báo cơm</span></div>
-        <div class="kpi k-warn"><b>@nCut</b><span>Cắt cơm</span></div>
-        <div class="kpi @(missing.Count + waiting.Count + rejected.Count > 0 ? "k-bad" : "k-idle")"><b>@(missing.Count + waiting.Count + rejected.Count)</b><span>Cần nhắc</span></div>
-    </div>
-    @if (missing.Count + waiting.Count + rejected.Count > 0)
-    {
-        <section class="card sec"><h2>Cần nhắc nhở</h2>
-            @if (missing.Count > 0) { <p style="margin:0 0 6px"><b class="red">Chưa báo trạng thái (@missing.Count):</b> @string.Join(", ", missing.Select(x => x.P.Name + (x.P.Role == Role.Staff ? " (" + x.Group + ")" : " (Leader)")))</p> }
-            @if (waiting.Count > 0) { <p style="margin:0 0 6px"><b>Đã báo, chờ Leader duyệt (@waiting.Count):</b> @string.Join(", ", waiting.Select(x => x.P.Name + " — " + (x.P.Role == Role.Leader ? "chờ TP" : x.Group)))</p> }
-            @if (rejected.Count > 0) { <p style="margin:0"><b class="red">Bị từ chối, cần báo lại (@rejected.Count):</b> @string.Join(", ", rejected.Select(x => x.P.Name))</p> }
-        </section>
-    }
     <section class="card sec"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
         <div class="tbl-wrap"><table>
-            <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Công tác / Công ty</th><th>Nghỉ</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
+            <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
             <tbody>
             @{ var no = 0; }
-            @foreach (var (p, group, g) in data)
+            @foreach (var (p, group, g) in rows.Select(r => (r.P, r.Group, G: Get(r.P))))
             {
                 no++;
                 var plan = g.Plan;
-                var lvRow = IsLeaveRow(plan, g.Lv, g.Info);
-                var ok = g.Info == 0;
+                var ok = g.Info == 0 && plan is not null;
+                var onLeave = (ok && LeaveRules.IsLeave(plan!.Status)) || (g.Info is 0 or 4 && g.Lv is not null);
+                var trip = ok && !onLeave && LeaveRules.IsTrip(plan!.Status);
+                var ts = ok && !onLeave ? D.Chosen(d, p.Id) : new List<WorkTask>();
                 <tr>
                     <td class="n">@no</td>
-                    <td><b>@(p.Role == Role.Manager ? p.Name : "")</b>@if (p.Role != Role.Manager) { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
+                    <td style="white-space:nowrap">@if (p.Role == Role.Manager) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
                     <td>@group</td>
+                    @* Trạng thái làm việc: tại công ty / công tác trong ngày / công tác dài ngày / nghỉ phép / nghỉ không lương (kèm thời gian nghỉ) *@
                     <td>@if (g.Info == 9) { <span class="note">—</span> }
-                        else if (lvRow) { <span class="note">—</span> }
-                        else if (ok && plan is not null && LeaveRules.IsTrip(plan.Status)) { <span class="pill p-info">Công tác @(plan.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span><div class="note">@(plan.TripProvince ?? "—") · @(plan.TripCustomer ?? "—")</div> }
-                        else if (ok) { <span class="pill p-ok">Ở công ty</span> }
+                        else if (onLeave)
+                        {
+                            var lt = plan is not null && ok && plan.LeaveType is not null ? Blocks.LeaveText(plan) : null;
+                            <span class="pill p-bad">@(plan is not null && ok && LeaveRules.IsLeave(plan.Status) ? Labels.Of(plan.Status) : "Nghỉ")</span>
+                            <div class="note">@if (lt is not null) { @Html.Raw(lt) } else { @(g.Lv?.Reason ?? "Cả ngày") }</div>
+                        }
+                        else if (trip) { <span class="pill p-info">Công tác @(plan!.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span> }
+                        else if (ok) { <span class="pill p-ok">Làm việc tại công ty</span> }
                         else { <span class="note">—</span> }</td>
-                    <td>@if (g.Info == 9) { <span class="note">—</span> }
-                        else if (lvRow) { <b class="red">Nghỉ</b><div class="note">@(g.Lv is not null ? g.Lv.Reason : plan is not null ? Labels.Of(plan.Status) : "")@if (plan is not null && ok && plan.LeaveType is not null) { <text> · </text>@Html.Raw(Blocks.LeaveText(plan)) }</div> }
-                        else if (g.Info == 0) { <span>Không</span> }
-                        else { <span class="note">—</span> }</td>
-                    <td>@if (g.Info == 9 || lvRow || !ok || plan is null) { <span class="note">—</span> }
-                        else if (plan.Meal is Meal.Rice or Meal.Noodle) { <b>@(plan.Meal == Meal.Noodle ? "Bún" : "Cơm")</b> }
+                    <td>@if (trip) { <b>@(plan!.TripProvince ?? "—")</b><div class="note">@(plan.TripCustomer ?? "")</div> } else { <span class="note">—</span> }</td>
+                    <td>@if (ts.Count == 0) { <span class="note">—</span> }
+                        else foreach (var t in ts) { <div style="margin-bottom:3px"><b>@D.PjName(t.ProjectId)</b><div class="note">@t.Title · <span class="mono">@t.Start–@t.End</span></div></div> }</td>
+                    <td>@if (!ok || onLeave) { <span class="note">—</span> }
+                        else if (plan!.Meal is Meal.Rice or Meal.Noodle) { <b>@(plan.Meal == Meal.Noodle ? "Bún" : "Cơm")</b> }
                         else { <span class="red">Cắt cơm</span> }</td>
                     <td>@switch (g.Info)
                         {
@@ -104,7 +79,7 @@
                 </tr>
             }
             </tbody></table></div>
-        <p class="note" style="margin-bottom:0">Chỉ hiện địa điểm / nghỉ / báo cơm của kế hoạch đã được Leader (hoặc TP, với Leader) duyệt.</p>
+        <p class="note" style="margin-bottom:0">Chỉ hiện trạng thái, địa chỉ công tác, nội dung dự án và báo cơm của kế hoạch đã được Leader (hoặc TP, với Leader) duyệt.</p>
     </section>
     return;
 }

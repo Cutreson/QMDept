@@ -267,3 +267,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-20) TP: gộp hàng nút trên thanh trên vào Tổng quan (3 mục Dự án / Nhân sự / Kế hoạch tháng + ô Xem màn hình); TeamPeople của TP gồm cả Leader; biểu đồ tiến độ cuộn ngang. Đã kiểm tra TP + Quản trị.
 - (2026-10-20) Xem màn hình người khác chỉ còn Kế hoạch tháng (TP / Quản trị / Leader); ô Xem màn hình chỉ ở mục Kế hoạch tháng. Đã kiểm tra TP + Quản trị xem Leader 9/26 và NV 11: mọi trang khác chuyển về Month.
 - (2026-10-20) Tổng quan TP: Dự án tổng hợp nhanh (trạng thái, cần chú ý, theo Leader, danh sách lọc), Nhân sự bảng + thống kê chỉ gồm thông tin Leader đã duyệt, Kế hoạch tháng có Lịch của tôi / Lịch phòng; TP chỉ giao việc cho Leader. Đã thử giao cho NV (bị chặn), giao Leader, việc cá nhân TP, rồi xóa dữ liệu thử.
+- (2026-10-20) Nhân sự (Tổng quan TP): bỏ ô số + khung cần nhắc, chỉ một bảng có thêm Địa chỉ công tác, Nội dung dự án, Trạng thái làm việc (gồm nghỉ + thời gian).
