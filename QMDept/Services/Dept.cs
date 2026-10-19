@@ -46,6 +46,12 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<Assignment> Assigns { get; private set; } = [];
     /// <summary>Đề xuất lịch của NV đang chờ Leader duyệt (CalendarProposal, kèm People).</summary>
     public List<CalendarProposal> PendingProposals { get; private set; } = [];
+    /// <summary>Đề xuất xin nghỉ đang chờ duyệt (mọi ngày).</summary>
+    public List<LeaveRequest> PendingLeaves { get; private set; } = [];
+    /// <summary>Xin nghỉ chờ Leader <paramref name="leaderId"/> duyệt (NV trong nhóm).</summary>
+    public List<LeaveRequest> LeavesFor(int leaderId) => PendingLeaves.Where(x => x.Role == Role.Staff && P(x.PersonId) is { IsDeleted: false } p && p.LeaderId == leaderId).OrderBy(x => x.Date).ThenBy(x => x.CreatedAt).ToList();
+    /// <summary>Xin nghỉ của Leader chờ Trưởng phòng duyệt.</summary>
+    public List<LeaveRequest> LeaderLeaves() => PendingLeaves.Where(x => x.Role == Role.Leader && P(x.PersonId) is { IsDeleted: false }).OrderBy(x => x.Date).ThenBy(x => x.CreatedAt).ToList();
     /// <summary>Đề xuất chờ duyệt của NV thuộc nhóm của Leader <paramref name="leaderId"/>.</summary>
     public List<CalendarProposal> ProposalsFor(int leaderId) => PendingProposals.Where(x => P(x.ProposerId) is { IsDeleted: false } p && p.LeaderId == leaderId).OrderBy(x => x.Date).ThenBy(x => x.CreatedAt).ToList();
     public IEnumerable<WorkTask> Tasks => _tasks.Values;
@@ -68,7 +74,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         if (!_base)
         {
             var b = await cache.GetBaseAsync();
-            People = b.People; Projects = b.Projects; Items = b.Items; Assigns = b.Assigns; PendingProposals = b.PendingProposals;
+            People = b.People; Projects = b.Projects; Items = b.Items; Assigns = b.Assigns; PendingProposals = b.PendingProposals; PendingLeaves = b.PendingLeaves;
             _base = true;
         }
         if (_ranges.Any(r => r.From <= from && to <= r.To)) return;
@@ -209,7 +215,12 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<WorkTask> Chosen(DateOnly date, int emp) => TasksOn(date, emp).Where(t => t.Selected).ToList();
     public DayPlan? PlanOf(DateOnly date, int emp) { Guard(date); return _plans.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
     public DayReport? ReportOf(DateOnly date, int emp) { Guard(date); return _reports.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
-    public Leave? OnLeave(DateOnly date, int emp) { Guard(date); return _leaves.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
+    /// <summary>Nghỉ cả ngày (ghi tay không chi tiết, nghỉ phép cả ngày, hoặc nghỉ không lương đủ 8 giờ) — người này không làm việc trong ngày.</summary>
+    public static bool IsFullDayLeave(Leave l) => l.LeaveType is null || l.LeaveSession == LeaveSession.FullDay || (l.LeaveType == LeaveType.Unpaid && (l.LeaveHours ?? 8) >= 8);
+    Leave? RawLeave(DateOnly date, int emp) { Guard(date); return _leaves.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
+    public Leave? OnLeave(DateOnly date, int emp) => RawLeave(date, emp) is { } l && IsFullDayLeave(l) ? l : null;
+    /// <summary>Nghỉ một phần ngày (nửa ngày / vài giờ) đã được duyệt — người này vẫn làm việc phần còn lại (yêu cầu 2026-10-20).</summary>
+    public Leave? PartLeave(DateOnly date, int emp) => RawLeave(date, emp) is { } l && !IsFullDayLeave(l) ? l : null;
     /// <summary>extrasOn(date): phát sinh trong ngày thuộc phạm vi, sắp theo thời điểm tạo.</summary>
     public List<Extra> ExtrasOn(DateOnly date) { Guard(date); return _extras.Values.Where(x => x.Date == date && InScope(x.EmployeeId)).OrderBy(x => x.CreatedAt).ToList(); }
     public Extra? ExtraById(int id) => _extras.GetValueOrDefault(id);
@@ -358,7 +369,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         return _plans.Values.Count(p => p.Date == d && p.LeaderDecision is null && Team(p.EmployeeId))
             + _extras.Values.Count(x => x.Date == d && x.Status == ExtraStatus.Pending && Team(x.EmployeeId))
             + _ots.Values.Count(x => x.Date == d && x.Role == Role.Staff && x.NeedsDecision && Team(x.PersonId))
-            + ProposalsFor(lid).Count;
+            + ProposalsFor(lid).Count + LeavesFor(lid).Count;
     }
 
     /// <summary>Số mục chờ Leader xử lý trong ngày (badge tab Kế hoạch &amp; duyệt).</summary>

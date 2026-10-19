@@ -35,6 +35,8 @@ public sealed class ManagerApprovalsVm
     public int PendingLeader { get; init; }
     /// <summary>Chế độ leader: trạng thái làm việc trong ngày của Leader (theo bộ lọc) + Leader chưa gửi.</summary>
     public List<DayPlan> LeaderPlans { get; init; } = [];
+    /// <summary>Xin nghỉ của Leader: chờ TP duyệt (mục Chờ duyệt) / đã quyết định gần đây.</summary>
+    public List<LeaveRequest> LeaderLeaves { get; init; } = [];
     public List<Person> LeaderNotSentPlan { get; init; } = [];
 
     /// <summary>Các lựa chọn của ô "Trạng thái:".</summary>

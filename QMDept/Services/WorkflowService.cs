@@ -214,6 +214,32 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (tx is not null) await tx.CommitAsync();
         await notify.CalendarDecidedAsync(x.ProposerId, x.Date, x.Title, approve, note);
     }
+
+    /// <summary>
+    /// Duyệt (approve) / từ chối (bắt buộc lý do) đề xuất xin nghỉ (yêu cầu 2026-10-20). Duyệt → ghi "Nghỉ" vào lịch (bảng leaves, kèm loại + buổi / giờ + lý do)
+    /// nên lịch tháng và các màn hình khác hiện nghỉ ngay. Quyền duyệt do controller kiểm (Leader: NV nhóm mình; TP: Leader).
+    /// </summary>
+    public async Task DecideLeaveAsync(int id, bool approve, string? note, Person actor)
+    {
+        var x = await db.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id) ?? throw new BizException("Không tìm thấy đề xuất xin nghỉ");
+        if (x.Status != ExtraStatus.Pending) throw new BizException("Đề xuất xin nghỉ đã được xử lý — tải lại trang");
+        var n = (note ?? "").Trim();
+        if (!approve && n.Length == 0) throw new BizException("Nhập lý do từ chối");
+        if (n.Length > 500) n = n[..500];
+        await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
+        x.Status = approve ? ExtraStatus.Approved : ExtraStatus.Rejected;
+        x.DecidedBy = actor.Name; x.DecidedAt = VnTime.UtcNow; x.DecisionNote = approve ? null : n;
+        if (approve)
+        {
+            var lv = await db.Leaves.FirstOrDefaultAsync(l => l.Date == x.Date && l.EmployeeId == x.PersonId);
+            if (lv is null) { lv = new Leave { Date = x.Date, EmployeeId = x.PersonId }; db.Leaves.Add(lv); }
+            lv.Reason = x.Reason; lv.LeaveType = x.LeaveType; lv.LeaveSession = x.LeaveSession;
+            lv.LeaveFrom = x.LeaveFrom; lv.LeaveTo = x.LeaveTo; lv.LeaveHours = x.LeaveHours; lv.LeaveDays = x.LeaveDays;
+        }
+        await db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
+        await notify.LeaveDecidedAsync(x.PersonId, x.Date, approve, approve ? null : n);
+    }
     /// <summary>
     /// Đặt vai trò NV trong dự án (chỉ ghi khi khác vai trò hiện tại). Mỗi dự án chỉ có MỘT Leader dự án (yêu cầu 2026-10-14):
     /// chọn người mới làm Leader dự án thì người đang là Leader dự án chuyển về "Hỗ trợ".

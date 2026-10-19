@@ -51,6 +51,8 @@ public static class NotifyCatalog
         new(NotifyType.CarryOver, "Kế hoạch chuyển tiếp", "Việc chuyển tiếp của bạn được duyệt / chỉnh / hoàn tác", [Role.Staff]),
         new(NotifyType.ProjectOwner, "Dự án giao nhóm phụ trách", "Trưởng phòng giao / bỏ giao một dự án cho nhóm của bạn phụ trách", [Role.Leader]),
         new(NotifyType.TeamChanged, "Đổi nhóm trên sơ đồ nhân sự", "Trưởng phòng chuyển nhân sự sang nhóm khác (bạn hoặc nhân sự trong nhóm bạn)", [Role.Staff, Role.Leader]),
+        new(NotifyType.LeaveRequested, "Đề xuất xin nghỉ cần duyệt", "Nhân viên (với Leader) hoặc Leader (với Trưởng phòng) xin nghỉ", [Role.Leader, Role.Manager]),
+        new(NotifyType.LeaveDecided, "Kết quả xin nghỉ", "Đề xuất xin nghỉ của bạn được duyệt / từ chối", [Role.Staff, Role.Leader]),
         new(NotifyType.CalendarProposed, "Đề xuất lịch mới", "Nhân viên trong nhóm đề xuất thêm công việc / người hỗ trợ ở lịch tháng", [Role.Leader]),
         new(NotifyType.CalendarDecided, "Kết quả đề xuất lịch", "Đề xuất lịch của bạn được duyệt / từ chối", [Role.Staff]),
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
@@ -175,6 +177,18 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
             string.IsNullOrWhiteSpace(note) ? $"{title} · bởi {Actor}" : $"{title} — {note.Trim()} · bởi {Actor}", Q("/Staff/Month", d));
 
     /// <summary>TP giao / bỏ giao dự án cho nhóm Leader phụ trách → Leader đó.</summary>
+    /// <summary>NV / Leader xin nghỉ → Leader nhóm (NV) / mọi TP (Leader) duyệt (yêu cầu 2026-10-20).</summary>
+    public async Task LeaveRequestedAsync(int person, Role role, DateOnly d, string what)
+    {
+        var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
+        var url = role == Role.Staff ? "/Planning/Proposals" : "/Manager/Approvals?mode=leader";
+        await SendAsync(to, NotifyType.LeaveRequested, $"{await Name(person)} xin nghỉ ngày {Fmt.Dm(d)}", what, Q(url, d));
+    }
+
+    /// <summary>Kết quả xin nghỉ → người xin.</summary>
+    public async Task LeaveDecidedAsync(int person, DateOnly d, bool approved, string? note) =>
+        await SendAsync([person], NotifyType.LeaveDecided, $"Xin nghỉ ngày {Fmt.Dm(d)} {(approved ? "đã được duyệt" : "bị từ chối")}", Body(note), Q("/Staff/Month", d));
+
     /// <summary>TP chuyển NV sang nhóm khác trên sơ đồ nhân sự (yêu cầu 2026-10-19) → NV, Leader cũ và Leader mới.</summary>
     public async Task TeamChangedAsync(int emp, int? oldLeader, int? newLeader)
     {

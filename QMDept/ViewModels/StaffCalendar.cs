@@ -17,6 +17,8 @@ public sealed class StaffMonthVm
     public Person? Me { get; init; }
     /// <summary>Đề xuất lịch của chính NV trong ngày đang chọn (nvMonth, chế độ một người, đang ở màn hình của mình).</summary>
     public List<CalendarProposal> Proposals { get; init; } = [];
+    /// <summary>Đề xuất xin nghỉ của chính người đang đăng nhập trong ngày đang chọn (Đề xuất công việc → Xin nghỉ).</summary>
+    public List<LeaveRequest> LeaveRequests { get; init; } = [];
     /// <summary>ppl = poolFor('nv') (chỉ dùng ở chế độ "Tất cả nhân sự").</summary>
     public List<Person> People { get; init; } = [];
 

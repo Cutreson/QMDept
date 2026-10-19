@@ -436,3 +436,15 @@
     f.requestSubmit ? f.requestSubmit() : f.submit();
   });
 })();
+
+// ---------- Xin nghỉ (Views/Shared/_LeaveSheet): đổi loại nghỉ → hiện buổi (nghỉ phép) hoặc giờ (nghỉ không lương) ----------
+(function () {
+  const sync = f => {
+    const t = f.querySelector('[data-leave-type]'); if (!t) return;
+    const paid = t.value === 'Paid';
+    const p = f.querySelector('[data-leave-paid]'), u = f.querySelector('[data-leave-unpaid]');
+    if (p) p.hidden = !paid; if (u) u.hidden = paid;
+  };
+  document.addEventListener('change', e => { const t = e.target; if (t.matches && t.matches('[data-leave-type]') && t.form) sync(t.form); });
+  document.addEventListener('qm:sheet-open', e => { if (e.target.querySelector && e.target.querySelector('[data-leave-type]')) sync(e.target); });
+})();

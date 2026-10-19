@@ -25,6 +25,8 @@ public partial class StaffController
             ? await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
                 .Where(p => p.ProposerId == Scope.Account.Id && p.Date == Date).OrderBy(p => p.CreatedAt).ToListAsync()
             : [];
+        var leaveReqs = (Scope.Account.Role == Role.Staff || (Scope.Account.Role == Role.Leader && Scope.OwnCalendar)) && !Scope.IsViewingOther
+            ? await Db.LeaveRequests.AsNoTracking().Where(r => r.PersonId == Scope.Account.Id && r.Date == Date).ToListAsync() : [];
         ViewData["Title"] = "Kế hoạch tháng";
         return View(new StaffMonthVm
         {
@@ -34,6 +36,7 @@ public partial class StaffController
             Me = Scope.Me,
             People = Scope.TeamPeople,
             Proposals = props,
+            LeaveRequests = leaveReqs,
         });
     }
 
@@ -85,6 +88,54 @@ public partial class StaffController
             ?? throw new BizException("Không tìm thấy công việc");
         await Flow.DeleteTaskAsync(t.Id);
     }, "Đã xóa công việc");
+
+    /// <summary>
+    /// POST /Staff/RequestLeave — xin nghỉ trong "Đề xuất công việc" ở lịch tháng (yêu cầu 2026-10-20): ngày = ngày đang chọn, loại nghỉ phép (buổi) / không lương (giờ),
+    /// BẮT BUỘC nêu lý do. NV → Leader nhóm duyệt; Leader → Trưởng phòng duyệt. Duyệt thì ghi nghỉ vào lịch (WorkflowService.DecideLeaveAsync).
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> RequestLeave(string? type, string? session, string? from, string? to, string? reason) => await Do(async () =>
+    {
+        RequireSelfStaff(leaderOk: true);
+        var me = Scope.Me!;
+        if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp nhóm trước khi xin nghỉ");
+        if (Date < Scope.Today) throw new BizException("Chỉ xin nghỉ cho hôm nay trở đi");
+        var why = (reason ?? "").Trim();
+        if (why.Length == 0) throw new BizException("Nhập lý do nghỉ (bắt buộc)");
+        if (why.Length > 500) throw new BizException("Lý do tối đa 500 ký tự");
+        var lt = StaffReports.ParseEnum<LeaveType>(type) ?? throw new BizException("Chọn loại nghỉ");
+        LeaveRules.Leave lv;
+        if (lt == LeaveType.Paid)
+            lv = StaffReports.ParseEnum<LeaveSession>(session) is LeaveSession s ? LeaveRules.Paid(s) : throw new BizException("Chọn buổi nghỉ");
+        else
+        {
+            var (v, err) = LeaveRules.Unpaid(from, to);
+            if (v is null) throw new BizException(err ?? "Chọn thời gian nghỉ");
+            if (!LeaveRules.UnpaidFrom.Contains(v.From) || !LeaveRules.UnpaidTo.Contains(v.To)) throw new BizException("Chọn thời gian nghỉ");
+            lv = v;
+        }
+        if (await Db.Leaves.AnyAsync(l => l.Date == Date && l.EmployeeId == me.Id)) throw new BizException("Ngày này đã được ghi nghỉ");
+        var x = await Db.LeaveRequests.FirstOrDefaultAsync(r => r.Date == Date && r.PersonId == me.Id);
+        if (x is not null && x.Status == ExtraStatus.Approved) throw new BizException("Đề xuất xin nghỉ ngày này đã được duyệt");
+        var now = VnTime.UtcNow;
+        if (x is null) { x = new LeaveRequest { Date = Date, PersonId = me.Id, CreatedAt = now }; Db.LeaveRequests.Add(x); }
+        x.Role = me.Role; x.LeaveType = lv.Type; x.LeaveSession = lv.Session; x.LeaveFrom = lv.From; x.LeaveTo = lv.To;
+        x.LeaveHours = lv.Hours; x.LeaveDays = lv.Days; x.Reason = why;
+        x.Status = ExtraStatus.Pending; x.DecidedBy = null; x.DecidedAt = null; x.DecisionNote = null; x.UpdatedAt = now;
+        await Db.SaveChangesAsync();
+        await Notify.LeaveRequestedAsync(me.Id, me.Role, Date, $"{(lt == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương")} {lv.From}–{lv.To} · {why}");
+    }, "Đã gửi đề xuất xin nghỉ, chờ duyệt");
+
+    /// <summary>POST /Staff/CancelLeaveRequest — rút lại đề xuất xin nghỉ của mình (chưa được duyệt).</summary>
+    [HttpPost]
+    public async Task<IActionResult> CancelLeaveRequest(int id) => await Do(async () =>
+    {
+        RequireSelfStaff(leaderOk: true);
+        var x = await Db.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id && r.PersonId == Scope.Me!.Id) ?? throw new BizException("Không tìm thấy đề xuất xin nghỉ");
+        if (x.Status == ExtraStatus.Approved) throw new BizException("Đề xuất đã được duyệt, không rút lại được — nhờ Leader hủy nghỉ");
+        Db.LeaveRequests.Remove(x);
+        await Db.SaveChangesAsync();
+    }, "Đã rút đề xuất xin nghỉ");
     /// <summary>
     /// POST /Staff/ProposeCalendar — NV đề xuất ở lịch tháng (ngày = ngày đang chọn): công việc của mình (không có "emp"), hoặc người hỗ trợ /
     /// Leader hỗ trợ (field "emp" nhiều giá trị) cho dự án mình là Leader dự án. Leader nhóm duyệt thì mới ghi vào lịch.

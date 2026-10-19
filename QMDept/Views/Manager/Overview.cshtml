@@ -56,7 +56,7 @@
                         {
                             var lt = plan is not null && ok && plan.LeaveType is not null ? Blocks.LeaveText(plan) : null;
                             <span class="pill p-bad">@(plan is not null && ok && LeaveRules.IsLeave(plan.Status) ? Labels.Of(plan.Status) : "Nghỉ")</span>
-                            <div class="note">@if (lt is not null) { @Html.Raw(lt) } else { @(g.Lv?.Reason ?? "Cả ngày") }</div>
+                            <div class="note">@if (lt is not null) { @Html.Raw(lt) } else { @(g.Lv is not null ? Blocks.LeaveBrief(g.Lv) : "Cả ngày") }</div>
                         }
                         else if (trip) { <span class="pill p-info">Công tác @(plan!.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span> }
                         else if (ok) { <span class="pill p-ok">Làm việc tại công ty</span> }

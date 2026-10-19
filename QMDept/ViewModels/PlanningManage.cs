@@ -164,6 +164,8 @@ public sealed class PlanningInboxVm
     public required List<Extra> Extras { get; init; }
     /// <summary>Đề xuất lịch: chờ duyệt (mọi ngày) hoặc đã quyết định gần đây.</summary>
     public required List<CalendarProposal> Proposals { get; init; }
+    /// <summary>Xin nghỉ của NV trong nhóm: chờ duyệt (mục Chờ duyệt) hoặc đã quyết định gần đây (mục Đã duyệt).</summary>
+    public List<LeaveRequest> LeaveRequests { get; init; } = [];
     /// <summary>Đăng ký làm thêm của NV trong nhóm (ngày đang xem); mục Chờ duyệt = đăng ký / kết quả cần duyệt.</summary>
     public required List<Overtime> Ots { get; init; }
     public int PendingTotal { get; init; }

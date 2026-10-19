@@ -378,12 +378,15 @@ public partial class PlanningController
             .Where(p => ids.Contains(p.ProposerId) && p.Status == ExtraStatus.Pending).OrderBy(p => p.Date).ThenBy(p => p.CreatedAt).ToListAsync();
         var doneProps = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
             .Where(p => ids.Contains(p.ProposerId) && p.Status != ExtraStatus.Pending).OrderByDescending(p => p.DecidedAt).Take(15).ToListAsync();
+        // Xin nghỉ của NV trong nhóm (nằm trong Đề xuất công việc, yêu cầu 2026-10-20)
+        var pendLeaves = D.LeavesFor(Scope.Account.Id);
+        var doneLeaves = await Db.LeaveRequests.AsNoTracking().Where(r => ids.Contains(r.PersonId) && r.Status != ExtraStatus.Pending).OrderByDescending(r => r.DecidedAt).Take(15).ToListAsync();
         var ots = D.OtPending(Date).OrderBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
         var pendOts = ots.Where(x => x.NeedsDecision).ToList();
         var doneOts = ots.Where(x => !x.NeedsDecision).ToList();
         var pend = f == "pending";
         var work = k == "work";
-        int workPend = pendPlans.Count + b.PendingExtras.Count + pendProps.Count, workDone = donePlans.Count + doneProps.Count;
+        int workPend = pendPlans.Count + b.PendingExtras.Count + pendProps.Count + pendLeaves.Count, workDone = donePlans.Count + doneProps.Count + doneLeaves.Count;
         return View(new PlanningInboxVm
         {
             Kind = k, Filter = f,
@@ -391,12 +394,27 @@ public partial class PlanningController
             NotSent = work && pend ? b.NotSent : [],
             Extras = work && pend ? b.PendingExtras : [],
             Proposals = work ? (pend ? pendProps : doneProps) : [],
+            LeaveRequests = work ? (pend ? pendLeaves : doneLeaves) : [],
             Ots = work ? [] : (pend ? pendOts : doneOts),
             WorkPending = workPend, OtPending = pendOts.Count,
             PendingTotal = work ? workPend : pendOts.Count,
             ApprovedTotal = work ? workDone : doneOts.Count,
         });
     }
+
+    /// <summary>POST /Planning/DecideLeave — Leader duyệt (v=ok → ghi Nghỉ vào lịch) / từ chối (bắt buộc lý do) đề xuất xin nghỉ của NV trong nhóm.</summary>
+    [HttpPost]
+    public Task<IActionResult> DecideLeave(int id, string? v, string? note) => Do(async () =>
+    {
+        RequireLead();
+        var x = await Db.LeaveRequests.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id) ?? throw new BizException("Không tìm thấy đề xuất xin nghỉ");
+        if (x.Role != Role.Staff) throw new BizException("Leader chỉ duyệt xin nghỉ của nhân viên");
+        await D.EnsureAsync(x.Date, x.Date);
+        if (D.P(x.PersonId) is not { IsDeleted: false, Role: Role.Staff } p || p.LeaderId != Scope.Account.Id) throw new BizException("Nhân viên không thuộc nhóm bạn quản lý");
+        var approve = v switch { "ok" => true, "no" => false, _ => throw new BizException("Thao tác không hợp lệ") };
+        await Flow.DecideLeaveAsync(id, approve, note, Scope.Account);
+        Toast(approve ? "Đã duyệt xin nghỉ — đã ghi vào lịch" : "Đã từ chối xin nghỉ");
+    });
 
     /// <summary>POST: duyệt (v=ok → tạo việc vào lịch NV + lịch nhóm) / từ chối (v=no, bắt buộc lý do) một đề xuất lịch.</summary>
     [HttpPost]

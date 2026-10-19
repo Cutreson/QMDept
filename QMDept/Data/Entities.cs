@@ -206,6 +206,39 @@ public class Leave
     public int EmployeeId { get; set; }
     public Person? Employee { get; set; }
     [MaxLength(500)] public string? Reason { get; set; }
+    // Chi tiết nghỉ khi được ghi từ đề xuất xin nghỉ đã duyệt (yêu cầu 2026-10-20): loại, buổi / giờ, số giờ / ngày
+    public LeaveType? LeaveType { get; set; }
+    public LeaveSession? LeaveSession { get; set; }
+    [MaxLength(5)] public string? LeaveFrom { get; set; }
+    [MaxLength(5)] public string? LeaveTo { get; set; }
+    public decimal? LeaveHours { get; set; }
+    public decimal? LeaveDays { get; set; }
+}
+
+/// <summary>
+/// Đề xuất xin nghỉ của NV / Leader (yêu cầu 2026-10-20) — nằm trong "Đề xuất công việc" ở lịch tháng, bắt buộc nêu lý do.
+/// NV → Leader nhóm duyệt; Leader → Trưởng phòng duyệt. Duyệt thì ghi vào lịch (bảng leaves) và hiện "Nghỉ" trên lịch.
+/// </summary>
+public class LeaveRequest
+{
+    public int Id { get; set; }
+    public DateOnly Date { get; set; }
+    public int PersonId { get; set; }
+    public Person? Person { get; set; }
+    public Role Role { get; set; }                                   // vai trò lúc xin: Staff → Leader duyệt; Leader → TP duyệt
+    public LeaveType LeaveType { get; set; }
+    public LeaveSession? LeaveSession { get; set; }                  // chỉ nghỉ phép
+    [MaxLength(5)] public string LeaveFrom { get; set; } = "08:00";
+    [MaxLength(5)] public string LeaveTo { get; set; } = "17:00";
+    public decimal LeaveHours { get; set; }
+    public decimal? LeaveDays { get; set; }
+    [MaxLength(500)] public string Reason { get; set; } = "";        // lý do nghỉ (bắt buộc)
+    public ExtraStatus Status { get; set; } = ExtraStatus.Pending;
+    [MaxLength(100)] public string? DecidedBy { get; set; }
+    public DateTime? DecidedAt { get; set; }
+    [MaxLength(500)] public string? DecisionNote { get; set; }       // lý do từ chối
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>Nhu cầu nhân sự theo ngày của dự án, ghi đè Project.Need (collection `needs`).</summary>

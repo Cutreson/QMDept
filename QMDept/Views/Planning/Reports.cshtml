@@ -8,71 +8,31 @@
 }
 <partial name="_PlanningTabs" model="@("reports")" />
 <partial name="_DayBar" />
-
-@* ---------- carrySection(d) ---------- *@
-@if (Model.Carries.Count > 0)
-{
-    var pend = Model.CarryPending;
-    <section class="card sec">
-        <h2><span class="grow">Đề xuất chuyển kế hoạch (@pend chờ duyệt)</span>
-            @if (pend > 1 && canWrite)
-            {
-                <form method="post" action="/Planning/ApproveAllCarries" class="inline" asp-antiforgery="true">
-                    @Ui.ReturnField(req)
-                    <input type="hidden" name="date" value="@Fmt.Key(d)">
-                    <button class="btn btn-sm btn-ok">Duyệt tất cả</button>
-                </form>
-            }
-        </h2>
-        @foreach (var n in Model.Carries)
-        {
-            var o = D.Task(n.CarriedFromId);
-            var name = D.PName(n.EmployeeId);
-            <div class="issue">@Ui.Av(name, style: "width:24px;height:24px;font-size:10px")<div><div class="t">@name</div>
-                @if (o is not null)
-                {
-                    <div class="m">Việc chưa xong: @o.Title · @Labels.Of(o.Status)@(string.IsNullOrEmpty(o.Note) ? "" : " — " + o.Note)</div>
-                }
-                <div class="m">→ <b style="color:var(--fg)">@Fmt.WD[Fmt.Wday(n.Date)] @Fmt.Dm(n.Date)</b> <span class="mono">@n.Start–@n.End</span> · @n.Title@(string.IsNullOrEmpty(n.EditedBy) ? "" : " · " + n.EditedBy + " đã chỉnh")</div></div>
-                <div style="display:grid;gap:4px;justify-items:end">
-                    @if (n.CarryOk)
-                    {
-                        <span class="pill p-ok">Đã duyệt</span>
-                        if (canWrite)
-                        {
-                            <form method="post" action="/Planning/UndoCarry" class="inline" asp-antiforgery="true">
-                                @Ui.ReturnField(req)
-                                <input type="hidden" name="id" value="@n.Id">
-                                <button class="link">Hoàn tác</button>
-                            </form>
-                        }
-                    }
-                    else if (canWrite)
-                    {
-                        <form method="post" action="/Planning/ApproveCarry" class="inline" asp-antiforgery="true">
-                            @Ui.ReturnField(req)
-                            <input type="hidden" name="id" value="@n.Id">
-                            <button class="btn btn-sm btn-ok">Duyệt</button>
-                        </form>
-                        <button type="button" class="btn btn-sm" data-sheet="carrySheet@(n.Id)">Sửa</button>
-                    }
-                </div></div>
-        }
-        
-    </section>
+@{
+    // Báo cáo cuối ngày chia 2 mục: Chờ duyệt / Đã duyệt (yêu cầu 2026-10-20); đề xuất chuyển kế hoạch nằm ngay trong thẻ báo cáo của từng nhân viên
+    var f = req.Query["f"] == "approved" ? "approved" : "pending";
+    var pendReports = Model.Reports.Where(x => x.LeaderDecision is null).ToList();
+    var doneReports = Model.Reports.Where(x => x.LeaderDecision is not null).ToList();
+    var shownReports = f == "pending" ? pendReports : doneReports;
 }
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("f", "pending")), $"Chờ duyệt ({pendReports.Count})", f == "pending", 0),
+    (Ui.Here(req, ("f", "approved")), $"Đã duyệt ({doneReports.Count})", f == "approved", 0),
+})
 
-@if (Model.NotSent.Count > 0)
+
+@if (f == "pending" && Model.NotSent.Count > 0)
 {
     <p class="note">Chưa gửi báo cáo cuối ngày: @string.Join(", ", Model.NotSent.Select(p => p.Name))</p>
 }
 
 @* ---------- ldEodApprove(): báo cáo cuối ngày ---------- *@
-@if (Model.Reports.Count == 0)
+@if (shownReports.Count == 0)
 {
-    <div class="empty">Chưa có nhân viên gửi báo cáo cuối ngày này.</div>
+    <div class="empty">@(f == "pending" ? "Không còn báo cáo cuối ngày nào chờ duyệt." : "Chưa có báo cáo cuối ngày nào đã duyệt.")</div>
 }
-@foreach (var r in Model.Reports)
+@foreach (var r in shownReports)
 {
     var st = Dept.EodSt(r);
     var name = D.PName(r.EmployeeId);
@@ -117,6 +77,11 @@
                             <div class="note">@n.EditedBy đã chỉnh</div>
                         }
                     </div>
+                    @if (canWrite && !n.CarryOk)
+                    {
+                        @* Duyệt riêng đề xuất chuyển (vd. NV sửa chuyển tiếp sau khi báo cáo đã duyệt) — mục "Đề xuất chuyển kế hoạch" riêng đã bỏ *@
+                        <form method="post" action="/Planning/ApproveCarry" class="inline" asp-antiforgery="true">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-ok">Duyệt</button></form>
+                    }
                     @if (canWrite && PlanningReportsVm.CanEditCarry(n))
                     {
                         <button type="button" class="btn btn-sm" data-sheet="carrySheet@(n.Id)">Sửa</button>

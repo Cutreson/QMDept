@@ -202,6 +202,8 @@ public enum NotifyType
     CalendarDecided,     // đề xuất lịch được duyệt / từ chối → NV đề xuất
     ProjectOwner,        // TP giao / bỏ giao dự án cho nhóm Leader phụ trách → Leader
     TeamChanged,         // TP chuyển nhân viên sang nhóm khác trên sơ đồ nhân sự → nhân viên + Leader cũ / mới
+    LeaveRequested,      // NV / Leader xin nghỉ → Leader nhóm / Trưởng phòng duyệt
+    LeaveDecided,        // xin nghỉ được duyệt / từ chối → người xin
 }
 
 /// <summary>

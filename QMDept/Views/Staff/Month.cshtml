@@ -76,9 +76,9 @@ else
             @foreach (var p in ppl)
             {
                 var t = D.TasksOn(sel, p.Id).Where(D.OkCal).ToList();
-                var leave = D.OnLeave(sel, p.Id);
+                var leave = D.OnLeave(sel, p.Id) ?? D.PartLeave(sel, p.Id);   // nghỉ một phần ngày vẫn có việc
                 var ot = D.OtOf(sel, p.Id) is { Status: not OtStatus.Rejected } o ? o : null;
-                <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red">Nghỉ</b>@(" · ")}@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
+                <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red" title="@Blocks.LeaveBrief(leave)">@(leave.LeaveType is null ? "Nghỉ" : Blocks.LeaveBrief(leave))</b>@(" · ")}@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
                     @foreach (var x in t) { @D.TaskRow(x, leadOnly: true) }
                 </div>
             }
@@ -142,7 +142,8 @@ else
     {
         var t = D.TasksOn(sel, me.Id).Where(D.OkCal).ToList();
         var ownLead = Scope.OwnCalendar && me.Role != Role.Staff;   // Leader ở "Lịch của tôi": cập nhật kế hoạch cá nhân (yêu cầu 2026-10-17)
-        <section class="card wday"><h3>@Fmt.WD[Fmt.Wday(sel)] – @Fmt.Dm(sel) (@t.Count công việc)@(D.OnLeave(sel, me.Id) is not null ? " · Nghỉ" : "")</h3>
+        <section class="card wday"><h3>@Fmt.WD[Fmt.Wday(sel)] – @Fmt.Dm(sel) (@t.Count công việc)@(D.OnLeave(sel, me.Id) is not null ? " · Nghỉ" : D.PartLeave(sel, me.Id) is not null ? " · Nghỉ một phần" : "")</h3>
+            @if ((D.OnLeave(sel, me.Id) ?? D.PartLeave(sel, me.Id)) is { } mlv) { <p class="note red" style="padding:6px 12px 0;margin:0"><b>@Blocks.LeaveBrief(mlv)</b></p> }
             @if (t.Count > 0)
             {
                 foreach (var x in t)
@@ -163,11 +164,19 @@ else
         @if (ownLead)
         {
             @* Cập nhật kế hoạch cá nhân: thêm việc của chính Leader vào ngày đang chọn (giống "Giao thêm việc" nhưng chỉ cho mình) *@
-            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-sheet="ownTaskTpl">＋ Cập nhật kế hoạch cá nhân</button></div>
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-sheet="ownTaskTpl">@(Scope.Account.Role == Role.Leader ? "＋ Cập nhật kế hoạch cá nhân / xin nghỉ" : "＋ Cập nhật kế hoạch cá nhân")</button></div>
+            @if (Scope.Account.Role == Role.Leader)
+            {
+                @* Leader xin nghỉ (trong Đề xuất công việc): bắt buộc nêu lý do, Trưởng phòng duyệt thì hiện Nghỉ trên lịch (yêu cầu 2026-10-20) *@
+                ViewData["workSheet"] = new[] { "leave", "ownTaskTpl", "leaveSheet", "Kế hoạch cá nhân" };
+                <partial name="_LeaveSheet" />
+                @if (Model.LeaveRequests.Count > 0) { <section class="card sec"><h2>Đề xuất của tôi · @Fmt.Dm(sel)</h2><partial name="_LeaveRequestRows" model="Model.LeaveRequests" /></section> }
+            }
             <template id="ownTaskTpl">
                 <form method="post" action="@Ui.To(req, "/Staff/AddOwnTask", ("d", Fmt.Key(sel)))">
                     @Html.AntiForgeryToken()
                     @Ui.ReturnField(req)
+                    @if (Scope.Account.Role == Role.Leader) { <partial name="_SheetTabs" model="@(new[] { "work", "ownTaskTpl", "leaveSheet", "Kế hoạch cá nhân" })" /> }
                     <h3>Cập nhật kế hoạch cá nhân</h3>
                     <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
                     <label class="f" for="ownP" style="margin-top:0">Dự án</label>

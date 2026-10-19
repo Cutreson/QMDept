@@ -65,6 +65,15 @@ public static class Blocks
         return $"<div class=\"cmt\"{(style.Length > 0 ? $" style=\"{style}\"" : "")}><b>Cần hỗ trợ · {Labels.Of(sc)}{(Dept.NeedsManager(p) ? " (TP duyệt)" : "")}:</b> {E(p.SupportText)}</div>";
     }
 
+
+    /// <summary>Mô tả ngắn một bản ghi nghỉ trên lịch: "Nghỉ phép · Cả ngày" / "Nghỉ không lương · 10:00–12:00" / "Nghỉ" (kèm lý do nếu có).</summary>
+    public static string LeaveBrief(Leave? l)
+    {
+        if (l is null) return "";
+        var kind = l.LeaveType == LeaveType.Paid ? "Nghỉ phép" + (l.LeaveSession is LeaveSession s ? " · " + LeaveRules.Session(s).Label : "")
+            : l.LeaveType == LeaveType.Unpaid ? $"Nghỉ không lương · {l.LeaveFrom}–{l.LeaveTo}" : "Nghỉ";
+        return string.IsNullOrEmpty(l.Reason) ? kind : $"{kind} — {l.Reason}";
+    }
     /// <summary>leaveText(l): "Buổi sáng 08:00–12:00 · 0,5 ngày phép".</summary>
     public static string LeaveText(DayPlan p) =>
         $"{(p.LeaveType == LeaveType.Paid && p.LeaveSession is LeaveSession s ? LeaveRules.Session(s).Label + " " : "")}<b class=\"mono\">{E(p.LeaveFrom)}–{E(p.LeaveTo)}</b> · {LeaveRules.Qty(p)}";

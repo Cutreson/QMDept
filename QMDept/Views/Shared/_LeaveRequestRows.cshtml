@@ -1,0 +1,21 @@
+@model List<LeaveRequest>
+@* Dòng đề xuất xin nghỉ của chính mình (trong "Đề xuất của tôi"): trạng thái + lý do + nút Rút lại khi chưa được duyệt. *@
+@{
+    var req = Context.Request;
+}
+@foreach (var x in Model)
+{
+    var ok = x.Status == ExtraStatus.Approved;
+    <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
+        <div><div class="t">Xin nghỉ · @(x.LeaveType == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương")@(x.LeaveSession is LeaveSession ls ? " · " + LeaveRules.Session(ls).Label : "")</div>
+            <div class="s">Lý do: @x.Reason@(x.Status == ExtraStatus.Rejected && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")@(ok ? " · Đã ghi vào lịch" : "")</div>
+            @if (!ok)
+            {
+                <form method="post" action="@Ui.To(req, "/Staff/CancelLeaveRequest", ("d", Fmt.Key(x.Date)))" asp-antiforgery="true" class="inline" data-confirm="Rút đề xuất xin nghỉ?" data-confirm-label="Rút lại">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="id" value="@x.Id">
+                    <button class="link">Rút lại</button>
+                </form>
+            }</div>
+        <span class="tm"><span class="mono">@x.LeaveFrom–@x.LeaveTo</span> <span class="pill @(ok ? "p-ok" : x.Status == ExtraStatus.Rejected ? "p-bad" : "p-warn")">@(ok ? "Đã duyệt" : x.Status == ExtraStatus.Rejected ? "Từ chối" : "Chờ duyệt")</span></span></div>
+}

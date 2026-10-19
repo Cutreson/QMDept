@@ -12,6 +12,7 @@
     <form method="post" action="@Model.Action">
         @Html.AntiForgeryToken()
         @Ui.ReturnField(Context.Request)
+        @if (Model.LeaveSheetId is not null) { <partial name="_SheetTabs" model="@(new[] { "work", id, Model.LeaveSheetId, "Đề xuất công việc" })" /> }
         <h3>Đề xuất công việc</h3>
         <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(Scope.Date)] @Fmt.Dm(Scope.Date)</p>
         <label class="f" for="@(id)P">Dự án</label>

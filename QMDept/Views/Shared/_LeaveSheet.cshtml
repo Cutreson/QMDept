@@ -1,0 +1,41 @@
+@* Xin nghỉ trong "Đề xuất công việc" ở lịch tháng (yêu cầu 2026-10-20): <template id="leaveSheet"> mở bằng <button type="button" data-sheet="leaveSheet">.
+   Ngày = ngày đang chọn; nghỉ phép theo buổi, nghỉ không lương theo giờ; BẮT BUỘC nêu lý do. POST /Staff/RequestLeave → Leader (NV) / TP (Leader) duyệt → hiện "Nghỉ" trên lịch.
+   JS: site.js ([data-leave-type]). *@
+@{
+    var sel = Scope.Date;
+    var req = Context.Request;
+}
+<template id="leaveSheet">
+    <form method="post" action="@Ui.To(req, "/Staff/RequestLeave", ("d", Fmt.Key(sel)))">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(req)
+        @if (ViewData["workSheet"] is string[] wt) { <partial name="_SheetTabs" model="wt" /> }
+        <h3>Xin nghỉ</h3>
+        <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
+        <label class="f" for="lvT" style="margin-top:0">Loại nghỉ</label>
+        <select class="in" id="lvT" name="type" data-leave-type>
+            <option value="Paid">Nghỉ phép</option>
+            <option value="Unpaid">Nghỉ không lương</option>
+        </select>
+        <div data-leave-paid>
+            <label class="f" for="lvS">Buổi nghỉ</label>
+            <select class="in" id="lvS" name="session">
+                @foreach (var s in new[] { LeaveSession.Morning, LeaveSession.Afternoon, LeaveSession.FullDay })
+                {
+                    var (label, a, b) = LeaveRules.Session(s);
+                    <option value="@s" selected="@(s == LeaveSession.FullDay)">@label (@a–@b)</option>
+                }
+            </select>
+        </div>
+        <div data-leave-unpaid hidden>
+            <div class="pick2 eq">
+                <div><label class="f" for="lvF">Nghỉ từ</label><select class="in mono" id="lvF" name="from">@foreach (var x in LeaveRules.UnpaidFrom) { <option value="@x">@x</option> }</select></div>
+                <div><label class="f" for="lvE">Đến</label><select class="in mono" id="lvE" name="to">@foreach (var x in LeaveRules.UnpaidTo) { <option value="@x">@x</option> }</select></div>
+            </div>
+        </div>
+        <label class="f" for="lvR">Lý do nghỉ (bắt buộc)</label>
+        <textarea class="in" id="lvR" name="reason" maxlength="500" required></textarea>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
+            <button class="btn btn-primary">Gửi đề xuất xin nghỉ</button></div>
+    </form>
+</template>

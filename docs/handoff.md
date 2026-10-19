@@ -4,6 +4,12 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
+## Phiên 5 — 2026-10-20 (Claude Code, Sonnet 5.5) — xin nghỉ trong đề xuất công việc, chia Báo cáo
+- Xong: xin nghỉ (bảng `leave_requests`, migration `20261020100000_LeaveRequests`, duyệt NV→Leader / Leader→TP, thông báo, hiện trên lịch); gộp nút "Đề xuất công việc / xin nghỉ" (thẻ `_SheetTabs`);
+  nghỉ một phần ngày không loại khỏi công việc (`Dept.PartLeave`); Planning/Reports bỏ mục đỏ đề xuất chuyển, chia Chờ duyệt / Đã duyệt. Quy tắc 36 ở AGENTS.md.
+- Đã thử trên DB thật (NV 12 → Leader 9, nghỉ không lương 1 giờ) rồi xóa dòng thử `zz`. Chưa thử đủ đường Leader → TP trên giao diện (code có sẵn, `/Manager/DecideLeave`).
+- Quyết định: nghỉ không lương < 8 giờ và nghỉ phép nửa ngày coi là nghỉ một phần.
+
 ## Phiên 4 — 2026-10-14 (Claude Code, Sonnet 5.5) — hướng dẫn cho người mới
 
 - Chủ dự án xác nhận lại: commit + push thẳng `master`, không tự publish (chủ dự án chạy Publish trong Visual Studio), không dùng `fable` → đã ghi vào agents.md (quy tắc 4, 18, 20).

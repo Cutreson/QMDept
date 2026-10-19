@@ -6,7 +6,7 @@
     var pend = Model.Filter == "pending";
     var work = Model.Kind == "work";
     var canWrite = Scope.CanLead && !Scope.IsReadOnly;
-    var empty = Model.Plans.Count == 0 && Model.Extras.Count == 0 && Model.Proposals.Count == 0 && Model.Ots.Count == 0;
+    var empty = Model.Plans.Count == 0 && Model.Extras.Count == 0 && Model.Proposals.Count == 0 && Model.LeaveRequests.Count == 0 && Model.Ots.Count == 0;
 }
 <partial name="_PlanningTabs" model="@("proposals")" />
 <partial name="_DayBar" />
@@ -106,6 +106,50 @@
                 <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
                     <div><div class="t">@x.Title</div>
                         <div class="s">@D.PName(x.ProposerId) · @D.PjName(x.ProjectId) · @Fmt.Short(x.Date)@(!ok && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
+                    <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
+            }
+        }
+    </section>
+}
+
+@if (Model.LeaveRequests.Count > 0)
+{
+    @* Xin nghỉ của NV (nằm trong Đề xuất công việc, yêu cầu 2026-10-20): duyệt → ghi Nghỉ vào lịch; từ chối bắt buộc lý do *@
+    <section class="card sec"><h2>Xin nghỉ (@Model.LeaveRequests.Count)</h2>
+        @foreach (var x in Model.LeaveRequests)
+        {
+            var who = D.PName(x.PersonId);
+            var kind = (x.LeaveType == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương") + (x.LeaveSession is LeaveSession ls ? " · " + LeaveRules.Session(ls).Label : "");
+            if (pend)
+            {
+                <div class="asg">
+                    <div class="row"><b>@who</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.LeaveFrom–@x.LeaveTo</span></span></div>
+                    <div class="t" style="margin-top:4px">@kind</div>
+                    <div class="note">Lý do: @x.Reason</div>
+                    @if (canWrite)
+                    {
+                        <div class="btn-row">
+                            <form method="post" action="/Planning/DecideLeave" asp-antiforgery="true">
+                                @Ui.ReturnField(req)
+                                <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="ok">
+                                <button class="btn btn-ok">✓ Duyệt</button>
+                            </form>
+                            <form method="post" action="/Planning/DecideLeave" asp-antiforgery="true"
+                                  data-prompt="Từ chối xin nghỉ của @who" data-prompt-label="Lý do từ chối" data-prompt-required data-prompt-name="note">
+                                @Ui.ReturnField(req)
+                                <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="no">
+                                <button class="btn btn-no">✕ Từ chối</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                var ok = x.Status == ExtraStatus.Approved;
+                <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
+                    <div><div class="t">@who · @kind</div>
+                        <div class="s">@Fmt.Short(x.Date) · @x.LeaveFrom–@x.LeaveTo · Lý do: @x.Reason@(!ok && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")</div></div>
                     <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
             }
         }

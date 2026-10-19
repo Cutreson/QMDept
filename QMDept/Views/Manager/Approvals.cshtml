@@ -116,9 +116,49 @@ else if (Model.Mode == "leader")
     {
         <p class="note">Chưa khai báo trạng thái làm việc: @string.Join(", ", Model.LeaderNotSentPlan.Select(p => p.Name))</p>
     }
-    if (Model.LeaderPlans.Count == 0)
+    if (Model.LeaderPlans.Count == 0 && Model.LeaderLeaves.Count == 0)
     {
         <div class="empty">Không có trạng thái làm việc của Leader phù hợp bộ lọc.</div>
+    }
+    if (Model.LeaderLeaves.Count > 0)
+    {
+        @* Xin nghỉ của Leader (nằm trong Đề xuất công việc): TP duyệt → ghi Nghỉ vào lịch; từ chối bắt buộc lý do (yêu cầu 2026-10-20) *@
+        <section class="card sec"><h2>Xin nghỉ của Leader (@Model.LeaderLeaves.Count)</h2>
+            @foreach (var x in Model.LeaderLeaves)
+            {
+                var who = D.PName(x.PersonId);
+                var kind = (x.LeaveType == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương") + (x.LeaveSession is LeaveSession ls ? " · " + LeaveRules.Session(ls).Label : "");
+                if (x.Status == ExtraStatus.Pending)
+                {
+                    <div class="asg">
+                        <div class="row"><b>@who</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.LeaveFrom–@x.LeaveTo</span></span></div>
+                        <div class="t" style="margin-top:4px">@kind</div>
+                        <div class="note">Lý do: @x.Reason</div>
+                        <div class="btn-row">
+                            <form method="post" action="/Manager/DecideLeave" asp-antiforgery="true">
+                                @Ui.ReturnField(req)
+                                <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="ok">
+                                <button class="btn btn-ok">✓ Duyệt</button>
+                            </form>
+                            <form method="post" action="/Manager/DecideLeave" asp-antiforgery="true"
+                                  data-prompt="Từ chối xin nghỉ của @who" data-prompt-label="Lý do từ chối" data-prompt-required data-prompt-name="note">
+                                @Ui.ReturnField(req)
+                                <input type="hidden" name="id" value="@x.Id"><input type="hidden" name="v" value="no">
+                                <button class="btn btn-no">✕ Từ chối</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    var ok = x.Status == ExtraStatus.Approved;
+                    <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
+                        <div><div class="t">@who · @kind</div>
+                            <div class="s">@Fmt.Short(x.Date) · @x.LeaveFrom–@x.LeaveTo · Lý do: @x.Reason@(!ok && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")</div></div>
+                        <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
+                }
+            }
+        </section>
     }
     foreach (var p in Model.LeaderPlans)
     {

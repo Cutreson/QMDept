@@ -14,4 +14,6 @@ public sealed class ProposalSheetVm
     /// <summary>Các nhóm khác (Leader của nhóm đó) — chỉ xin hỗ trợ theo số lượng, không chỉ định người.</summary>
     public List<Person> OtherGroups { get; init; } = [];
     public required string Action { get; init; }
+    /// <summary>Id template xin nghỉ — có thì đầu bảng hiện hai thẻ "Đề xuất công việc | Xin nghỉ" (yêu cầu 2026-10-20).</summary>
+    public string? LeaveSheetId { get; init; }
 }

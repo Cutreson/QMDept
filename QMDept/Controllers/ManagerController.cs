@@ -44,7 +44,8 @@ public class ManagerController : AppController
         bool IsLeaderPerson(int emp) => D.P(emp) is { Role: Role.Leader };
         // Kế hoạch / báo cáo của chính Leader (Leader tự gửi → Trưởng phòng duyệt, yêu cầu 2026-10-16): mục riêng "Của Leader".
         var leaderPlans = D.Plans.Where(p => p.Date == Date && IsLeaderPerson(p.EmployeeId)).ToList();
-        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending);
+        var pendLeaves = D.LeaderLeaves();
+        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending) + pendLeaves.Count;
         var pendingManager = D.Plans.Count(p => p.Date == Date && !IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.PendingManager);
 
         var plans = new List<DayPlan>();
@@ -80,6 +81,7 @@ public class ManagerController : AppController
         {
             Mode = mode, Filter = f, PendingManager = pendingManager, Plans = plans, Extras = extras, PendingLeader = pendingLeader,
             LeaderPlans = mode == "leader" ? leaderPlans : [],
+            LeaderLeaves = mode == "leader" ? (f == "pending" ? pendLeaves : await Db.LeaveRequests.AsNoTracking().Where(r => r.Role == Role.Leader && r.Status != ExtraStatus.Pending).OrderByDescending(r => r.DecidedAt).Take(15).ToListAsync()) : [],
             LeaderNotSentPlan = mode == "leader" ? D.Leaders().Where(l => D.PlanOf(Date, l.Id) is null && D.OnLeave(Date, l.Id) is null).ToList() : [],
         });
     }
@@ -112,6 +114,18 @@ public class ManagerController : AppController
         await Db.SaveChangesAsync();
         await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, v == "ok" ? "Trưởng phòng đã duyệt" : "Trưởng phòng từ chối", n);
     }, "Đã quyết định kế hoạch của Leader");
+
+    /// <summary>POST /Manager/DecideLeave — Trưởng phòng duyệt (ghi Nghỉ vào lịch) / từ chối (bắt buộc lý do) đề xuất xin nghỉ của Leader (yêu cầu 2026-10-20).</summary>
+    [HttpPost]
+    public Task<IActionResult> DecideLeave(int id, string? v, string? note) => Do(async () =>
+    {
+        RequireManager();
+        var x = await Db.LeaveRequests.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id) ?? throw new BizException("Không tìm thấy đề xuất xin nghỉ");
+        if (x.Role != Role.Leader) throw new BizException("Trưởng phòng duyệt xin nghỉ của Leader — nhân viên do Leader duyệt");
+        var approve = v switch { "ok" => true, "no" => false, _ => throw new BizException("Thao tác không hợp lệ") };
+        await Flow.DecideLeaveAsync(id, approve, note, Scope.Account);
+        Toast(approve ? "Đã duyệt xin nghỉ — đã ghi vào lịch" : "Đã từ chối xin nghỉ");
+    });
 
     /// <summary>POST /Manager/UndoLeaderPlan — hoàn tác quyết định kế hoạch của Leader.</summary>
     [HttpPost]

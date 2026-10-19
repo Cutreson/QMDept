@@ -420,3 +420,9 @@ Cập nhật 2026-10-20: Tổng quan của Trưởng phòng có 3 mục: Dự á
 Cập nhật 2026-10-20: ô Xem màn hình chỉ có ở mục Kế hoạch tháng và chỉ xem được kế hoạch tháng của nhân sự được chọn (Leader hoặc nhân viên).
 
 Cập nhật 2026-10-20: Trưởng phòng — Dự án tổng hợp nhanh; Nhân sự bảng + thống kê (thông tin Leader đã duyệt); Kế hoạch tháng gồm Lịch của tôi và Lịch phòng; giao việc chỉ xuống Leader (không vượt cấp).
+
+## 20. Xin nghỉ trong Đề xuất công việc (yêu cầu 2026-10-20)
+- Một nút "Đề xuất công việc / xin nghỉ" trên Lịch của tôi, hai thẻ Công việc | Xin nghỉ. Xin nghỉ **bắt buộc có lý do**; nghỉ phép theo buổi, nghỉ không lương theo giờ (≥ 1 giờ).
+- NV → Leader nhóm duyệt; Leader → Trưởng phòng duyệt; từ chối phải nêu lý do. Duyệt ⇒ ghi `Leave` (chi tiết loại / buổi / giờ) hiện trên lịch.
+- Nghỉ vài giờ / nửa ngày (đã duyệt) không loại người đó khỏi công việc trong ngày (`Dept.PartLeave`); chỉ nghỉ cả ngày mới là "Nghỉ" (`Dept.OnLeave`).
+- Báo cáo cuối ngày của Leader chia 2 mục Chờ duyệt / Đã duyệt; đề xuất chuyển kế hoạch hiện ngay trong thẻ báo cáo.

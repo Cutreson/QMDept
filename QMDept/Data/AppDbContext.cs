@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CalendarProposalPerson> CalendarProposalPeople => Set<CalendarProposalPerson>();
     public DbSet<LeaderReport> LeaderReports => Set<LeaderReport>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<OvertimeTask> OvertimeTasks => Set<OvertimeTask>();
     public DbSet<MealOrder> MealOrders => Set<MealOrder>();
     public DbSet<NotifySetting> NotifySettings => Set<NotifySetting>();
@@ -146,6 +147,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.Date, x.LeaderId }).IsUnique();
             e.HasOne(x => x.Leader).WithMany().HasForeignKey(x => x.LeaderId).OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.SummaryJson).HasColumnType("longtext");
+        });
+
+        m.Entity<LeaveRequest>(e =>
+        {
+            e.ToTable("leave_requests");
+            e.HasIndex(x => new { x.Date, x.PersonId }).IsUnique();
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
         });
 
         m.Entity<Overtime>(e =>
