@@ -68,6 +68,7 @@ main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .h2 .grow,.sec>h2 .grow{flex:1}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
 .kpis.k4{grid-template-columns:repeat(4,1fr)}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}
 .kpi{border-radius:10px;padding:8px 4px;background:var(--kbg);color:var(--kfg);text-align:center}
 .kpi b{display:block;font-size:20px;font-family:var(--mono);line-height:1.15}
 .kpi span{font-size:11px;font-weight:600}

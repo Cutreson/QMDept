@@ -1,18 +1,43 @@
 @model PlanningOwnersVm
-@* TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án — giống tab "Leader dự án" của Leader. Leader được chọn sẽ thấy dự án ở tab "Leader dự án"
-   để tiếp tục chọn người làm Leader dự án trong nhóm mình. *@
+@* TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án — có thống kê tổng quan (số dự án, từng Leader đang quản lý) và 2 mục Đã có Leader / Chưa có Leader
+   (yêu cầu 2026-10-20). Leader được chọn sẽ thấy dự án ở tab "Leader dự án" (Leader chỉ thấy dự án được giao). *@
 @{
     var req = Context.Request;
+    var has = Model.Filter == "has";
 }
-@Ui.Head(0, "Leader phụ trách dự án", $"{Model.Total} dự án đang triển khai · {Model.Unassigned} chưa có Leader phụ trách")
+@Ui.Head(0, "Leader phụ trách dự án")
+@* Thống kê tổng quan *@
+<div class="kpis k3">
+    <div class="kpi k-info"><b>@Model.Total</b><span>Dự án đang triển khai</span></div>
+    <div class="kpi k-ok"><b>@Model.Assigned</b><span>Đã có Leader</span></div>
+    <div class="kpi @(Model.Unassigned > 0 ? "k-bad" : "k-idle")"><b>@Model.Unassigned</b><span>Chưa có Leader</span></div>
+</div>
+<section class="card sec">
+    <h2>Leader đang quản lý</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Leader</th><th class="n">Số dự án</th><th>Dự án</th></tr></thead><tbody>
+        @foreach (var (l, ps) in Model.Stats)
+        {
+            <tr>
+                <td><b>@l.Name</b><div class="note">nhóm @D.Team(l.Id).Count người</div></td>
+                <td class="n"><b class="mono">@ps.Count</b></td>
+                <td>@if (ps.Count == 0) { <span class="note">Chưa được giao dự án</span> } else { <details><summary class="link">Xem @ps.Count dự án</summary><ul class="otl">@foreach (var p in ps) { <li>@p.Name</li> }</ul></details> }</td>
+            </tr>
+        }
+        <tr>
+            <td><b>Chưa có Leader</b></td>
+            <td class="n"><b class="mono @(Model.Unassigned > 0 ? "red" : "")">@Model.Unassigned</b></td>
+            <td>@if (Model.Unassigned == 0) { <span class="note">Mọi dự án đã có Leader phụ trách</span> } else { <span class="note">Xem ở mục "Chưa có Leader" bên dưới</span> }</td>
+        </tr>
+    </tbody></table></div>
+</section>
 @Ui.Seg(new[]
 {
-    (Ui.Here(req, ("f", null)), $"Tất cả ({Model.Total})", Model.Filter == "all", 0),
-    (Ui.Here(req, ("f", "none")), "Chưa có Leader", Model.Filter == "none", Model.Unassigned),
+    (Ui.Here(req, ("f", "has")), $"Đã có Leader ({Model.Assigned})", has, 0),
+    (Ui.Here(req, ("f", "none")), $"Chưa có Leader ({Model.Unassigned})", !has, 0),
 })
 @if (Model.Projects.Count == 0)
 {
-    <div class="empty">@(Model.Filter == "none" ? "Mọi dự án đã có Leader phụ trách." : "Chưa có dự án đang triển khai.")</div>
+    <div class="empty">@(has ? "Chưa có dự án nào được giao cho Leader." : "Mọi dự án đã có Leader phụ trách.")</div>
     return;
 }
 @foreach (var p in Model.Projects)

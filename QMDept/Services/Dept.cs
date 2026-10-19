@@ -152,8 +152,10 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         var (t, a, d) = PjCounts(ps, date);
         return $"{t} dự án · {a} đang triển khai · {d} đã hoàn thành";
     }
-    public List<Project> ActivePj() { GuardBase(); return Projects.Where(p => !p.Closed).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
-    public List<Project> AllPj() { GuardBase(); return Projects.OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
+    /// <summary>Dự án người đang đăng nhập được thấy: Leader chỉ thấy dự án TP đã giao cho nhóm mình phụ trách (yêu cầu 2026-10-20); TP / Quản trị / NV thấy như cũ.</summary>
+    IEnumerable<Project> VisiblePj() => scope.Resolved && scope.Account is { Role: Role.Leader } a ? Projects.Where(p => p.OwnerLeaderId == a.Id) : Projects;
+    public List<Project> ActivePj() { GuardBase(); return VisiblePj().Where(p => !p.Closed).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
+    public List<Project> AllPj() { GuardBase(); return VisiblePj().OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<PlanItem> ItemsOf(int pid) { GuardBase(); return Items.Where(i => i.ProjectId == pid).OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).ToList(); }
     /// <summary>tile(pid): màu ô dự án.</summary>
     public string Tile(int pid) { GuardBase(); var i = Math.Max(0, Projects.OrderBy(p => p.Id).ToList().FindIndex(p => p.Id == pid)); return Fmt.Tile[i % Fmt.Tile.Length]; }
@@ -309,15 +311,10 @@ public sealed class Dept(ViewScope scope, DataCache cache)
 
     /// <summary>kpis(date)</summary>
     public Kpi Kpis(DateOnly date) => new(DayCounts(date), Working(date).Count, Staff().Count,
-        scope.Role == Role.Leader ? TeamProjects().Count : ActivePj().Count);
+        ActivePj().Count);
 
-    /// <summary>Dự án hiển thị ở bảng tình hình (pjTable): Leader → dự án nhóm quản lý; TP → tất cả dự án đang chạy.</summary>
-    public List<Project> TableProjects()
-    {
-        if (scope.Role != Role.Leader) return ActivePj();
-        var teamProjects = TeamProjects();
-        return ActivePj().Where(p => teamProjects.Contains(p.Id)).ToList();
-    }
+    /// <summary>Dự án hiển thị ở bảng tình hình (pjTable): Leader → dự án được giao cho nhóm; TP → tất cả dự án đang chạy (ActivePj đã lọc theo tài khoản).</summary>
+    public List<Project> TableProjects() => ActivePj();
 
     /// <summary>issuesOf(d): phát sinh chờ duyệt, NV báo vướng mắc, dự án nguy cơ, thiếu nhân sự ngày mai.</summary>
     public List<Issue> IssuesOf(DateOnly d)

@@ -182,3 +182,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     `/Planning/Approvals` → `?f=pending`, `/Overtime?tab=approve` (Leader) → `?k=ot`.
 30. **Nhân sự: bỏ Báo nghỉ trên sơ đồ, thêm Xóa; tên vai trò** (yêu cầu 2026-10-19): thẻ sơ đồ (`_OrgCard`) không còn nút Báo nghỉ / Bỏ nghỉ (chỉ còn dòng "Nghỉ …" nếu có); TP thấy **Sửa** + **Xóa**
     (Xóa gửi form ẩn `epDel{id}` có hỏi xác nhận, không xóa chính mình). Vai trò hiển thị chỉ là **Nhân viên / Leader / Trưởng phòng** (`Labels.Title`; bỏ chữ "Setup"); Quản trị là "Quản trị hệ thống".
+31. **Leader chỉ thấy dự án được giao; thống kê Leader phụ trách dự án** (yêu cầu 2026-10-20): `Dept.ActivePj()/AllPj()/TableProjects()` lọc theo tài khoản — tài khoản Leader chỉ thấy dự án có `OwnerLeaderId` = mình
+    (danh sách dự án, ô chọn dự án, bảng tình hình, tab "Dự án & đầu mục", báo cáo TP…); TP / Quản trị / nhân viên không đổi. Trang TP `/Planning/ProjectOwners`: thống kê tổng quan (tổng dự án, đã có / chưa có Leader, từng Leader đang quản lý bao nhiêu dự án
+    + danh sách) và 2 mục **Đã có Leader / Chưa có Leader** (`?f=has|none`, bỏ "Tất cả").

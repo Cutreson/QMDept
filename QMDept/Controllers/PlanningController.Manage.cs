@@ -408,7 +408,7 @@ public partial class PlanningController
         Toast(approve ? "Đã duyệt đề xuất — việc đã vào lịch" : "Đã từ chối đề xuất");
     });
 
-    /// <summary>GET /Planning/ProjectOwners — TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án (?f=none: chỉ dự án chưa có Leader phụ trách).</summary>
+    /// <summary>GET /Planning/ProjectOwners — TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án (?f=has|none: đã có / chưa có Leader phụ trách).</summary>
     [HttpGet]
     public async Task<IActionResult> ProjectOwners(string? f)
     {
@@ -416,11 +416,15 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader phụ trách dự án";
         var all = D.ActivePj();
-        var none = f == "none";
+        var has = all.Where(p => p.OwnerLeaderId is not null).ToList();
+        var none = all.Where(p => p.OwnerLeaderId is null).ToList();
+        // 2 mục: Đã có Leader / Chưa có Leader (thay "Tất cả"); mặc định mục đầu tiên có dự án
+        f = f is "has" or "none" ? f : has.Count > 0 ? "has" : "none";
         return View(new PlanningOwnersVm
         {
-            Projects = none ? all.Where(p => p.OwnerLeaderId is null).ToList() : all, Leaders = D.Leaders(), Filter = none ? "none" : "all",
-            Total = all.Count, Unassigned = all.Count(p => p.OwnerLeaderId is null),
+            Projects = f == "has" ? has : none, Leaders = D.Leaders(), Filter = f,
+            Total = all.Count, Unassigned = none.Count,
+            Stats = D.Leaders().Select(l => (l, has.Where(p => p.OwnerLeaderId == l.Id).ToList())).ToList(),
         });
     }
 

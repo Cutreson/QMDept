@@ -131,11 +131,16 @@ public sealed class PlanningProposalsVm
 /// <summary>TP chọn Leader (nhóm) phụ trách dự án: dự án đang triển khai + danh sách Leader + bộ lọc (all | none).</summary>
 public sealed class PlanningOwnersVm
 {
+    /// <summary>Dự án đang triển khai của mục đang chọn (Đã có Leader / Chưa có Leader).</summary>
     public required List<Project> Projects { get; init; }
     public required List<Person> Leaders { get; init; }
+    /// <summary>"has" = đã có Leader phụ trách; "none" = chưa có (?f=).</summary>
     public required string Filter { get; init; }
     public int Total { get; init; }
     public int Unassigned { get; init; }
+    public int Assigned => Total - Unassigned;
+    /// <summary>Thống kê tổng quan: từng Leader đang phụ trách những dự án nào (yêu cầu 2026-10-20).</summary>
+    public required List<(Person Leader, List<Project> Projects)> Stats { get; init; }
 }
 
 /// <summary>
