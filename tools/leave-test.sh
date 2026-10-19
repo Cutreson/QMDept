@@ -12,7 +12,7 @@ page(){ local c; c=$(curl -s -b $J -c $J -L -o $T/p.html -w "%{http_code}" "$B$1
 
 echo "== A. Mở trang theo vai trò (toàn bộ phòng) =="
 for id in 11 12 13 27 28 29; do login $id; echo "NV $id"; for p in "/Staff/Month?d=2026-11-03" "/Staff/Morning" "/Staff/Projects" "/Overtime" "/Settings"; do page "$p"; done; done
-for id in 9 10 26; do login $id; echo "Leader $id"; for p in "/Leader/Overview" "/Leader/Overview?s=people" "/Staff/Month?as=mine&d=2026-11-03" "/Staff/Month?as=all" "/Planning/Proposals" "/Planning/Proposals?k=ot" "/Planning/Reports" "/Planning/Reports?f=approved" "/Planning/Projects" "/Planning/ProjectLeads" "/Planning/People" "/Staff/Morning?as=mine" "/Leader/Tracking" "/Overtime"; do page "$p"; done; done
+for id in 9 10 26; do login $id; echo "Leader $id"; for p in "/Planning/Leave" "/Planning/Leave?f=approved" "/Leader/Overview" "/Leader/Overview?s=people" "/Staff/Month?as=mine&d=2026-11-03" "/Staff/Month?as=all" "/Planning/Proposals" "/Planning/Proposals?k=ot" "/Planning/Leave" "/Planning/Leave?f=approved" "/Planning/Reports" "/Planning/Reports?f=approved" "/Planning/Projects" "/Planning/ProjectLeads" "/Planning/People" "/Staff/Morning?as=mine" "/Leader/Tracking" "/Overtime"; do page "$p"; done; done
 for id in 8 5; do login $id; echo "TP/QT $id"; for p in "/Manager/Overview" "/Manager/Overview?s=people" "/Staff/Month?as=all" "/Staff/Month?as=mine" "/Manager/Approvals" "/Manager/Approvals?mode=leader" "/Planning/People" "/Planning/ProjectOwners" "/Overtime"; do page "$p"; done; done
 login 5; page "/Admin/Accounts"
 
@@ -58,7 +58,7 @@ n=0
 while IFS='|' read -r rid pid rest; do
   rid=$(echo $rid); pid=$(echo $pid); [ -z "$rid" ] && continue
   case "$pid" in 11|12|13|27|28|29) lead=${LEAD[$pid]}; login $lead; n=$((n+1)); v=ok; extra=""; [ $((n%4)) = 0 ] && { v=no; extra="&note=zz tu choi"; }
-     post "$B/Planning/DecideLeave" "$B/Planning/Proposals" -d "id=$rid&v=$v$extra" >/dev/null ;;
+     post "$B/Planning/DecideLeave" "$B/Planning/Leave" -d "id=$rid&v=$v$extra" >/dev/null ;;
      9|10|26) login 8; post "$B/Manager/DecideLeave" "$B/Manager/Approvals?mode=leader" -d "id=$rid&v=ok" >/dev/null ;;
   esac
 done < <(grep -E '^[0-9]+ \|' $T/lr.txt)

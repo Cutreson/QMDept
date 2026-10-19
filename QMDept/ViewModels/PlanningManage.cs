@@ -165,9 +165,17 @@ public sealed class PlanningInboxVm
     /// <summary>Đề xuất lịch: chờ duyệt (mọi ngày) hoặc đã quyết định gần đây.</summary>
     public required List<CalendarProposal> Proposals { get; init; }
     /// <summary>Xin nghỉ của NV trong nhóm: chờ duyệt (mục Chờ duyệt) hoặc đã quyết định gần đây (mục Đã duyệt).</summary>
-    public List<LeaveRequest> LeaveRequests { get; init; } = [];
     /// <summary>Đăng ký làm thêm của NV trong nhóm (ngày đang xem); mục Chờ duyệt = đăng ký / kết quả cần duyệt.</summary>
     public required List<Overtime> Ots { get; init; }
+    public int PendingTotal { get; init; }
+    public int ApprovedTotal { get; init; }
+}
+
+/// <summary>Trang Leader → Xin nghỉ (/Planning/Leave): xin nghỉ của nhân viên trong nhóm, 2 mục Chờ duyệt / Đã duyệt.</summary>
+public sealed class PlanningLeaveVm
+{
+    public string Filter { get; init; } = "pending";
+    public List<LeaveRequest> Requests { get; init; } = [];
     public int PendingTotal { get; init; }
     public int ApprovedTotal { get; init; }
 }

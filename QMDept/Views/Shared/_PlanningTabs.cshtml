@@ -9,12 +9,14 @@
     var inbox = lid is int li ? D.LeaderInbox(d, li) : 0;
     bool InTeam(int emp) => lid is int l ? D.P(emp) is { Role: Role.Staff } pe && pe.LeaderId == l : D.IsTeamStaff(emp);
     var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId));
+    var leaveCount = lid is int ll ? D.LeavesFor(ll).Count : 0;
     var propCount = lid is int pl ? D.ProposalsFor(pl).Count : Scope.MeId is int pm ? D.ProposalsFor(pm).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {
         // Thứ tự theo yêu cầu 2026-10-16 (sửa lại): Kế hoạch, Kế hoạch tháng (đã gồm giao việc → bỏ Lịch tuần + Phân công), Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
         // Gộp "Kế hoạch" + "Đề xuất lịch" + duyệt đăng ký làm thêm thành "Kế hoạch đề xuất" (yêu cầu 2026-10-19).
         ("proposals", "/Planning/Proposals", "Kế hoạch đề xuất" + (inbox > 0 ? $" ({inbox})" : "")),
+        ("leave", "/Planning/Leave", "Xin nghỉ" + (leaveCount > 0 ? $" ({leaveCount})" : "")),
         ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),
@@ -22,4 +24,4 @@
     };
 }
 @Ui.Head(2, "Kế hoạch & phê duyệt")
-@Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))
+@Ui.Subtabs(tabs.Where(t => t.Key != "leave" || Scope.Account.Role == Role.Leader).Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))

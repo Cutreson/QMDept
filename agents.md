@@ -214,3 +214,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     Leader **duyệt** ⇒ nhãn **Đã duyệt** + nút **"Sao chép dự án này"** (từng dự án, để dán vào nhóm Zalo dự án đó) và **"Sao chép toàn bộ báo cáo"** (JS `[data-copy="id1 id2…"]` trong `site.js`; văn bản chọn / copy tay được,
     CSS `.rpt-text`). Leader **từ chối** ⇒ báo cáo mở lại để nhân viên cập nhật theo yêu cầu (hiện ghi chú của Leader), gửi lại thì thành Chờ duyệt. Leader hoàn tác duyệt ⇒ về Chờ duyệt. Kiểm thử toàn phòng: `bash tools/report-test.sh`.
     Nút gửi của sheet Đề xuất công việc / xin nghỉ luôn ghi **"Gửi đề xuất"** (không ghi "xin nghỉ" vì có thể gửi nghỉ, công việc hoặc cả hai).
+39. **Leader: "Xin nghỉ" là tab con riêng của Kế hoạch & duyệt** (yêu cầu 2026-10-20, tách khỏi "Kế hoạch đề xuất" của quy tắc 27 / 29): `/Planning/Leave` ngay sau "Kế hoạch đề xuất", hiện số chờ duyệt, 2 mục **Chờ duyệt / Đã duyệt** (`?f=pending|approved`,
+    `PlanningLeaveVm`); duyệt → ghi Nghỉ vào lịch, từ chối bắt buộc lý do (`POST /Planning/DecideLeave`). "Kế hoạch đề xuất" không còn chứa xin nghỉ (`Dept.LeaderInbox` không đếm xin nghỉ; badge tab "Kế hoạch & duyệt" vẫn cộng cả hai).
+    Thông báo xin nghỉ của nhân viên dẫn tới `/Planning/Leave`.

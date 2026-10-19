@@ -181,7 +181,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     public async Task LeaveRequestedAsync(int person, Role role, DateOnly d, string what)
     {
         var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
-        var url = role == Role.Staff ? "/Planning/Proposals" : "/Manager/Approvals?mode=leader";
+        var url = role == Role.Staff ? "/Planning/Leave" : "/Manager/Approvals?mode=leader";
         await SendAsync(to, NotifyType.LeaveRequested, $"{await Name(person)} xin nghỉ ngày {Fmt.Dm(d)}", what, Q(url, d));
     }
 
