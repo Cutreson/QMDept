@@ -1,12 +1,8 @@
 @model OvertimeVm
-@* otApprove(d): Leader duyệt đăng ký của NV trong nhóm; TP duyệt đăng ký của Leader. Từ chối bắt buộc lý do; có Hoàn tác. *@
+@* otApprove(d): TP duyệt đăng ký làm thêm của Leader (Leader duyệt đăng ký của NV ở Planning → Kế hoạch đề xuất — yêu cầu 2026-10-19).
+   Từ chối bắt buộc lý do; có Hoàn tác; duyệt cả kết quả làm thêm. Thẻ: _OtCard. *@
 @{
-    var req = Context.Request;
     var forStaff = Scope.Role == Role.Leader;
-    var approveUrl = OvertimeUi.PostUrl(req, "Decide", Scope.Date);
-    var undoUrl = OvertimeUi.PostUrl(req, "Undo", Scope.Date);
-    var doneUrl = OvertimeUi.PostUrl(req, "DecideDone", Scope.Date);
-    var undoDoneUrl = OvertimeUi.PostUrl(req, "UndoDone", Scope.Date);
 }
 @if (Model.Approve.Count == 0)
 {
@@ -14,74 +10,5 @@
 }
 @foreach (var x in Model.Approve)
 {
-    var name = D.PName(x.PersonId);
-    <section class="card apv">
-        <div class="hd">@Ui.Av(name)<b>@name</b>@Ui.Pill(x.Status)</div>
-        <partial name="_OtDetail" model="x" />
-        @if (x.Status == OtStatus.Approved)
-        {
-            @* Kết quả làm thêm: duyệt → lưu trữ, giờ được tính; từ chối → giờ không được tính, NV cập nhật lại (yêu cầu 2026-10-19) *@
-            <div class="h2" style="margin-top:12px">Kết quả làm thêm @Ui.Pill(OvertimeUi.CompletionLabel(x.Completion), OvertimeUi.CompletionClass(x.Completion))</div>
-            @if (x.Completion == OtCompletion.None)
-            {
-                <p class="note">Chưa cập nhật kết quả làm thêm.</p>
-            }
-            else
-            {
-                <partial name="_OtDone" model="x" />
-                @if (x.Completion == OtCompletion.Pending)
-                {
-                    <div class="btn-row" style="margin-top:12px">
-                        <form method="post" action="@doneUrl" asp-antiforgery="true"
-                              data-prompt="Từ chối kết quả làm thêm của @name — giờ làm thêm sẽ không được tính" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason">
-                            @Ui.ReturnField(req)
-                            <input type="hidden" name="id" value="@x.Id">
-                            <input type="hidden" name="v" value="no">
-                            <button class="btn btn-no">Từ chối kết quả</button>
-                        </form>
-                        <form method="post" action="@doneUrl" asp-antiforgery="true">
-                            @Ui.ReturnField(req)
-                            <input type="hidden" name="id" value="@x.Id">
-                            <input type="hidden" name="v" value="ok">
-                            <button class="btn btn-ok">Duyệt kết quả</button>
-                        </form>
-                    </div>
-                }
-                else
-                {
-                    <form method="post" action="@undoDoneUrl" asp-antiforgery="true" style="margin-top:6px">
-                        @Ui.ReturnField(req)
-                        <input type="hidden" name="id" value="@x.Id">
-                        <button class="link">Hoàn tác quyết định kết quả</button>
-                    </form>
-                }
-            }
-        }
-        @if (x.Status == OtStatus.Pending)
-        {
-            <div class="btn-row" style="margin-top:12px">
-                <form method="post" action="@approveUrl" asp-antiforgery="true"
-                      data-prompt="Từ chối làm thêm của @name" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason">
-                    @Ui.ReturnField(req)
-                    <input type="hidden" name="id" value="@x.Id">
-                    <input type="hidden" name="v" value="no">
-                    <button class="btn btn-no">Từ chối</button>
-                </form>
-                <form method="post" action="@approveUrl" asp-antiforgery="true">
-                    @Ui.ReturnField(req)
-                    <input type="hidden" name="id" value="@x.Id">
-                    <input type="hidden" name="v" value="ok">
-                    <button class="btn btn-ok">Duyệt</button>
-                </form>
-            </div>
-        }
-        else
-        {
-            <p class="note" style="margin-bottom:0">@OvertimeUi.DecidedText(x) <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
-            <form id="otUndo@(x.Id)" method="post" action="@undoUrl" asp-antiforgery="true" hidden>
-                @Ui.ReturnField(req)
-                <input type="hidden" name="id" value="@x.Id">
-            </form>
-        }
-    </section>
+    <partial name="_OtCard" model="x" />
 }

@@ -137,3 +137,24 @@ public sealed class PlanningOwnersVm
     public int Total { get; init; }
     public int Unassigned { get; init; }
 }
+
+/// <summary>
+/// Leader → Kế hoạch &amp; duyệt → "Kế hoạch đề xuất" (yêu cầu 2026-10-19): gộp kế hoạch đầu ngày của NV + đề xuất lịch + đăng ký làm thêm,
+/// chia 2 mục riêng "Chờ duyệt" / "Đã duyệt" (?f=pending|approved).
+/// </summary>
+public sealed class PlanningInboxVm
+{
+    public required string Filter { get; init; }
+    /// <summary>Kế hoạch đầu ngày của NV trong nhóm (ngày đang xem) theo mục đang chọn.</summary>
+    public required List<DayPlan> Plans { get; init; }
+    /// <summary>NV chưa gửi kế hoạch (chỉ hiện ở mục Chờ duyệt).</summary>
+    public required List<Person> NotSent { get; init; }
+    /// <summary>Phát sinh chờ duyệt trong ngày (chỉ mục Chờ duyệt).</summary>
+    public required List<Extra> Extras { get; init; }
+    /// <summary>Đề xuất lịch: chờ duyệt (mọi ngày) hoặc đã quyết định gần đây.</summary>
+    public required List<CalendarProposal> Proposals { get; init; }
+    /// <summary>Đăng ký làm thêm của NV trong nhóm (ngày đang xem); mục Chờ duyệt = đăng ký / kết quả cần duyệt.</summary>
+    public required List<Overtime> Ots { get; init; }
+    public int PendingTotal { get; init; }
+    public int ApprovedTotal { get; init; }
+}

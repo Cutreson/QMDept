@@ -339,18 +339,39 @@ public partial class PlanningController
 
     // ======================= Đề xuất lịch của NV (yêu cầu 2026-10-15) =======================
 
-    /// <summary>GET /Planning/Proposals — đề xuất thêm công việc / người hỗ trợ của NV trong nhóm: chờ duyệt + đã quyết định gần đây.</summary>
+    /// <summary>
+    /// GET /Planning/Proposals?f=pending|approved — "Kế hoạch đề xuất" (yêu cầu 2026-10-19): kế hoạch đầu ngày của NV + phát sinh + đề xuất lịch (thêm việc / người hỗ trợ)
+    /// + đăng ký làm thêm (kèm kết quả), chia 2 mục riêng Chờ duyệt / Đã duyệt.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Proposals()
+    public async Task<IActionResult> Proposals(string? f)
     {
         await D.EnsureAsync(Date, Date);
-        ViewData["Title"] = "Đề xuất lịch";
+        ViewData["Title"] = "Kế hoạch đề xuất";
+        f = f == "approved" ? "approved" : "pending";
         var ids = D.Staff().Select(p => p.Id).ToList();
-        var pending = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
+        var b = PlanningApprovalsVm.Build(D, Date, null, null);
+        var pendPlans = b.Filtered.Where(p => p.LeaderDecision is null).OrderBy(p => D.PName(p.EmployeeId), Fmt.ViCompare).ToList();
+        var donePlans = b.Filtered.Where(p => p.LeaderDecision is not null).OrderBy(p => D.PName(p.EmployeeId), Fmt.ViCompare).ToList();
+        var pendProps = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
             .Where(p => ids.Contains(p.ProposerId) && p.Status == ExtraStatus.Pending).OrderBy(p => p.Date).ThenBy(p => p.CreatedAt).ToListAsync();
-        var recent = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
+        var doneProps = await Db.CalendarProposals.AsNoTracking().Include(p => p.People)
             .Where(p => ids.Contains(p.ProposerId) && p.Status != ExtraStatus.Pending).OrderByDescending(p => p.DecidedAt).Take(15).ToListAsync();
-        return View(new PlanningProposalsVm { Pending = pending, Recent = recent });
+        var ots = D.OtPending(Date).OrderBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
+        var pendOts = ots.Where(x => x.NeedsDecision).ToList();
+        var doneOts = ots.Where(x => !x.NeedsDecision).ToList();
+        var pend = f == "pending";
+        return View(new PlanningInboxVm
+        {
+            Filter = f,
+            Plans = pend ? pendPlans : donePlans,
+            NotSent = pend ? b.NotSent : [],
+            Extras = pend ? b.PendingExtras : [],
+            Proposals = pend ? pendProps : doneProps,
+            Ots = pend ? pendOts : doneOts,
+            PendingTotal = pendPlans.Count + b.PendingExtras.Count + pendProps.Count + pendOts.Count,
+            ApprovedTotal = donePlans.Count + doneProps.Count + doneOts.Count,
+        });
     }
 
     /// <summary>POST: duyệt (v=ok → tạo việc vào lịch NV + lịch nhóm) / từ chối (v=no, bắt buộc lý do) một đề xuất lịch.</summary>

@@ -352,6 +352,18 @@ public sealed class Dept(ViewScope scope, DataCache cache)
 
     // ======================= Đếm cho badge thanh tab =======================
 
+    /// <summary>Số mục chờ duyệt ở "Kế hoạch đề xuất" của Leader <paramref name="lid"/> (tính theo tài khoản, không phụ thuộc người đang xem):
+    /// kế hoạch đầu ngày + phát sinh + đăng ký làm thêm (hoặc kết quả chờ duyệt) của NV trong nhóm + đề xuất lịch.</summary>
+    public int LeaderInbox(DateOnly d, int lid)
+    {
+        Guard(d);
+        bool Team(int emp) => P(emp) is { IsDeleted: false, Role: Role.Staff } p && p.LeaderId == lid;
+        return _plans.Values.Count(p => p.Date == d && p.LeaderDecision is null && Team(p.EmployeeId))
+            + _extras.Values.Count(x => x.Date == d && x.Status == ExtraStatus.Pending && Team(x.EmployeeId))
+            + _ots.Values.Count(x => x.Date == d && x.Role == Role.Staff && x.NeedsDecision && Team(x.PersonId))
+            + ProposalsFor(lid).Count;
+    }
+
     /// <summary>Số mục chờ Leader xử lý trong ngày (badge tab Kế hoạch &amp; duyệt).</summary>
     public int LeaderPending(DateOnly d) =>
         _plans.Values.Count(p => p.Date == d && PlanSt(p) == PlanState.Pending && IsTeamStaff(p.EmployeeId))

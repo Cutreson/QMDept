@@ -1,0 +1,77 @@
+@model DayPlan
+@* Thẻ kế hoạch đầu ngày của NV trong nhóm (ldApprove): Duyệt / Từ chối / Góp ý / Hoàn tác. Dùng ở "Kế hoạch đề xuất" (Planning/Proposals). *@
+@{
+    var p = Model;
+    var req = Context.Request;
+    var canWrite = Scope.CanLead && !Scope.IsReadOnly;
+    var st = Dept.PlanSt(p);
+    var name = D.PName(p.EmployeeId);
+}
+<section class="card apv">
+    <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">gửi @VnTime.Hm(p.SentAt)</span></b>@Ui.Pill(st)</div>
+    @Blocks.PlanMeta(p)
+    @D.PlanTable(p)
+    @if (!string.IsNullOrEmpty(p.Note))
+    {
+        <div class="cmt"><b>Nhân viên ghi chú:</b> @p.Note</div>
+    }
+    @if (!string.IsNullOrEmpty(p.LeaderNote))
+    {
+        <div class="cmt"><b>Góp ý Leader:</b> @p.LeaderNote</div>
+    }
+    @if (!string.IsNullOrEmpty(p.ManagerNote))
+    {
+        <div class="cmt"><b>Ý kiến TP:</b> @p.ManagerNote</div>
+    }
+    @if (p.LeaderDecision is null)
+    {
+        if (canWrite)
+        {
+            <div class="btn-row">
+                <form method="post" action="/Planning/DecidePlan" asp-antiforgery="true">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="id" value="@p.Id"><input type="hidden" name="v" value="ok">
+                    <button class="btn btn-ok">✓ Duyệt</button>
+                </form>
+                <form method="post" action="/Planning/DecidePlan" asp-antiforgery="true"
+                      data-prompt="Từ chối kế hoạch của @name" data-prompt-label="Lý do / hướng dẫn sửa" data-prompt-required
+                      data-prompt-name="note" data-prompt-value="@p.LeaderNote">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="id" value="@p.Id"><input type="hidden" name="v" value="no">
+                    <button class="btn btn-no">✕ Từ chối</button>
+                </form>
+                <form method="post" action="/Planning/CommentPlan" asp-antiforgery="true"
+                      data-prompt="Góp ý cho @name" data-prompt-label="Nội dung góp ý" data-prompt-name="note" data-prompt-value="@p.LeaderNote">
+                    @Ui.ReturnField(req)
+                    <input type="hidden" name="id" value="@p.Id">
+                    <button class="btn">Góp ý</button>
+                </form>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row" style="justify-content:space-between">
+            <span class="note">Leader @(p.LeaderDecision == Decision.Ok ? "đã duyệt" : "đã từ chối") lúc @VnTime.Hm(p.LeaderAt)</span>
+            @if (canWrite)
+            {
+                <div>
+                    <form method="post" action="/Planning/CommentPlan" class="inline" asp-antiforgery="true"
+                          data-prompt="Góp ý cho @name" data-prompt-label="Nội dung góp ý" data-prompt-name="note" data-prompt-value="@p.LeaderNote">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@p.Id">
+                        <button class="btn btn-sm">Góp ý</button>
+                    </form>
+                    @if (p.ManagerDecision is null)
+                    {
+                        <form method="post" action="/Planning/UndoPlanDecision" class="inline" asp-antiforgery="true">
+                            @Ui.ReturnField(req)
+                            <input type="hidden" name="id" value="@p.Id">
+                            <button class="btn btn-sm">Hoàn tác</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    }
+</section>

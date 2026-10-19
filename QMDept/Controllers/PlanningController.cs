@@ -25,6 +25,6 @@ public partial class PlanningController : AppController
         LeaderManagerActions.Contains(ctx.RouteData.Values["action"]?.ToString() ?? "") ? [Role.Leader, Role.Manager] : [Role.Leader];
 
     /// <summary>/Controller → trang mặc định của giao diện.</summary>
-    [HttpGet] public IActionResult Index() => Redirect(Ui.To(Request, "/Planning/Approvals"));
+    [HttpGet] public IActionResult Index() => Redirect(Ui.To(Request, "/Planning/Proposals"));
 
 }

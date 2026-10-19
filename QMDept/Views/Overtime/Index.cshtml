@@ -10,13 +10,12 @@
 @OvertimeUi.Deadline(d)
 @if (Scope.Role != Role.Staff)
 {
-    var approveLabel = $"Duyệt {(Scope.Role == Role.Leader ? "nhân viên" : "Leader")}{(Model.Pending > 0 ? $" ({Model.Pending})" : "")}";
-    @Ui.Subtabs(new[]
-    {
-        (Ui.Here(req, ("tab", "mine"), ("edit", null)), "Của tôi", Model.Tab == "mine"),
-        (Ui.Here(req, ("tab", "approve"), ("edit", null)), approveLabel, Model.Tab == "approve"),
-        (Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"),
-    })
+    // Leader: duyệt đăng ký làm thêm của NV nằm ở Kế hoạch & duyệt → Kế hoạch đề xuất (yêu cầu 2026-10-19); chỉ TP còn tab "Duyệt Leader".
+    var tabsList = new List<(string Href, string Label, bool Active)> { (Ui.Here(req, ("tab", "mine"), ("edit", null)), "Của tôi", Model.Tab == "mine") };
+    if (Scope.Role == Role.Manager)
+        tabsList.Add((Ui.Here(req, ("tab", "approve"), ("edit", null)), $"Duyệt Leader{(Model.Pending > 0 ? $" ({Model.Pending})" : "")}", Model.Tab == "approve"));
+    tabsList.Add((Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"));
+    @Ui.Subtabs(tabsList)
 }
 @if (Model.Tab == "approve")
 {

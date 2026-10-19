@@ -6,6 +6,7 @@
     var d = Scope.Date;
     // Đếm theo TÀI KHOẢN Leader (không theo người đang xem): trang Kế hoạch tháng cũng dùng thanh tab này ở chế độ lịch nhóm / xem nhân viên.
     var lid = Scope.Account.Role == Role.Leader ? Scope.Account.Id : (int?)null;
+    var inbox = lid is int li ? D.LeaderInbox(d, li) : 0;
     bool InTeam(int emp) => lid is int l ? D.P(emp) is { Role: Role.Staff } pe && pe.LeaderId == l : D.IsTeamStaff(emp);
     var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId))
         + (lid is int l2 ? D.CarriesFromTeam(d, l2).Count(t => !t.CarryOk) : D.CarriesFrom(d).Count(t => !t.CarryOk));
@@ -13,10 +14,10 @@
     var tabs = new (string Key, string Path, string Label)[]
     {
         // Thứ tự theo yêu cầu 2026-10-16 (sửa lại): Kế hoạch, Kế hoạch tháng (đã gồm giao việc → bỏ Lịch tuần + Phân công), Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
-        ("approvals", "/Planning/Approvals", "Kế hoạch"),
+        // Gộp "Kế hoạch" + "Đề xuất lịch" + duyệt đăng ký làm thêm thành "Kế hoạch đề xuất" (yêu cầu 2026-10-19).
+        ("proposals", "/Planning/Proposals", "Kế hoạch đề xuất" + (inbox > 0 ? $" ({inbox})" : "")),
         ("month", "/Staff/Month?as=mine", "Kế hoạch tháng"),
         ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
-        ("proposals", "/Planning/Proposals", "Đề xuất lịch" + (propCount > 0 ? $" ({propCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),
         ("people", "/Planning/People", "Nhân sự"),

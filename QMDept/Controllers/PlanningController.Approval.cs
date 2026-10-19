@@ -15,15 +15,9 @@ public partial class PlanningController
 {
     // ======================= GET =======================
 
-    /// <summary>GET /Planning/Approvals?ap=all|pending&amp;pj={projectId} — ldApprove().</summary>
+    /// <summary>GET /Planning/Approvals — đã gộp vào "Kế hoạch đề xuất" (/Planning/Proposals, yêu cầu 2026-10-19); giữ route cũ cho liên kết thông báo (ap=pending → mục Chờ duyệt).</summary>
     [HttpGet]
-    public async Task<IActionResult> Approvals(string? ap, string? pj)
-    {
-        await D.EnsureAsync(Date, Date);
-        int? pid = int.TryParse(pj, out var x) ? x : null;
-        ViewData["Title"] = "Kế hoạch & duyệt";
-        return View(PlanningApprovalsVm.Build(D, Date, ap, pid));
-    }
+    public IActionResult Approvals(string? ap) => Redirect(Ui.To(Request, "/Planning/Proposals", ("f", ap == "pending" ? "pending" : null)));
 
     /// <summary>GET /Planning/Reports — ldEodApprove() + carrySection(). Nạp thêm 14 ngày sau (ngày chuyển tiếp).</summary>
     [HttpGet]

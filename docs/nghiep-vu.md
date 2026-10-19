@@ -406,3 +406,5 @@ Cập nhật 2026-10-17: Leader ở Lịch của tôi có "＋ Cập nhật kế
 Luồng: NV đăng ký làm thêm → Leader duyệt → NV làm thêm, **cập nhật công việc đã triển khai + giờ thực tế** → Leader duyệt kết quả → **lưu trữ** (giờ được tính).
 Làm chưa đến giờ đăng ký / vượt giờ đăng ký → hệ thống cảnh báo chênh lệch cho người duyệt; người duyệt **từ chối kết quả** (kèm lý do) → giờ làm thêm của người đó **không được tính** và phải cập nhật lại (gửi lại → chờ duyệt lại).
 Leader làm thêm: TP duyệt cả đăng ký lẫn kết quả; TP tự ghi nhận (không cần duyệt). Tổng hợp suất ăn có thêm cột "Kết quả (giờ tính)" và dòng "Giờ làm thêm được tính" (chỉ kết quả đã duyệt).
+
+Cập nhật 2026-10-19: Leader duyệt kế hoạch đầu ngày, đề xuất lịch và đăng ký làm thêm (kèm kết quả làm thêm) ở một chỗ: Kế hoạch & duyệt → Kế hoạch đề xuất, chia Chờ duyệt / Đã duyệt.

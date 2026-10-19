@@ -169,3 +169,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     chỉ từ ngày làm thêm trở đi) → người duyệt **duyệt kết quả** (lưu trữ, giờ được tính) hoặc **từ chối** (bắt buộc lý do; giờ làm thêm **không được tính**, phải cập nhật lại) —
     `DecideDone` / `UndoDone`, enum `OtCompletion`, cột `overtimes.Completion/Actual*/Done*`, partial `Views/Overtime/_OtDone.cshtml`. Sửa / hủy đăng ký khi kết quả đã duyệt bị chặn;
     sửa đăng ký hoặc hoàn tác duyệt đăng ký thì kết quả làm lại. Tab Duyệt + badge đếm cả kết quả chờ duyệt (`Overtime.NeedsDecision`); Tổng hợp có "Giờ làm thêm được tính" (chỉ kết quả đã duyệt).
+27. **Leader: "Kế hoạch đề xuất"** (yêu cầu 2026-10-19): tab con đầu của Kế hoạch & duyệt (`/Planning/Proposals`, thay "Kế hoạch" + "Đề xuất lịch"; `/Planning/Approvals` chỉ còn redirect) gộp
+    kế hoạch đầu ngày của NV (`_PlanCard`) + phát sinh chờ duyệt + đề xuất lịch + **đăng ký làm thêm kèm kết quả** (`Views/Shared/_OtCard`), chia 2 mục riêng **Chờ duyệt / Đã duyệt** (`?f=pending|approved`, `PlanningInboxVm`).
+    Leader không còn tab "Duyệt" ở trang Làm thêm (`/Overtime?tab=approve` redirect; chỉ TP còn "Duyệt Leader"). Số chờ duyệt: `Dept.LeaderInbox` (tab con) + badge tab "Kế hoạch & duyệt" (`ChromeBuilder.Badge`).
+    Thứ tự tab con Leader: Kế hoạch đề xuất, Kế hoạch tháng, Báo cáo, Dự án & đầu mục, Leader dự án, Nhân sự.
