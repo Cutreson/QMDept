@@ -113,8 +113,8 @@ public static class Labels
     /// <summary>Chức danh theo vai trò (TITLE trong artifact).</summary>
     public static string Title(Role r) => r switch
     {
-        Role.Staff => "Nhân viên Setup",
-        Role.Leader => "Leader Setup",
+        Role.Staff => "Nhân viên",
+        Role.Leader => "Leader",
         Role.Admin => "Quản trị hệ thống",
         _ => "Trưởng phòng",
     };

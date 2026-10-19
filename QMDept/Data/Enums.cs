@@ -7,8 +7,8 @@ namespace QMDept.Data;
 /// <summary>Vai trò tài khoản (people.role).</summary>
 public enum Role
 {
-    Staff,   // 'nv'     Nhân viên Setup
-    Leader,  // 'leader' Leader Setup
+    Staff,   // 'nv'     Nhân viên
+    Leader,  // 'leader' Leader
     Manager, // 'tp'     Trưởng phòng
     Admin,   // (không có trong artifact) Quản trị: toàn quyền tài khoản + xem màn hình của mọi người
 }

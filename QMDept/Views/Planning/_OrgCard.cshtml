@@ -6,7 +6,6 @@
     var d = Scope.Date;
     var isManager = Scope.Role == Role.Manager;
     var ownTeam = Scope.Role == Role.Leader && p.Role == Role.Staff && p.LeaderId == Scope.MeId;
-    var canLeave = p.Role == Role.Staff && (isManager || ownTeam);
     var canMove = isManager && p.Role == Role.Staff;
     var leave = D.OnLeave(d, p.Id);
     var leaders = D.Leaders();
@@ -22,20 +21,14 @@
     {
         <div class="s red"><b>Nghỉ @Fmt.Dm(d): @leave.Reason</b></div>
     }
-    @if (canLeave || isManager)
+    @if (isManager)
     {
         <div class="org-act">
-            @if (canLeave && leave is not null)
+            <button type="button" class="btn btn-sm" data-sheet="ep@(p.Id)">Sửa</button>
+            @if (p.Id != Scope.Account.Id)
             {
-                <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="false"><button class="btn btn-sm">Bỏ nghỉ</button></form>
-            }
-            else if (canLeave)
-            {
-                <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline" data-prompt="Báo nghỉ @p.Name ngày @Fmt.Dm(d)" data-prompt-label="Lý do" data-prompt-value="Nghỉ phép" data-prompt-name="reason">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="true"><button class="btn btn-sm">Báo nghỉ</button></form>
-            }
-            @if (isManager)
-            {
-                <button type="button" class="btn btn-sm" data-sheet="ep@(p.Id)">Sửa</button>
+                @* Xóa tài khoản: gửi form ẩn epDel{id} (data-confirm) ở cuối trang *@
+                <button type="submit" class="btn btn-sm" form="epDel@(p.Id)" style="color:var(--bad)">Xóa</button>
             }
         </div>
     }
