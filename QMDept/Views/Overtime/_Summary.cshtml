@@ -6,6 +6,9 @@
     var all = Model.Summary;
     int rice = all.Count(x => OtRules.IsFullMeal(x.Meal)), snack = all.Count(x => x.Meal == OtMeal.Snack), allowance = all.Count(x => x.Allowance > 0);
     int pendingCount = all.Count(x => x.Status == OtStatus.Pending), lateCount = all.Count(x => x.Reg == OtReg.Late);
+    // Giờ làm thêm được tính = kết quả đã được duyệt (bị từ chối / chưa duyệt kết quả thì không tính).
+    var counted = all.Where(x => x.Completion == OtCompletion.Approved).Sum(x => x.ActualHours ?? 0);
+    int doneRejected = all.Count(x => x.Completion == OtCompletion.Rejected), donePending = all.Count(x => x.Status == OtStatus.Approved && x.Completion == OtCompletion.Pending);
 }
 <div class="kpis k4">
     <div class="kpi k-info"><b>@all.Count</b><span>Người làm thêm</span></div>
@@ -19,7 +22,12 @@
         <dt>Suất cơm</dt><dd class="mono">@rice × 35.000đ = @Fmt.Money(rice * (long)OtRules.MealCost)</dd>
         <dt>Ăn nhẹ</dt><dd class="mono">@snack × 15.000đ = @Fmt.Money(snack * (long)OtRules.SnackCost)</dd>
         <dt>Phụ cấp (lương)</dt><dd class="mono">@allowance × 20.000đ = @Fmt.Money(allowance * (long)OtRules.Allowance4h)</dd>
+        <dt>Giờ làm thêm được tính</dt><dd class="mono">@Fmt.Num(counted) giờ <span class="note">(chỉ tính kết quả đã được duyệt)</span></dd>
     </dl>
+    @if (doneRejected > 0 || donePending > 0)
+    {
+        <p class="note">@if (donePending > 0) { <b>@donePending</b><text> kết quả làm thêm chờ duyệt. </text> }@if (doneRejected > 0) { <b class="red">@doneRejected</b><text> kết quả bị từ chối — giờ không được tính, nhân sự cần cập nhật lại.</text> }</p>
+    }
     @if (pendingCount > 0 || lateCount > 0)
     {
         <p class="note" style="margin-bottom:0">@if (pendingCount > 0)
@@ -35,7 +43,7 @@
     <h2>Danh sách (@all.Count)</h2>
     @if (all.Count > 0)
     {
-        <div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th class="n">Giờ</th><th>Suất ăn</th><th>Duyệt</th><th>Hạn ĐK</th></tr></thead><tbody>
+        <div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th class="n">Giờ</th><th>Suất ăn</th><th>Duyệt</th><th>Kết quả (giờ tính)</th><th>Hạn ĐK</th></tr></thead><tbody>
             @foreach (var x in all)
             {
                 <tr>
@@ -46,6 +54,7 @@
                             <text> </text><span class="pill p-info">+20k</span>
                         }</td>
                     <td>@Ui.Pill(x.Status)</td>
+                    <td>@if (x.Status != OtStatus.Approved) { <text>—</text> } else if (x.Completion == OtCompletion.Approved) { <b class="mono">@Fmt.Num(x.ActualHours ?? 0) giờ</b> } else { @Ui.Pill(OvertimeUi.CompletionLabel(x.Completion), OvertimeUi.CompletionClass(x.Completion)) }</td>
                     <td>@Ui.Pill(x.Reg)</td>
                 </tr>
             }

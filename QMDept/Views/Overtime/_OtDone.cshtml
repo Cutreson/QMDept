@@ -1,0 +1,30 @@
+@model Overtime
+@* Kết quả làm thêm (yêu cầu 2026-10-19): giờ thực tế so với giờ đăng ký, công việc đã triển khai, quyết định của người duyệt.
+   Dùng ở "Của tôi" (_Mine) và "Duyệt" (_Approve). *@
+@{
+    var x = Model;
+    var dev = OtRules.Deviation(x);
+    var sent = x.DoneSentAt is DateTime sa ? $"{VnTime.Hm(sa)} {Fmt.Dm(VnTime.DateOf(sa))}" : "";
+}
+<dl class="kvl">
+    <dt>Giờ thực tế</dt><dd><b class="mono">@x.ActualStart–@x.ActualEnd</b> · @Fmt.Num(x.ActualHours ?? 0) giờ <span class="note">(đăng ký @x.Start–@x.End · @Fmt.Num(x.Hours) giờ)</span></dd>
+    <dt>Đã triển khai</dt><dd>@x.DoneContent</dd>
+    <dt>Cập nhật lúc</dt><dd class="note mono">@sent</dd>
+</dl>
+@foreach (var w in dev)
+{
+    <div class="note red" style="margin-top:4px">⚠ @w</div>
+}
+@switch (x.Completion)
+{
+    case OtCompletion.Approved:
+        <div class="notice" style="margin-top:10px"><span class="ic">✓</span><div><b>Kết quả đã được duyệt và lưu trữ — tính @Fmt.Num(x.ActualHours ?? 0) giờ làm thêm</b><div class="note">Duyệt bởi @x.DoneDecidedBy lúc @VnTime.Hm(x.DoneDecidedAt)</div></div></div>
+        break;
+    case OtCompletion.Rejected:
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:10px"><span class="ic">!</span><div><b>Kết quả bị từ chối — thời gian làm thêm KHÔNG được tính, cần cập nhật lại</b>
+            <div class="note">@x.DoneDecidedBy · @x.DoneReason</div></div></div>
+        break;
+    default:
+        <p class="note" style="margin:10px 0 0">Chờ duyệt kết quả.</p>
+        break;
+}

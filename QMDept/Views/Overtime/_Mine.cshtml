@@ -16,8 +16,42 @@
 else if (x is not null && (!Model.Edit || !self))
 {
     <section class="card sec">
-        <h2><span class="grow">@(self ? "Đăng ký của tôi" : "Đăng ký của " + me.Name) · @Fmt.Dm(d)</span>@Ui.Pill(x.Status)</h2>
+        <h2><span class="grow">@(self ? "Đăng ký của tôi" : "Đăng ký của " + me.Name) · @Fmt.Dm(d)</span>@Ui.Pill(x.Status)@if (x.Status == OtStatus.Approved && x.Completion != OtCompletion.None) { @Ui.Pill(OvertimeUi.CompletionLabel(x.Completion), OvertimeUi.CompletionClass(x.Completion)) }</h2>
         <partial name="_OtDetail" model="x" />
+        @if (x.Status == OtStatus.Approved)
+        {
+            @* Kết quả làm thêm: đăng ký đã duyệt → làm thêm → cập nhật giờ thực tế + công việc → người duyệt duyệt kết quả (yêu cầu 2026-10-19) *@
+            <div class="h2" style="margin-top:14px">Kết quả làm thêm</div>
+            @if (x.Completion != OtCompletion.None)
+            {
+                <partial name="_OtDone" model="x" />
+            }
+            @if (self && role != Role.Manager && x.Completion != OtCompletion.Approved)
+            {
+                if (d > Scope.Today)
+                {
+                    <p class="note">Cập nhật kết quả sau khi làm thêm (từ ngày @Fmt.Dmy(d)).</p>
+                }
+                else
+                {
+                    <form method="post" action="@OvertimeUi.PostUrl(req, "ReportDone", Scope.Date)" asp-antiforgery="true" style="margin-top:10px">
+                        @Ui.ReturnField(req)
+                        <b>@(x.Completion == OtCompletion.None ? "Cập nhật công việc và thời gian đã làm" : "Cập nhật lại công việc và thời gian đã làm")</b>
+                        <div class="pick2 eq">
+                            <div><label class="f" for="dnS">Giờ thực tế bắt đầu</label>@Ui.TimeSelect("start", x.ActualStart ?? x.Start, id: "dnS")</div>
+                            <div><label class="f" for="dnE">Giờ thực tế kết thúc</label>@Ui.TimeSelect("end", x.ActualEnd ?? x.End, end: true, id: "dnE")</div>
+                        </div>
+                        <label class="f" for="dnC">Công việc đã triển khai</label>
+                        <textarea class="in" id="dnC" name="content" maxlength="2000">@x.DoneContent</textarea>
+                        <button class="btn btn-primary btn-block" style="margin-top:12px">@(x.Completion == OtCompletion.None ? "Gửi cập nhật" : "Gửi cập nhật lại")</button>
+                    </form>
+                }
+            }
+            else if (x.Completion == OtCompletion.None && !(self && role != Role.Manager))
+            {
+                <p class="note">Chưa cập nhật kết quả làm thêm.</p>
+            }
+        }
         <p class="note">@(role == Role.Manager ? "Trưởng phòng tự ghi nhận, không cần duyệt."
             : !string.IsNullOrEmpty(x.DecidedBy) ? OvertimeUi.DecidedText(x)
             : $"Chờ {(role == Role.Staff ? "Leader" : "Trưởng phòng")} duyệt.")</p>

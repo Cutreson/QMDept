@@ -195,6 +195,14 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync(to, NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)}", $"{start}–{end}", Q("/Overtime?tab=approve", d));
     }
 
+    /// <summary>NV / Leader cập nhật kết quả làm thêm (giờ thực tế + công việc) → người duyệt (Leader nhóm / mọi TP).</summary>
+    public async Task OvertimeDoneSubmittedAsync(int person, Role role, DateOnly d, string start, string end)
+    {
+        if (role == Role.Manager) return;
+        var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
+        await SendAsync(to, NotifyType.OvertimeSubmitted, $"{await Name(person)} cập nhật kết quả làm thêm {Fmt.Dm(d)}", $"Giờ thực tế {start}–{end}, chờ bạn duyệt kết quả.", Q("/Overtime?tab=approve", d));
+    }
+
     /// <summary>Hủy đăng ký làm thêm (kể cả đã duyệt) → người duyệt (Leader nhóm / mọi TP).</summary>
     public async Task OvertimeCancelledAsync(int person, Role role, DateOnly d, string start, string end, bool wasApproved)
     {

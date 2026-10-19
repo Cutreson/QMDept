@@ -202,3 +202,15 @@ public enum NotifyType
     CalendarDecided,     // đề xuất lịch được duyệt / từ chối → NV đề xuất
     ProjectOwner,        // TP giao / bỏ giao dự án cho nhóm Leader phụ trách → Leader
 }
+
+/// <summary>
+/// Kết quả làm thêm (yêu cầu 2026-10-19): sau khi đăng ký được duyệt, NV làm thêm → cập nhật công việc + giờ thực tế → người duyệt
+/// duyệt kết quả (Approved = lưu trữ, giờ được tính) hoặc từ chối (Rejected = giờ KHÔNG được tính, phải cập nhật lại).
+/// </summary>
+public enum OtCompletion
+{
+    None,     // chưa cập nhật kết quả
+    Pending,  // đã cập nhật, chờ duyệt kết quả
+    Approved, // kết quả được duyệt: lưu trữ, giờ làm thêm được tính
+    Rejected, // bị từ chối: giờ làm thêm không được tính, cập nhật lại
+}

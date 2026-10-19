@@ -284,8 +284,22 @@ public class Overtime
     public DateTime? DecidedAt { get; set; }
     [MaxLength(2000)] public string? Reason { get; set; }
     public OtReg Reg { get; set; }
+
+    // ---- Kết quả làm thêm (sau khi đăng ký được duyệt) — yêu cầu 2026-10-19 ----
+    public OtCompletion Completion { get; set; } = OtCompletion.None;
+    [MaxLength(5)] public string? ActualStart { get; set; }          // giờ thực tế NV khai
+    [MaxLength(5)] public string? ActualEnd { get; set; }
+    public decimal? ActualHours { get; set; }
+    [MaxLength(2000)] public string? DoneContent { get; set; }       // công việc đã triển khai
+    public DateTime? DoneSentAt { get; set; }
+    [MaxLength(100)] public string? DoneDecidedBy { get; set; }
+    public DateTime? DoneDecidedAt { get; set; }
+    [MaxLength(2000)] public string? DoneReason { get; set; }        // lý do từ chối kết quả
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>Cần người duyệt xử lý: đăng ký chờ duyệt, hoặc đăng ký đã duyệt và NV vừa cập nhật kết quả.</summary>
+    public bool NeedsDecision => Status == OtStatus.Pending || (Status == OtStatus.Approved && Completion == OtCompletion.Pending);
 
     public ICollection<OvertimeTask> Items { get; set; } = new List<OvertimeTask>();
 }

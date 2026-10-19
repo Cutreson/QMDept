@@ -165,3 +165,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     "Màn hình của tôi | Kế hoạch" (`ChromeModel.ViewInPlan` ẩn cả form `viewas`); tab con của Kế hoạch & duyệt: **Kế hoạch**, **Kế hoạch tháng** (`/Staff/Month?as=mine`, thanh "Lịch của tôi | Lịch nhóm" +
     ô "Xem màn hình" nhân sự; đã có "Giao thêm việc" nên **bỏ tab Lịch tuần + Phân công** — trang `/Planning/Week`, `/Planning/Assign` vẫn còn nhưng không có lối vào), Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
     Tab trái "Kế hoạch & duyệt" sáng cả khi ở Kế hoạch tháng (`ChromeBuilder.onPlanMonth`); số chờ duyệt ở `_PlanningTabs` đếm theo tài khoản Leader (`Dept.CarriesFromTeam`).
+26. **Kết quả làm thêm (nghiệm thu)** (yêu cầu 2026-10-19): đăng ký làm thêm được Leader (NV) / TP (Leader) duyệt → người làm thêm **cập nhật công việc đã triển khai + giờ thực tế** (`POST /Overtime/ReportDone`,
+    chỉ từ ngày làm thêm trở đi) → người duyệt **duyệt kết quả** (lưu trữ, giờ được tính) hoặc **từ chối** (bắt buộc lý do; giờ làm thêm **không được tính**, phải cập nhật lại) —
+    `DecideDone` / `UndoDone`, enum `OtCompletion`, cột `overtimes.Completion/Actual*/Done*`, partial `Views/Overtime/_OtDone.cshtml`. Sửa / hủy đăng ký khi kết quả đã duyệt bị chặn;
+    sửa đăng ký hoặc hoàn tác duyệt đăng ký thì kết quả làm lại. Tab Duyệt + badge đếm cả kết quả chờ duyệt (`Overtime.NeedsDecision`); Tổng hợp có "Giờ làm thêm được tính" (chỉ kết quả đã duyệt).

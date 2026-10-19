@@ -401,3 +401,8 @@ Cập nhật 2026-10-16: Leader chọn nhân viên để xem màn hình ở tran
 Cập nhật 2026-10-17: Leader — Kế hoạch tháng là tab con của Kế hoạch & duyệt (sau tab Kế hoạch); bỏ tab Lịch tuần và Phân công (giao việc làm ở Kế hoạch tháng → Lịch nhóm → Giao thêm việc); thanh trên của Leader không còn nút.
 
 Cập nhật 2026-10-17: Leader ở Lịch của tôi có "＋ Cập nhật kế hoạch cá nhân" — thêm việc của chính mình vào ngày đang chọn (như Giao thêm việc nhưng chỉ cho mình; `TaskSource.Planned`), có thể xóa việc đã thêm.
+
+### 19g. Làm thêm: nghiệm thu kết quả (yêu cầu 2026-10-19)
+Luồng: NV đăng ký làm thêm → Leader duyệt → NV làm thêm, **cập nhật công việc đã triển khai + giờ thực tế** → Leader duyệt kết quả → **lưu trữ** (giờ được tính).
+Làm chưa đến giờ đăng ký / vượt giờ đăng ký → hệ thống cảnh báo chênh lệch cho người duyệt; người duyệt **từ chối kết quả** (kèm lý do) → giờ làm thêm của người đó **không được tính** và phải cập nhật lại (gửi lại → chờ duyệt lại).
+Leader làm thêm: TP duyệt cả đăng ký lẫn kết quả; TP tự ghi nhận (không cần duyệt). Tổng hợp suất ăn có thêm cột "Kết quả (giờ tính)" và dòng "Giờ làm thêm được tính" (chỉ kết quả đã duyệt).

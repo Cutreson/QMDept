@@ -109,4 +109,8 @@ public static class OvertimeUi
 
     /// <summary>"Duyệt" / "Từ chối" bởi … lúc hh:mm.</summary>
     public static string DecidedText(Overtime x) => $"{(x.Status == OtStatus.Rejected ? "Từ chối" : "Duyệt")} bởi {x.DecidedBy ?? ""} lúc {VnTime.Hm(x.DecidedAt)}";
+
+    /// <summary>Nhãn / màu pill kết quả làm thêm.</summary>
+    public static string CompletionLabel(OtCompletion c) => c switch { OtCompletion.Approved => "Đã duyệt kết quả", OtCompletion.Rejected => "Kết quả bị từ chối", OtCompletion.Pending => "Chờ duyệt kết quả", _ => "Chưa cập nhật kết quả" };
+    public static string CompletionClass(OtCompletion c) => c switch { OtCompletion.Approved => "p-ok", OtCompletion.Rejected => "p-bad", OtCompletion.Pending => "p-warn", _ => "p-idle" };
 }

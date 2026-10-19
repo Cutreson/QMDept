@@ -77,6 +77,27 @@ public static class OtRules
         return ("Đã quá 14:00 — không đảm bảo bố trí suất ăn", "var(--bad)", "var(--bad-soft)");
     }
 
+    /// <summary>Giờ làm thêm thực tế (trừ nghỉ trưa 12:00–13:00 với ngày nghỉ / lễ như otRule); null nếu giờ sai.</summary>
+    public static decimal? ActualHours(OtDayType dt, string? a, string? b)
+    {
+        if (!Fmt.IsHhmm(a) || !Fmt.IsHhmm(b) || b!.Le(a!)) return null;
+        int lunch = dt == OtDayType.Holiday ? Math.Max(0, Math.Min(Fmt.Min(b), 780) - Math.Max(Fmt.Min(a!), 720)) : 0;
+        var h = (Fmt.Min(b) - Fmt.Min(a!) - lunch) / 60m;
+        return h > 0 ? h : null;
+    }
+
+    /// <summary>So giờ thực tế với giờ đăng ký (chưa đến / chưa đủ giờ đăng ký, vượt giờ đăng ký) để người duyệt cân nhắc.</summary>
+    public static List<string> Deviation(Overtime x)
+    {
+        var l = new List<string>();
+        if (x.ActualStart is null || x.ActualEnd is null) return l;
+        if (x.ActualStart.Gt(x.Start)) l.Add($"Bắt đầu muộn hơn đăng ký ({x.Start}) — chưa đủ thời gian đăng ký");
+        if (x.ActualEnd.Lt(x.End)) l.Add($"Kết thúc sớm hơn đăng ký ({x.End}) — chưa đủ thời gian đăng ký");
+        if (x.ActualStart.Lt(x.Start)) l.Add($"Bắt đầu sớm hơn đăng ký ({x.Start}) — vượt thời gian đăng ký");
+        if (x.ActualEnd.Gt(x.End)) l.Add($"Kết thúc muộn hơn đăng ký ({x.End}) — vượt thời gian đăng ký");
+        return l;
+    }
+
     /// <summary>mealText(x)</summary>
     public static string MealText(Overtime x) =>
         x.Exempt ? "Không áp dụng (công tác / giao hàng)" : IsFullMeal(x.Meal) ? "Cơm" : x.Meal == OtMeal.Snack ? "Ăn nhẹ" : "Không đăng ký";

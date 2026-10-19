@@ -167,7 +167,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (scope.Role == Role.Manager && id == "approvals")
                 return d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
                     + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending);
-            if (id == "overtime") return scope.Role == Role.Staff ? 0 : d.OtPending(date).Count(x => x.Status == OtStatus.Pending);
+            if (id == "overtime") return scope.Role == Role.Staff ? 0 : d.OtPending(date).Count(x => x.NeedsDecision);
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
                 return d.ExtrasOn(date).Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
             return 0;
