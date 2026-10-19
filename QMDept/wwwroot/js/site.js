@@ -464,3 +464,16 @@
   document.addEventListener('change', e => { const t = e.target; if (t.matches && t.matches('[data-kind],[data-leave-type],[data-leave-session],[data-leave-from],[data-leave-to]') && t.form) sync(t.form); });
   document.addEventListener('qm:sheet-open', e => { if (e.target.querySelector && e.target.querySelector('[data-kind]')) sync(e.target); });
 })();
+
+// ---------- Sao chép báo cáo tổng hợp (Views/Staff/Evening): [data-copy="id1 id2 …"] ghép văn bản các <pre> theo thứ tự rồi chép vào bộ nhớ tạm ----------
+(function () {
+  const fallback = text => { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { } t.remove(); return ok; };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    e.preventDefault();
+    const text = b.dataset.copy.split(/\s+/).map(id => { const el = document.getElementById(id); return el ? el.textContent.trim() : ''; }).filter(Boolean).join('\n\n');
+    const done = ok => { const old = b.dataset.label || b.textContent; b.dataset.label = old; b.textContent = ok ? 'Đã sao chép ✓' : 'Không sao chép được — hãy bôi đen và copy'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = old; }, 1800); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => done(true), () => done(fallback(text)));
+    else done(fallback(text));
+  });
+})();

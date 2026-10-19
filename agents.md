@@ -209,3 +209,8 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     JS `site.js` (syncPropForm: `[data-kind]`, `[data-leave-fields]`, `[data-work-block]`), partial `_LeaveFields`, `_ProposalSheet`. Nhãn là "Nội dung công việc" (bỏ chữ "phát sinh").
     **Leader: tab "Tổng quan" có 3 mục Dự án / Nhân sự / Kế hoạch tháng** như TP (`_OverviewTabs`): Dự án = `/Leader/Overview`, Nhân sự = `?s=people` (bảng nhóm mình, `_PeopleTable` dùng chung với TP),
     Kế hoạch tháng = `/Staff/Month?as=mine` (có "Lịch của tôi | Lịch nhóm" + ô "Xem màn hình" nhân sự). **Kế hoạch & duyệt của Leader không còn tab con "Kế hoạch tháng"**. Kiểm thử toàn phòng: `bash tools/leave-test.sh`.
+38. **Báo cáo cuối ngày: chờ duyệt → khóa; duyệt → sao chép gửi Zalo; từ chối → mở lại** (yêu cầu 2026-10-20): nhân viên gửi báo cáo ⇒ trang `/Staff/Evening` hiện khối **"Báo cáo tổng hợp"** theo dự án (`Services/EodText.cs`) với nhãn **Chờ duyệt**
+    và **khóa chỉnh sửa** (Cập nhật / tích hỗ trợ / phát sinh / gửi lại bị chặn cả ở server — `StaffController.EnsureReportOpenAsync`); có nút **"Rút lại để sửa"** (`POST /Staff/WithdrawReport`, chỉ khi chưa duyệt).
+    Leader **duyệt** ⇒ nhãn **Đã duyệt** + nút **"Sao chép dự án này"** (từng dự án, để dán vào nhóm Zalo dự án đó) và **"Sao chép toàn bộ báo cáo"** (JS `[data-copy="id1 id2…"]` trong `site.js`; văn bản chọn / copy tay được,
+    CSS `.rpt-text`). Leader **từ chối** ⇒ báo cáo mở lại để nhân viên cập nhật theo yêu cầu (hiện ghi chú của Leader), gửi lại thì thành Chờ duyệt. Leader hoàn tác duyệt ⇒ về Chờ duyệt. Kiểm thử toàn phòng: `bash tools/report-test.sh`.
+    Nút gửi của sheet Đề xuất công việc / xin nghỉ luôn ghi **"Gửi đề xuất"** (không ghi "xin nghỉ" vì có thể gửi nghỉ, công việc hoặc cả hai).

@@ -179,11 +179,35 @@ public partial class StaffController
         return View(new StaffEveningVm { Me = Scope.Me, Open = StaffReports.OpenIds(Request) });
     }
 
+    /// <summary>Báo cáo cuối ngày đã gửi (chờ duyệt) hoặc đã duyệt thì khóa chỉnh sửa; Leader từ chối → mở lại để nhân sự cập nhật (yêu cầu 2026-10-20).</summary>
+    async Task EnsureReportOpenAsync()
+    {
+        var me = Scope.Me!.Id;
+        var r = await Db.DayReports.AsNoTracking().FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me);
+        if (r is null || r.LeaderDecision == Decision.No) return;
+        throw new BizException(r.LeaderDecision == Decision.Ok
+            ? "Báo cáo đã được duyệt — không sửa được nữa"
+            : "Báo cáo đã gửi, đang chờ Leader duyệt — bấm “Rút lại để sửa” nếu cần chỉnh");
+    }
+
+    /// <summary>POST /Staff/WithdrawReport — nhân viên rút lại báo cáo cuối ngày đang chờ duyệt để sửa (đã duyệt thì không rút được; Leader hoàn tác duyệt mới mở lại).</summary>
+    [HttpPost]
+    public async Task<IActionResult> WithdrawReport() => await Do(async () =>
+    {
+        RequireSelfStaff();
+        var me = Scope.Me!.Id;
+        var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me) ?? throw new BizException("Chưa có báo cáo để rút lại");
+        if (r.LeaderDecision == Decision.Ok) throw new BizException("Báo cáo đã được duyệt, không rút lại được");
+        Db.DayReports.Remove(r);
+        await Db.SaveChangesAsync();
+    }, "Đã rút lại báo cáo — bạn có thể cập nhật rồi gửi lại");
+
     /// <summary>openUpdate → Lưu cập nhật: trạng thái, ghi chú, ảnh, kế hoạch tiếp theo (việc chuyển tiếp), đầu mục.</summary>
     [HttpPost]
     public async Task<IActionResult> UpdateTask(StaffUpdateInput input) => await Do(async () =>
     {
         RequireSelfStaff();
+        await EnsureReportOpenAsync();
         var me = Scope.Me!;
         var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == input.TaskId && x.Selected)
             ?? throw new BizException("Không tìm thấy công việc");
@@ -280,6 +304,7 @@ public partial class StaffController
     public async Task<IActionResult> TickSupport(int taskId, bool on, string? start, string? end) => await Do(async () =>
     {
         RequireSelfStaff();
+        await EnsureReportOpenAsync();
         var me = Scope.Me!;
         var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == taskId && x.EmployeeId == me.Id && x.Selected)
             ?? throw new BizException("Không tìm thấy công việc");
@@ -301,6 +326,7 @@ public partial class StaffController
     public async Task<IActionResult> ProposeExtra(ExtraInput input) => await Do(async () =>
     {
         RequireSelfStaff();
+        await EnsureReportOpenAsync();
         await StaffReports.RequireActiveProjectAsync(Db, input.ProjectId);
         StaffReports.Clip(input.Title, 300);
         StaffReports.Clip(input.Desc, 2000);
@@ -314,6 +340,7 @@ public partial class StaffController
     public async Task<IActionResult> SubmitReport(StaffEveningInput input) => await Do(async () =>
     {
         RequireSelfStaff();
+        await EnsureReportOpenAsync();
         var me = Scope.Me!.Id;
         // Dự án đã có Leader dự án (yêu cầu 2026-10-14): người hỗ trợ chỉ cần tích "đã hỗ trợ" mọi việc của mình; Leader dự án báo cáo kết quả
         // (hoàn thành / chưa + kế hoạch tiếp) cho cả việc của mình lẫn việc của người hỗ trợ trong dự án mình phụ trách.

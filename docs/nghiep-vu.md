@@ -430,3 +430,6 @@ Cập nhật 2026-10-20: Trưởng phòng — Dự án tổng hợp nhanh; Nhân
 ## 21. Sheet gộp + Tổng quan Leader (yêu cầu 2026-10-20)
 - Đề xuất công việc và xin nghỉ nằm trong MỘT sheet (ô "Loại đề xuất"). Xin nghỉ nửa ngày / vài giờ thì có thể kèm nội dung công việc làm trong thời gian còn lại (cùng một lần gửi, vẫn là hai đề xuất do người duyệt quyết định riêng).
 - Tổng quan của Leader chia 3 mục: Dự án, Nhân sự (nhóm mình), Kế hoạch tháng (chuyển từ Kế hoạch & duyệt).
+
+## 22. Vòng đời báo cáo cuối ngày của nhân viên (yêu cầu 2026-10-20)
+Chưa gửi / bị từ chối: sửa được → Gửi → **Chờ duyệt** (khóa, xem báo cáo tổng hợp theo dự án, có thể rút lại) → Leader **duyệt**: **Đã duyệt** (khóa hẳn, sao chép từng dự án hoặc toàn bộ để gửi nhóm Zalo) hoặc **từ chối** (kèm yêu cầu, báo cáo mở lại để cập nhật).

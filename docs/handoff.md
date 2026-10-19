@@ -9,6 +9,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
   nghỉ một phần ngày không loại khỏi công việc (`Dept.PartLeave`); Planning/Reports bỏ mục đỏ đề xuất chuyển, chia Chờ duyệt / Đã duyệt. Quy tắc 36 ở AGENTS.md.
 - Đã thử trên DB thật (NV 12 → Leader 9, nghỉ không lương 1 giờ) rồi xóa dòng thử `zz`. Chưa thử đủ đường Leader → TP trên giao diện (code có sẵn, `/Manager/DecideLeave`).
 - Quyết định: nghỉ không lương < 8 giờ và nghỉ phép nửa ngày coi là nghỉ một phần.
+- Cùng ngày: báo cáo cuối ngày khóa khi chờ duyệt / đã duyệt, có báo cáo tổng hợp + sao chép Zalo, từ chối thì mở lại (quy tắc 38; `tools/report-test.sh`).
 - Cùng ngày (2026-10-20): gộp đề xuất công việc + xin nghỉ thành MỘT sheet (quy tắc 37), bỏ chữ "phát sinh"; Kế hoạch tháng của Leader chuyển sang Tổng quan (3 mục như TP); `tools/leave-test.sh` kiểm thử toàn phòng.
 
 ## Phiên 4 — 2026-10-14 (Claude Code, Sonnet 5.5) — hướng dẫn cho người mới

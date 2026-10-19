@@ -24,6 +24,10 @@
     var list = D.Chosen(d, me.Id);
     var xs = D.ExtrasOn(d).Where(x => x.EmployeeId == me.Id).ToList();
     var rep = D.ReportOf(d, me.Id);
+    // Báo cáo đã gửi (chờ duyệt) hoặc đã duyệt → khóa chỉnh sửa; Leader từ chối → mở lại để cập nhật theo yêu cầu (yêu cầu 2026-10-20)
+    var es0 = Dept.EodSt(rep);
+    var locked = rep is not null && es0 != EodState.Rejected;
+    ro = ro || locked;
     // Dự án đã có Leader dự án: người hỗ trợ chỉ tích "Đã hỗ trợ"; Leader dự án báo cáo cả việc của người hỗ trợ trong dự án mình phụ trách.
     var teamTasks = D.TeamTasksOf(me.Id, d);
     var openCnt = list.Count(t => !D.IsSupportTask(t) && t.Status != TaskState.Done && t.CarriedToId is null);
@@ -37,6 +41,51 @@
 else if (Dept.PlanSt(plan) != PlanState.Approved)
 {
     <p class="note">Trạng thái kế hoạch: @Ui.Pill(Dept.PlanSt(plan))</p>
+}
+@if (rep is not null)
+{
+    var es = Dept.EodSt(rep);
+    var by = string.IsNullOrEmpty(rep.LeaderBy) ? (me.Role == Role.Leader ? "Trưởng phòng" : "Leader") : rep.LeaderBy;
+    if (es == EodState.Rejected)
+    {
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@by yêu cầu bổ sung báo cáo</b><div class="note">@(rep.LeaderNote ?? "")</div></div></div>
+    }
+    else if (es == EodState.Approved)
+    {
+        <div class="notice"><span class="ic">✓</span><div><b>@by đã duyệt báo cáo lúc @VnTime.Hm(rep.LeaderAt)</b>@if (!string.IsNullOrEmpty(rep.LeaderNote))
+            {
+                <div class="note">Góp ý: @rep.LeaderNote</div>
+            }</div></div>
+    }
+    else
+    {
+        <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Hm(rep.SentAt) · chờ @(me.Role == Role.Leader ? "Trưởng phòng" : "Leader") duyệt</b></div></div>
+        @if (!Scope.IsReadOnly)
+        {
+            <form method="post" action="@Ui.To(req, "/Staff/WithdrawReport", ("d", dkey))" asp-antiforgery="true" class="inline" data-confirm="Rút lại báo cáo để sửa? Leader sẽ không còn thấy báo cáo này cho đến khi bạn gửi lại." data-confirm-label="Rút lại">
+                @Ui.ReturnField(req)
+                <button class="btn btn-sm" style="margin-bottom:10px">Rút lại để sửa</button>
+            </form>
+        }
+    }
+}
+@if (rep is not null && locked)
+{
+    @* Báo cáo tổng hợp theo dự án: chờ duyệt thì chỉ xem; Leader duyệt xong thì chọn / sao chép gửi nhóm Zalo của từng dự án (yêu cầu 2026-10-20) *@
+    var sum = EodText.Build(D, d, me, rep);
+    var approved = es0 == EodState.Approved;
+    var allIds = "eodHead " + string.Join(" ", sum.Projects.Select((_, i) => "eodP" + i)) + " eodFoot";
+    <section class="card sec" id="eodSummary">
+        <div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Báo cáo tổng hợp</h2><span class="pill @(approved ? "p-ok" : "p-warn")">@(approved ? "Đã duyệt" : "Chờ duyệt")</span></div>
+        <pre class="rpt-text" id="eodHead">@sum.Header</pre>
+        @for (var i = 0; i < sum.Projects.Count; i++)
+        {
+            <div class="rpt-blk"><pre class="rpt-text" id="@("eodP" + i)">@sum.Projects[i].Text</pre>
+                @if (approved) { <button type="button" class="btn btn-sm" data-copy="@("eodHead eodP" + i)">Sao chép dự án này</button> }</div>
+        }
+        <pre class="rpt-text" id="eodFoot">@sum.Footer</pre>
+        @if (approved) { <button type="button" class="btn btn-primary btn-block" data-copy="@allIds" style="margin-top:8px">Sao chép toàn bộ báo cáo</button> }
+    </section>
 }
 <div class="h2">Kết quả công việc hôm nay</div>
 @if (list.Count > 0)
@@ -165,26 +214,6 @@ else if (plan is not null)
 @if (supCnt > 0)
 {
     <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">!</span><div><b>Còn @supCnt việc hỗ trợ chưa tích “Đã hỗ trợ”</b></div></div>
-}
-@if (rep is not null)
-{
-    var es = Dept.EodSt(rep);
-    var by = string.IsNullOrEmpty(rep.LeaderBy) ? (me.Role == Role.Leader ? "Trưởng phòng" : "Leader") : rep.LeaderBy;
-    if (es == EodState.Rejected)
-    {
-        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@by yêu cầu bổ sung báo cáo</b><div class="note">@(rep.LeaderNote ?? "")</div></div></div>
-    }
-    else if (es == EodState.Approved)
-    {
-        <div class="notice"><span class="ic">✓</span><div><b>@by đã duyệt báo cáo lúc @VnTime.Hm(rep.LeaderAt)</b>@if (!string.IsNullOrEmpty(rep.LeaderNote))
-            {
-                <div class="note">Góp ý: @rep.LeaderNote</div>
-            }</div></div>
-    }
-    else
-    {
-        <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Hm(rep.SentAt) · chờ @(me.Role == Role.Leader ? "Trưởng phòng" : "Leader") duyệt</b></div></div>
-    }
 }
 <form id="eodForm" class="card sec" method="post" action="@Ui.To(req, "/Staff/SubmitReport", ("d", dkey))" asp-antiforgery="true" data-miss="@openCnt" data-miss-team="@teamOpen" data-miss-sup="@supCnt">
     @Ui.ReturnField(req)
