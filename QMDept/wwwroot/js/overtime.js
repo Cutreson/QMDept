@@ -27,9 +27,12 @@
   }
   // Lựa chọn báo cơm tăng ca theo mức: từ 3 giờ bắt buộc suất (cơm/bún); 2 giờ: ăn nhẹ hoặc cắt cơm; dưới 2 giờ: không có chế độ ăn.
   function otMealOpts(r){ return r.err ? [] : r.meal==='rice' ? [['rice','Cơm'],['none','Không đăng ký']] : r.meal==='snack' ? [['snack','Ăn nhẹ'],['none','Không đăng ký']] : [['none','Không đăng ký']] }
+  let lastTier = null;   // mức suất ăn của lần tính trước (rice / snack / none / '' khi lỗi)
   function otLive(){
     const r=otRule(f.querySelector('#otDay').value, f.querySelector('#otS').value, f.querySelector('#otE').value), box=f.querySelector('#otRule');
-    const m=f.querySelector('#otM'), want=m.options.length ? m.value : m.dataset.init, opts=otMealOpts(r);
+    const m=f.querySelector('#otM'), opts=otMealOpts(r), tier=r.err ? '' : r.meal;
+    // Đổi mức làm thêm (ăn nhẹ ↔ cơm ↔ không có suất) thì quay về suất của mức mới — hiển thị / chọn sẵn trước; cùng mức thì giữ lựa chọn của người dùng.
+    let want=m.options.length ? m.value : m.dataset.init; if(lastTier!==null && lastTier!==tier) want=opts.length ? opts[0][0] : ''; lastTier=tier;
     m.innerHTML = opts.map(([k,l])=>`<option value="${k}" ${k===want?'selected':''}>${l}</option>`).join(''); m.disabled = opts.length<2; m.dataset.init = m.value;
     f.querySelector('#otMealNote').textContent = r.err ? '' : r.meal==='rice' ? 'Tăng ca từ 3 giờ (đến 20:00 trở đi): cơm.' : r.meal==='snack' ? 'Tăng ca 2 giờ (17:00–19:00): ăn nhẹ, thực đơn cố định theo ngày.' : 'Làm thêm dưới 2 giờ không có chế độ suất ăn.';
     box.classList.toggle('err', !!r.err);
