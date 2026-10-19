@@ -9,7 +9,7 @@
     var gridPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "Leader/Overview", "Leader/Tracking", "Leader/Reports", "Manager/Overview", "Manager/Approvals", "Manager/Reports",
-        "Planning/Proposals", "Planning/Reports", "Planning/Projects", "Planning/People", "Admin/Accounts",
+        "Planning/Proposals", "Planning/Reports", "Planning/Projects", "Admin/Accounts",
     };
     var mainClass = "shell" + (gridPages.Contains(page) ? " grid-page" : "");
 }

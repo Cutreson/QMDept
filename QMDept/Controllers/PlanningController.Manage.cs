@@ -274,6 +274,26 @@ public partial class PlanningController
         catch (DbUpdateException) { throw new BizException("Mã nhân viên đã tồn tại"); }
     }, "Đã lưu tài khoản");
 
+    /// <summary>
+    /// POST /Planning/MoveToTeam (chỉ TP / Quản trị) — thay đổi sơ đồ nhân sự: chuyển một nhân viên sang nhóm của Leader khác (leaderId trống = chưa xếp nhóm).
+    /// Nhân viên tự vào đúng nhóm (Leader mới duyệt / thấy kế hoạch, báo cáo của người đó); NV, Leader cũ và mới nhận thông báo (yêu cầu 2026-10-19).
+    /// </summary>
+    [HttpPost]
+    public Task<IActionResult> MoveToTeam(int emp, int? leaderId) => Do(async () =>
+    {
+        RequireManager();
+        var p = await Db.People.FirstOrDefaultAsync(x => x.Id == emp && !x.IsDeleted && x.Role == Role.Staff) ?? throw new BizException("Không tìm thấy nhân viên");
+        Person? nl = null;
+        if (leaderId is int l)
+            nl = await Db.People.AsNoTracking().FirstOrDefaultAsync(x => x.Id == l && x.Role == Role.Leader && !x.IsDeleted) ?? throw new BizException("Không tìm thấy Leader của nhóm");
+        if (p.LeaderId == nl?.Id) { Toast($"{p.Name} đã ở nhóm này"); return; }
+        var old = p.LeaderId;
+        p.LeaderId = nl?.Id;
+        await Db.SaveChangesAsync();
+        await Notify.TeamChangedAsync(p.Id, old, nl?.Id);
+        Toast(nl is null ? $"Đã đưa {p.Name} về “Chưa xếp nhóm”" : $"Đã chuyển {p.Name} sang nhóm {nl.Name}");
+    });
+
     /// <summary>POST delPerson (chỉ TP): xóa mềm tài khoản (lịch sử giữ nguyên), bỏ các phân công dự án.</summary>
     [HttpPost]
     public Task<IActionResult> DeleteAccount(int id) => Do(async () =>

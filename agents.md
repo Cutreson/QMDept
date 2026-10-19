@@ -173,3 +173,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     kế hoạch đầu ngày của NV (`_PlanCard`) + phát sinh chờ duyệt + đề xuất lịch + **đăng ký làm thêm kèm kết quả** (`Views/Shared/_OtCard`), chia 2 mục riêng **Chờ duyệt / Đã duyệt** (`?f=pending|approved`, `PlanningInboxVm`).
     Leader không còn tab "Duyệt" ở trang Làm thêm (`/Overtime?tab=approve` redirect; chỉ TP còn "Duyệt Leader"). Số chờ duyệt: `Dept.LeaderInbox` (tab con) + badge tab "Kế hoạch & duyệt" (`ChromeBuilder.Badge`).
     Thứ tự tab con Leader: Kế hoạch đề xuất, Kế hoạch tháng, Báo cáo, Dự án & đầu mục, Leader dự án, Nhân sự.
+28. **Nhân sự: sơ đồ quản lý hình tháp** (yêu cầu 2026-10-19): `/Planning/People` (Leader và TP) vẽ sơ đồ Trưởng phòng → Leader → nhân viên từng nhóm (+ cột "Chưa xếp nhóm"), thẻ `Views/Planning/_OrgCard.cshtml`,
+    CSS `.org*`, trang này bỏ khỏi `gridPages`. Leader xem cả sơ đồ phòng (chỉ thao tác Báo nghỉ / Bỏ nghỉ với nhân viên nhóm mình). **TP / Quản trị sửa sơ đồ**: kéo thả thẻ nhân viên sang cột Leader khác
+    (`wwwroot/js/site.js` "sơ đồ nhân sự") hoặc dùng ô chọn nhóm trên thẻ → `POST /Planning/MoveToTeam` (đổi `Person.LeaderId`; nhân viên tự vào nhóm mới: Leader mới duyệt / thấy, Leader cũ không còn) +
+    thông báo `NotifyType.TeamChanged` (NV, Leader cũ, Leader mới). Tạo / sửa / xóa tài khoản giữ nguyên (nút "Sửa" trên thẻ + form "Tạo tài khoản").

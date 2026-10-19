@@ -15,42 +15,51 @@ else
     <partial name="_PlanningTabs" model="@("people")" />
 }
 <partial name="_DayBar" />
-<section class="card sec"><h2>@(isManager ? "Tài khoản & nhân sự" : "Nhóm của " + D.PName(Model.Leader?.Id)) (@Model.People.Count)</h2>
-    @foreach (var p in Model.People)
+@* Sơ đồ nhân sự hình tháp (yêu cầu 2026-10-19): Trưởng phòng → Leader → nhân viên của từng nhóm (+ cột "Chưa xếp nhóm").
+   TP kéo thả thẻ nhân viên sang cột Leader khác (hoặc dùng ô chọn nhóm trên thẻ) → POST /Planning/MoveToTeam: nhân viên tự vào đúng nhóm. *@
+@{
+    var managers = D.Active.Where(x => x.Role == Role.Manager).OrderBy(x => x.SortOrder).ToList();
+    var unassigned = D.Unassigned();
+    var cols = leaders.Count + (unassigned.Count > 0 || isManager ? 1 : 0);
+    var total = managers.Count + leaders.Count + leaders.Sum(l => D.Team(l.Id).Count) + unassigned.Count;
+}
+<section class="card sec">
+    <h2>@(isManager ? "Sơ đồ nhân sự" : "Sơ đồ nhân sự phòng") (@total)</h2>
+    <div class="org" data-org="@(isManager ? "edit" : "view")" style="--n:@Math.Max(cols, 1)">
+        <div class="org-top">
+            @foreach (var m in managers) { <partial name="_OrgCard" model="m" /> }
+        </div>
+        <div class="org-stem"></div>
+        <div class="org-row">
+            @foreach (var l in leaders)
+            {
+                var team = D.Team(l.Id);
+                <div class="org-col" data-leader="@l.Id">
+                    <partial name="_OrgCard" model="l" />
+                    <div class="org-staff">
+                        @foreach (var s in team) { <partial name="_OrgCard" model="s" /> }
+                        @if (team.Count == 0) { <div class="note org-empty">Chưa có nhân viên</div> }
+                    </div>
+                </div>
+            }
+            @if (unassigned.Count > 0 || isManager)
+            {
+                <div class="org-col none" data-leader="">
+                    <div class="org-card plain"><b>Chưa xếp nhóm</b></div>
+                    <div class="org-staff">
+                        @foreach (var s in unassigned) { <partial name="_OrgCard" model="s" /> }
+                        @if (unassigned.Count == 0) { <div class="note org-empty">Không có ai</div> }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    @if (isManager)
     {
-        var leave = D.OnLeave(d, p.Id);
-        var sub = Labels.Title(p.Role)
-            + (p.Role == Role.Staff ? " · " + D.GroupText(p) : "")
-            + (isManager && !string.IsNullOrEmpty(p.Code) && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "");
-        <div class="trow">@Ui.Av(p.Name, p.Role == Role.Manager)<div>
-            <div class="t">
-                @if (p.Role == Role.Staff)
-                {
-                    <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a>
-                }
-                else
-                {
-                    @p.Name
-                }
-                <span class="mono note">@(string.IsNullOrEmpty(p.Code) ? "chưa có mã" : p.Code)</span></div>
-            <div class="s">@sub@if (leave is not null)
-                {
-                    <text> · <b class="red">Nghỉ @Fmt.Dm(d): @leave.Reason</b></text>
-                }</div></div>
-            <span class="tm">
-                @if (p.Role == Role.Staff && leave is not null)
-                {
-                    <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="false"><button class="btn btn-sm">Bỏ nghỉ</button></form>
-                }
-                else if (p.Role == Role.Staff)
-                {
-                    <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline" data-prompt="Báo nghỉ @p.Name ngày @Fmt.Dm(d)" data-prompt-label="Lý do" data-prompt-value="Nghỉ phép" data-prompt-name="reason">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="true"><button class="btn btn-sm">Báo nghỉ</button></form>
-                }
-                @if (isManager)
-                {
-                    <button type="button" class="btn btn-sm" data-sheet="ep@(p.Id)">Sửa</button>
-                }
-            </span></div>
+        <form id="orgMove" method="post" action="/Planning/MoveToTeam" asp-antiforgery="true" hidden>
+            @Ui.ReturnField(req)
+            <input type="hidden" name="emp" value=""><input type="hidden" name="leaderId" value="">
+        </form>
     }
 </section>
 @if (!isManager)

@@ -1,0 +1,56 @@
+@model Person
+@* Thẻ một người trên sơ đồ nhân sự hình tháp (Planning/People): tên + mã + cấp bậc / Leader, nghỉ trong ngày, Báo nghỉ / Bỏ nghỉ, TP: Sửa + chuyển nhóm (kéo thả hoặc ô chọn). *@
+@{
+    var p = Model;
+    var req = Context.Request;
+    var d = Scope.Date;
+    var isManager = Scope.Role == Role.Manager;
+    var ownTeam = Scope.Role == Role.Leader && p.Role == Role.Staff && p.LeaderId == Scope.MeId;
+    var canLeave = p.Role == Role.Staff && (isManager || ownTeam);
+    var canMove = isManager && p.Role == Role.Staff;
+    var leave = D.OnLeave(d, p.Id);
+    var leaders = D.Leaders();
+}
+<div class="org-card @(p.Role == Role.Manager ? "mgr" : p.Role == Role.Leader ? "ldr" : "stf")@(ownTeam || (Scope.Role == Role.Leader && p.Id == Scope.MeId) ? " mine" : "")" data-emp="@p.Id" draggable="@(canMove ? "true" : null)">
+    <div class="org-id">@Ui.Av(p.Name, p.Role == Role.Manager)
+        <div>
+            <div class="t">@if (p.Role == Role.Staff && (isManager || ownTeam)) { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a> } else { @p.Name }</div>
+            <div class="s"><span class="mono">@(string.IsNullOrEmpty(p.Code) ? "chưa có mã" : p.Code)</span> @(p.Role == Role.Manager ? Ui.Pill("Trưởng phòng", "p-mgr") : Ui.LevelPill(p))@(isManager && !string.IsNullOrEmpty(p.Code) && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "")</div>
+        </div>
+    </div>
+    @if (leave is not null)
+    {
+        <div class="s red"><b>Nghỉ @Fmt.Dm(d): @leave.Reason</b></div>
+    }
+    @if (canLeave || isManager)
+    {
+        <div class="org-act">
+            @if (canLeave && leave is not null)
+            {
+                <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="false"><button class="btn btn-sm">Bỏ nghỉ</button></form>
+            }
+            else if (canLeave)
+            {
+                <form method="post" action="/Planning/ToggleLeave" asp-antiforgery="true" class="inline" data-prompt="Báo nghỉ @p.Name ngày @Fmt.Dm(d)" data-prompt-label="Lý do" data-prompt-value="Nghỉ phép" data-prompt-name="reason">@Ui.ReturnField(req)<input type="hidden" name="emp" value="@p.Id"><input type="hidden" name="on" value="true"><button class="btn btn-sm">Báo nghỉ</button></form>
+            }
+            @if (isManager)
+            {
+                <button type="button" class="btn btn-sm" data-sheet="ep@(p.Id)">Sửa</button>
+            }
+        </div>
+    }
+    @if (canMove)
+    {
+        <form method="post" action="/Planning/MoveToTeam" asp-antiforgery="true" class="org-move">
+            @Ui.ReturnField(req)
+            <input type="hidden" name="emp" value="@p.Id">
+            <select class="in" name="leaderId" data-autosubmit aria-label="Chuyển nhóm cho @p.Name">
+                <option value="" selected="@(p.LeaderId is null)">Chưa xếp nhóm</option>
+                @foreach (var x in leaders)
+                {
+                    <option value="@x.Id" selected="@(p.LeaderId == x.Id)">Nhóm @x.Name</option>
+                }
+            </select>
+        </form>
+    }
+</div>

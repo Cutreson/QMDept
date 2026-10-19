@@ -451,3 +451,36 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 /* Hàng "Xem màn hình" + các nút (Màn hình của tôi / Lịch của tôi / Lịch nhóm): xuống dòng trên màn hình hẹp, không tràn ngang */
 .top-grid>.viewas{flex-wrap:wrap;row-gap:6px}
 .top-grid>.viewas .in{flex:1 1 140px}
+
+/* Sơ đồ nhân sự hình tháp (Planning/People): TP → Leader → nhân viên */
+.org{--oc:var(--line);overflow-x:auto;padding-bottom:4px}
+.org-top{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.org-stem{width:2px;height:16px;background:var(--oc);margin:0 auto}
+.org-row{display:grid;grid-template-columns:1fr;gap:16px;position:relative}
+.org-col{position:relative;display:flex;flex-direction:column;align-items:stretch;min-width:0;border-radius:12px}
+.org-col.over{outline:2px dashed var(--brand);outline-offset:4px;background:var(--brand-soft)}
+.org-staff{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:2px;position:relative}
+.org-staff::before{content:"";position:absolute;left:50%;top:-14px;height:14px;width:2px;background:var(--oc)}
+.org-empty{text-align:center;padding:6px 0}
+.org-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 1px 2px rgba(15,23,42,.05);display:grid;gap:6px;min-width:0}
+.org-card.mgr{border-color:var(--mgr);min-width:min(260px,100%)}
+.org-card.ldr{border-top:3px solid var(--brand)}
+.org-card.stf{background:var(--surface-2)}
+.org-card.mine{box-shadow:0 0 0 2px var(--brand-soft),0 1px 2px rgba(15,23,42,.05)}
+.org-card.plain{text-align:center;color:var(--muted)}
+.org-card[draggable=true]{cursor:grab}
+.org-card.dragging{opacity:.45}
+.org-id{display:flex;align-items:center;gap:10px;min-width:0}
+.org-id .t{font-weight:700;font-size:14px}
+.org-id .s,.org-card>.s{font-size:12px;color:var(--muted)}
+.org-act{display:flex;gap:6px;flex-wrap:wrap}
+.org-move .in{padding:5px 8px;font-size:12.5px}
+@media (min-width:900px){
+  .org-row{grid-template-columns:repeat(var(--n),minmax(0,1fr));padding-top:16px}
+  .org-row::before{content:"";position:absolute;top:0;left:calc(50% / var(--n));right:calc(50% / var(--n));border-top:2px solid var(--oc)}
+  .org-col::before{content:"";position:absolute;top:-16px;left:50%;height:16px;width:2px;background:var(--oc)}
+}
+@media (max-width:899px){
+  .org-col{padding-left:14px;border-left:2px solid var(--oc)}
+  .org-staff::before{display:none}
+}

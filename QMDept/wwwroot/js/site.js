@@ -413,3 +413,26 @@
   document.addEventListener('qm:sheet-open', e => init(e.target));
   init(document);
 })();
+
+// ---------- sơ đồ nhân sự: kéo thả nhân viên sang nhóm khác (TP; Planning/People) ----------
+// Thả thẻ .org-card[draggable] vào cột .org-col[data-leader] → gửi form #orgMove (POST /Planning/MoveToTeam); ô chọn nhóm trên thẻ làm cùng việc cho điện thoại.
+(function () {
+  const root = document.querySelector('.org[data-org="edit"]'); if (!root) return;
+  let dragEmp = null;
+  root.addEventListener('dragstart', e => {
+    const c = e.target.closest && e.target.closest('.org-card[draggable=true]'); if (!c) return;
+    dragEmp = c.dataset.emp; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragEmp);
+  });
+  root.addEventListener('dragend', e => { dragEmp = null; root.querySelectorAll('.dragging,.over').forEach(x => x.classList.remove('dragging', 'over')); });
+  root.addEventListener('dragover', e => { const col = e.target.closest('.org-col'); if (!col || dragEmp === null) return; e.preventDefault(); col.classList.add('over'); });
+  root.addEventListener('dragleave', e => { const col = e.target.closest('.org-col'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('over'); });
+  root.addEventListener('drop', e => {
+    const col = e.target.closest('.org-col'); if (!col || dragEmp === null) return;
+    e.preventDefault(); col.classList.remove('over');
+    const card = root.querySelector('.org-card[data-emp="' + dragEmp + '"]');
+    if (!card || card.closest('.org-col') === col) return;   // thả lại đúng nhóm cũ → không làm gì
+    const f = document.getElementById('orgMove'); if (!f) return;
+    f.elements.emp.value = dragEmp; f.elements.leaderId.value = col.dataset.leader || '';
+    f.requestSubmit ? f.requestSubmit() : f.submit();
+  });
+})();
