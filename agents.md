@@ -177,3 +177,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     CSS `.org*`, trang này bỏ khỏi `gridPages`. Leader xem cả sơ đồ phòng (chỉ thao tác Báo nghỉ / Bỏ nghỉ với nhân viên nhóm mình). **TP / Quản trị sửa sơ đồ**: kéo thả thẻ nhân viên sang cột Leader khác
     (`wwwroot/js/site.js` "sơ đồ nhân sự") hoặc dùng ô chọn nhóm trên thẻ → `POST /Planning/MoveToTeam` (đổi `Person.LeaderId`; nhân viên tự vào nhóm mới: Leader mới duyệt / thấy, Leader cũ không còn) +
     thông báo `NotifyType.TeamChanged` (NV, Leader cũ, Leader mới). Tạo / sửa / xóa tài khoản giữ nguyên (nút "Sửa" trên thẻ + form "Tạo tài khoản").
+29. **Kế hoạch đề xuất = 2 mục chính × 2 mục con** (yêu cầu 2026-10-19, sửa quy tắc 27): vị trí tab con **giữa "Kế hoạch tháng" và "Báo cáo"**; hai mục chính `?k=work` **Đề xuất công việc** (kế hoạch đầu ngày + phát sinh + đề xuất lịch)
+    và `?k=ot` **Đề xuất làm thêm tại công ty** (đăng ký làm thêm + kết quả); mỗi mục có 2 mục con **Chờ duyệt / Đã duyệt** (`?f=pending|approved`). `PlanningInboxVm.Kind/WorkPending/OtPending`; link cũ
+    `/Planning/Approvals` → `?f=pending`, `/Overtime?tab=approve` (Leader) → `?k=ot`.

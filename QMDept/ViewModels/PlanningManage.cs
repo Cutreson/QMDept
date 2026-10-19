@@ -144,7 +144,13 @@ public sealed class PlanningOwnersVm
 /// </summary>
 public sealed class PlanningInboxVm
 {
+    /// <summary>Mục chính (?k=): "work" = Đề xuất công việc (kế hoạch đầu ngày + phát sinh + đề xuất lịch); "ot" = Đề xuất làm thêm tại công ty.</summary>
+    public required string Kind { get; init; }
+    /// <summary>Mục con (?f=): "pending" = Chờ duyệt | "approved" = Đã duyệt.</summary>
     public required string Filter { get; init; }
+    /// <summary>Số chờ duyệt của từng mục chính (nhãn nút chuyển mục).</summary>
+    public int WorkPending { get; init; }
+    public int OtPending { get; init; }
     /// <summary>Kế hoạch đầu ngày của NV trong nhóm (ngày đang xem) theo mục đang chọn.</summary>
     public required List<DayPlan> Plans { get; init; }
     /// <summary>NV chưa gửi kế hoạch (chỉ hiện ở mục Chờ duyệt).</summary>

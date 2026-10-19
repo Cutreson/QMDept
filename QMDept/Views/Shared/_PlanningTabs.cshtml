@@ -15,8 +15,8 @@
     {
         // Thứ tự theo yêu cầu 2026-10-16 (sửa lại): Kế hoạch, Kế hoạch tháng (đã gồm giao việc → bỏ Lịch tuần + Phân công), Báo cáo, Đề xuất lịch, Dự án & đầu mục, Leader dự án, Nhân sự.
         // Gộp "Kế hoạch" + "Đề xuất lịch" + duyệt đăng ký làm thêm thành "Kế hoạch đề xuất" (yêu cầu 2026-10-19).
-        ("proposals", "/Planning/Proposals", "Kế hoạch đề xuất" + (inbox > 0 ? $" ({inbox})" : "")),
         ("month", "/Staff/Month?as=mine", "Kế hoạch tháng"),
+        ("proposals", "/Planning/Proposals", "Kế hoạch đề xuất" + (inbox > 0 ? $" ({inbox})" : "")),
         ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),

@@ -33,7 +33,7 @@ public class OvertimeController : AppController
         var pending = role == Role.Staff ? 0 : D.OtPending(d).Count(x => x.NeedsDecision);
 
         // Leader duyệt đăng ký làm thêm của NV ở Planning → Kế hoạch đề xuất (yêu cầu 2026-10-19); chỉ TP còn tab Duyệt ở đây.
-        if (t == "approve" && role == Role.Leader) return Redirect(Ui.To(Request, "/Planning/Proposals"));
+        if (t == "approve" && role == Role.Leader) return Redirect(Ui.To(Request, "/Planning/Proposals", ("k", "ot")));
         if (t == "approve")
         {
             // otApprove: Leader duyệt NV trong nhóm; TP duyệt Leader.

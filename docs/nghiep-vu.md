@@ -410,3 +410,5 @@ Leader làm thêm: TP duyệt cả đăng ký lẫn kết quả; TP tự ghi nh�
 Cập nhật 2026-10-19: Leader duyệt kế hoạch đầu ngày, đề xuất lịch và đăng ký làm thêm (kèm kết quả làm thêm) ở một chỗ: Kế hoạch & duyệt → Kế hoạch đề xuất, chia Chờ duyệt / Đã duyệt.
 
 Cập nhật 2026-10-19: mục Nhân sự là sơ đồ quản lý hình tháp; Trưởng phòng đổi sơ đồ (chuyển nhân viên giữa các nhóm) thì nhân viên tự vào nhóm tương ứng và Leader liên quan nhận thông báo.
+
+Cập nhật 2026-10-19: Kế hoạch đề xuất chia 2 mục chính (Đề xuất công việc; Đề xuất làm thêm tại công ty), mỗi mục có Chờ duyệt / Đã duyệt; tab nằm giữa Kế hoạch tháng và Báo cáo.

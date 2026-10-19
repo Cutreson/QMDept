@@ -4,11 +4,18 @@
 @{
     var req = Context.Request;
     var pend = Model.Filter == "pending";
+    var work = Model.Kind == "work";
     var canWrite = Scope.CanLead && !Scope.IsReadOnly;
     var empty = Model.Plans.Count == 0 && Model.Extras.Count == 0 && Model.Proposals.Count == 0 && Model.Ots.Count == 0;
 }
 <partial name="_PlanningTabs" model="@("proposals")" />
 <partial name="_DayBar" />
+@* 2 mục chính: Đề xuất công việc / Đề xuất làm thêm tại công ty; mỗi mục có 2 mục con Chờ duyệt / Đã duyệt *@
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("k", "work"), ("f", null)), $"Đề xuất công việc ({Model.WorkPending})", work, 0),
+    (Ui.Here(req, ("k", "ot"), ("f", null)), $"Đề xuất làm thêm tại công ty ({Model.OtPending})", !work, 0),
+})
 @Ui.Seg(new[]
 {
     (Ui.Here(req, ("f", "pending")), $"Chờ duyệt ({Model.PendingTotal})", pend, 0),
@@ -20,7 +27,7 @@
 }
 @if (empty)
 {
-    <div class="empty">@(pend ? "Không còn mục nào chờ duyệt." : "Chưa có mục nào đã duyệt.")</div>
+    <div class="empty">@(work ? (pend ? "Không còn đề xuất công việc nào chờ duyệt." : "Chưa có đề xuất công việc nào đã duyệt.") : (pend ? "Không còn đề xuất làm thêm nào chờ duyệt." : "Chưa có đề xuất làm thêm nào đã duyệt."))</div>
 }
 
 @if (Model.Plans.Count > 0)
@@ -107,7 +114,7 @@
 
 @if (Model.Ots.Count > 0)
 {
-    <h2 class="h2">Đăng ký làm thêm (@Model.Ots.Count)</h2>
+    <h2 class="h2">Đề xuất làm thêm tại công ty (@Model.Ots.Count)</h2>
     foreach (var x in Model.Ots)
     {
         <partial name="_OtCard" model="x" />

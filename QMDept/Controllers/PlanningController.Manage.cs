@@ -360,15 +360,16 @@ public partial class PlanningController
     // ======================= Đề xuất lịch của NV (yêu cầu 2026-10-15) =======================
 
     /// <summary>
-    /// GET /Planning/Proposals?f=pending|approved — "Kế hoạch đề xuất" (yêu cầu 2026-10-19): kế hoạch đầu ngày của NV + phát sinh + đề xuất lịch (thêm việc / người hỗ trợ)
+    /// GET /Planning/Proposals?k=work|ot&f=pending|approved — "Kế hoạch đề xuất" (yêu cầu 2026-10-19): kế hoạch đầu ngày của NV + phát sinh + đề xuất lịch (thêm việc / người hỗ trợ)
     /// + đăng ký làm thêm (kèm kết quả), chia 2 mục riêng Chờ duyệt / Đã duyệt.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Proposals(string? f)
+    public async Task<IActionResult> Proposals(string? k, string? f)
     {
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Kế hoạch đề xuất";
         f = f == "approved" ? "approved" : "pending";
+        k = k == "ot" ? "ot" : "work";   // 2 mục chính: work = Đề xuất công việc; ot = Đề xuất làm thêm tại công ty (yêu cầu 2026-10-19)
         var ids = D.Staff().Select(p => p.Id).ToList();
         var b = PlanningApprovalsVm.Build(D, Date, null, null);
         var pendPlans = b.Filtered.Where(p => p.LeaderDecision is null).OrderBy(p => D.PName(p.EmployeeId), Fmt.ViCompare).ToList();
@@ -381,16 +382,19 @@ public partial class PlanningController
         var pendOts = ots.Where(x => x.NeedsDecision).ToList();
         var doneOts = ots.Where(x => !x.NeedsDecision).ToList();
         var pend = f == "pending";
+        var work = k == "work";
+        int workPend = pendPlans.Count + b.PendingExtras.Count + pendProps.Count, workDone = donePlans.Count + doneProps.Count;
         return View(new PlanningInboxVm
         {
-            Filter = f,
-            Plans = pend ? pendPlans : donePlans,
-            NotSent = pend ? b.NotSent : [],
-            Extras = pend ? b.PendingExtras : [],
-            Proposals = pend ? pendProps : doneProps,
-            Ots = pend ? pendOts : doneOts,
-            PendingTotal = pendPlans.Count + b.PendingExtras.Count + pendProps.Count + pendOts.Count,
-            ApprovedTotal = donePlans.Count + doneProps.Count + doneOts.Count,
+            Kind = k, Filter = f,
+            Plans = work ? (pend ? pendPlans : donePlans) : [],
+            NotSent = work && pend ? b.NotSent : [],
+            Extras = work && pend ? b.PendingExtras : [],
+            Proposals = work ? (pend ? pendProps : doneProps) : [],
+            Ots = work ? [] : (pend ? pendOts : doneOts),
+            WorkPending = workPend, OtPending = pendOts.Count,
+            PendingTotal = work ? workPend : pendOts.Count,
+            ApprovedTotal = work ? workDone : doneOts.Count,
         });
     }
 
