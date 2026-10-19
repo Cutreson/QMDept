@@ -264,3 +264,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-19) Kế hoạch đề xuất: chuyển tab con vào giữa Kế hoạch tháng và Báo cáo; chia 2 mục chính (Đề xuất công việc / Đề xuất làm thêm tại công ty) × 2 mục con (Chờ duyệt / Đã duyệt). Đã thử đăng ký làm thêm của NV Tài hiện đúng ở mục làm thêm rồi xóa.
 - (2026-10-19) Sơ đồ nhân sự: bỏ Báo nghỉ ở thẻ, thêm Xóa tài khoản cạnh Sửa; Labels.Title: Nhân viên / Leader / Trưởng phòng (bỏ Setup). Đã thử tạo + xóa tài khoản zz (đã xóa hẳn khỏi DB).
 - (2026-10-20) Leader chỉ thấy dự án được giao (VisiblePj theo OwnerLeaderId); trang TP chọn Leader phụ trách có thống kê + 2 mục Đã có / Chưa có Leader. Hiện 48/48 dự án đã có Leader (Huề 20, Tân 27, Hùng 1).
+- (2026-10-20) TP: gộp hàng nút trên thanh trên vào Tổng quan (3 mục Dự án / Nhân sự / Kế hoạch tháng + ô Xem màn hình); TeamPeople của TP gồm cả Leader; biểu đồ tiến độ cuộn ngang. Đã kiểm tra TP + Quản trị.

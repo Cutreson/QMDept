@@ -109,12 +109,13 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var onStatus = scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase);   // trang Trạng thái làm việc của Leader thuộc "Màn hình của tôi"
         var away = scope.AllStaff || scope.OwnCalendar || (acc.Role == Role.Leader && scope.IsViewingOther);   // lịch nhóm / chế độ cá nhân / xem nhân viên của Leader: hiện tab Leader (kèm as=me để thoát)
         var onPlanMonth = acc.Role == Role.Leader && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng thuộc tab "Kế hoạch & duyệt"
+        var onOverviewMonth = acc.Role is Role.Manager or Role.Admin && scope.AllStaff && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng của phòng thuộc tab "Tổng quan" của TP
         var tabRole = away ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         var tabs = defs.Any()
             ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, t.Id == "status" ? "mine" : away ? "me" : null),
-                (t.Id == "planning" && onPlanMonth) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+                (t.Id == "planning" && onPlanMonth) || (t.Id == "overview" && onOverviewMonth) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
                 away ? 0 : Badge(t.Id))).ToList()
@@ -154,7 +155,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamHref = acc.Role is not (Role.Staff or Role.Leader) && scope.TeamPeople.Count > 0 ? WithQ("/Staff/Month", "all") : null,
             OwnHref = acc.Role == Role.Leader ? WithQ("/Staff/Month", "mine") : null,
             OwnActive = (scope.OwnCalendar && !onStatus) || (acc.Role == Role.Leader && (scope.AllStaff || scope.IsViewingOther)),
-            ViewInPlan = acc.Role == Role.Leader,
+            ViewInPlan = acc.Role != Role.Staff,   // Leader / TP: ô "Xem màn hình" nằm trong Kế hoạch tháng (Leader) / Tổng quan (TP), không ở thanh trên
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,

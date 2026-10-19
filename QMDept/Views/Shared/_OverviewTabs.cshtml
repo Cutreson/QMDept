@@ -1,0 +1,30 @@
+@model string
+@* Tổng quan của Trưởng phòng / Quản trị (yêu cầu 2026-10-20): 3 mục Dự án / Nhân sự / Kế hoạch tháng + ô "Xem màn hình" (chuyển từ thanh trên).
+   Model = khóa mục đang chọn: projects | people | month. *@
+@{
+    var req = Context.Request;
+    var tabs = new (string Key, string Path, string Label)[]
+    {
+        ("projects", "/Manager/Overview", "Dự án"),
+        ("people", "/Manager/Overview?s=people", "Nhân sự"),
+        ("month", "/Staff/Month?as=all", "Kế hoạch tháng"),
+    };
+}
+@Ui.Head(1, "Tổng quan")
+@Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))
+@if (Scope.Subordinates.Count > 0)
+{
+    <form method="get" action="@req.Path" class="row" style="margin-bottom:12px">
+        @if (!string.IsNullOrEmpty(req.Query["d"])) { <input type="hidden" name="d" value="@req.Query["d"]"> }
+        <span class="note" style="white-space:nowrap">Xem màn hình:</span>
+        <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
+            <option value="" selected disabled hidden>Chọn người</option>
+            @foreach (var g in Scope.Subordinates.GroupBy(p => p.Role))
+            {
+                <optgroup label="@Labels.Title(g.Key)">
+                    @foreach (var p in g) { <option value="@p.Id">@p.Name</option> }
+                </optgroup>
+            }
+        </select>
+    </form>
+}

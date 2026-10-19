@@ -18,6 +18,11 @@
     @* Leader: Kế hoạch tháng là tab con của "Kế hoạch & phê duyệt" (yêu cầu 2026-10-16) *@
     <partial name="_PlanningTabs" model="@("month")" />
 }
+else if (Model.AllMode && Scope.IsManager)
+{
+    @* TP / Quản trị: Lịch của phòng là mục "Kế hoạch tháng" của Tổng quan (yêu cầu 2026-10-20) *@
+    <partial name="_OverviewTabs" model="@("month")" />
+}
 else if (Model.AllMode)
 {
     @Ui.Head(0, (Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm") + " · Tất cả nhân sự", $"{ppl.Count} nhân sự")

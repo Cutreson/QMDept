@@ -19,7 +19,7 @@ public class ManagerController : AppController
 
     /// <summary>GET /Manager/Overview — tpOverview: KPI, báo cáo Leader đã gửi, tiến độ, biểu đồ, nhân sự, vấn đề.</summary>
     [HttpGet]
-    public async Task<IActionResult> Overview()
+    public async Task<IActionResult> Overview(string? s)
     {
         await D.EnsureAsync(Date, Date.AddDays(1)); // issuesOf(d) cần d và d+1
         // Khác artifact: báo cáo khóa theo (ngày, Leader) → có thể nhiều báo cáo trong một ngày.
@@ -28,6 +28,7 @@ public class ManagerController : AppController
         var sent = reports.Select(r => r.LeaderId).ToHashSet();
         return View(new ManagerOverviewVm
         {
+            Section = s == "people" ? "people" : "projects",
             Reports = reports,
             NotSent = D.Leaders().Where(l => !sent.Contains(l.Id)).ToList(),
         });

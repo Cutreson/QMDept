@@ -1,23 +1,90 @@
 @model ManagerOverviewVm
-@* tpOverview(): Dashboard tổng quan của Trưởng phòng. Controller nạp Date..Date+1 (issuesOf cần ngày mai). *@
+@* tpOverview(): Tổng quan của Trưởng phòng — 3 mục (yêu cầu 2026-10-20): Dự án (KPI, tiến độ, biểu đồ, vấn đề), Nhân sự (ai đang làm, làm ở đâu, việc từng người, nghỉ…),
+   Kế hoạch tháng (/Staff/Month?as=all — lịch của phòng, bố trí như Kế hoạch tháng của Leader). Controller nạp Date..Date+1 (issuesOf cần ngày mai). *@
 @{
     ViewData["Title"] = "Tổng quan";
     var req = Context.Request;
     var d = Scope.Date;
+    var people = Model.Section == "people";
+}
+<partial name="_OverviewTabs" model="@(people ? "people" : "projects")" />
+<partial name="_DayBar" />
+@if (people)
+{
+    // ---------- Nhân sự: số lượng đang làm, làm ở đâu, công việc từng người, nhân sự nghỉ ----------
+    var leaders = D.Leaders();
+    var groups = leaders.Select(l => (Title: "Nhóm " + l.Name, Members: new[] { l }.Concat(D.Team(l.Id)).ToList())).ToList();
+    var none = D.Unassigned();
+    if (none.Count > 0) groups.Add(("Chưa xếp nhóm", none));
+    var everyone = groups.SelectMany(g => g.Members).ToList();
+    // 0 = đang làm tại công ty, 1 = công tác, 2 = nghỉ, 3 = chưa báo trạng thái
+    int Kind(Person p)
+    {
+        var plan = D.PlanOf(d, p.Id);
+        if (D.OnLeave(d, p.Id) is not null || plan?.Status is WorkStatus.PaidLeave or WorkStatus.UnpaidLeave) return 2;
+        if (plan is null) return 3;
+        return LeaveRules.IsTrip(plan.Status) ? 1 : 0;
+    }
+    var kinds = everyone.Select(Kind).ToList();
+    int cOffice = kinds.Count(k => k == 0), cTrip = kinds.Count(k => k == 1), cLeave = kinds.Count(k => k == 2), cNone = kinds.Count(k => k == 3);
+    <div class="kpis">
+        <div class="kpi k-mgr"><b>@everyone.Count</b><span>Nhân sự</span></div>
+        <div class="kpi k-ok"><b>@(cOffice + cTrip)</b><span>Đang làm</span></div>
+        <div class="kpi k-info"><b>@cTrip</b><span>Công tác</span></div>
+        <div class="kpi k-bad"><b>@cLeave</b><span>Nghỉ</span></div>
+        <div class="kpi k-idle"><b>@cNone</b><span>Chưa báo</span></div>
+    </div>
+    @foreach (var g in groups)
+    {
+        <section class="card sec">
+            <h2>@g.Title (@g.Members.Count)</h2>
+            @foreach (var p in g.Members)
+            {
+                var plan = D.PlanOf(d, p.Id);
+                var leave = D.OnLeave(d, p.Id);
+                var k = Kind(p);
+                var ts = D.TasksOn(d, p.Id).Where(D.OkCal).ToList();
+                <div class="tmd"><div class="tmd-h">
+                        <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a>
+                        @Ui.LevelPill(p)
+                        @switch (k)
+                        {
+                            case 0: <span class="pill p-ok">Làm việc tại công ty</span> break;
+                            case 1: <span class="pill p-info">Công tác @(plan?.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span> break;
+                            case 2: <span class="pill p-bad">Nghỉ</span> break;
+                            default: <span class="pill p-idle">Chưa báo trạng thái</span> break;
+                        }
+                        <span class="note">@ts.Count việc</span>
+                    </div>
+                    @if (k == 1 && plan is not null && (!string.IsNullOrEmpty(plan.TripProvince) || !string.IsNullOrEmpty(plan.TripCustomer)))
+                    {
+                        <div class="note" style="margin:2px 0 4px">Làm ở: <b>@(plan.TripProvince ?? "—")</b> · Khách hàng: <b>@(plan.TripCustomer ?? "—")</b></div>
+                    }
+                    else if (k == 0)
+                    {
+                        <div class="note" style="margin:2px 0 4px">Làm ở: <b>Công ty</b></div>
+                    }
+                    @if (k == 2)
+                    {
+                        <div class="note red" style="margin:2px 0 4px"><b>@(leave is not null ? (leave.Reason ?? "Nghỉ") : plan is not null ? Labels.Of(plan.Status) : "Nghỉ")</b>@if (plan is not null && LeaveRules.IsLeave(plan.Status) && plan.LeaveType is not null) { <text> · </text>@Html.Raw(Blocks.LeaveText(plan)) }</div>
+                    }
+                    @foreach (var t in ts) { @D.TaskRow(t, leadOnly: true) }
+                    @if (ts.Count == 0 && k != 2) { <p class="note" style="margin:2px 0 4px">Chưa có công việc trong lịch.</p> }
+                </div>
+            }
+        </section>
+    }
+    return;
+}
+@{
+    // ---------- Dự án ----------
     var ps = D.ActivePj();
     var avg = ps.Count > 0 ? (int)Math.Round(ps.Average(p => (double)D.PjPct(p.Id)), MidpointRounding.AwayFromZero) : 0;
     var iss = D.IssuesOf(d);
     var xs = D.ExtrasOn(d);
-    var staff = D.Staff();
-    var tot = staff.Count;
-    var onLeave = staff.Count(p => D.OnLeave(d, p.Id) is not null);
-    var w = D.Working(d).Count;
 }
-@Ui.Head(1, "Dashboard tổng quan")
-<partial name="_DayBar" />
-<div class="kpis">
+<div class="kpis k4">
     <div class="kpi k-mgr"><b>@ps.Count</b><span>Dự án</span></div>
-    <div class="kpi k-mgr"><b>@tot</b><span>Nhân sự</span></div>
     <div class="kpi k-ok"><b>@(avg)%</b><span>Tiến độ TB</span></div>
     <div class="kpi k-bad"><b>@iss.Count</b><span>Vấn đề</span></div>
     <div class="kpi k-warn"><b>@xs.Count</b><span>Phát sinh</span></div>
@@ -25,8 +92,8 @@
 @{ var noTeam = D.Unassigned(); }
 @if (noTeam.Count > 0)
 {
-    @* NV chưa xếp nhóm không có Leader duyệt kế hoạch / báo cáo → TP xếp nhóm ở tab Nhân sự. *@
-    <a class="notice" href="@Ui.To(req, "/Planning/People")" style="--nbg:var(--bad-soft);--nfg:var(--bad);border:0;width:100%;text-align:left"><span class="ic">!</span><div><b>@noTeam.Count nhân viên chưa xếp nhóm</b><div class="note">@string.Join(", ", noTeam.Select(p => p.Name))</div></div></a>
+    @* NV chưa xếp nhóm không có Leader duyệt kế hoạch / báo cáo → TP xếp nhóm ở sơ đồ Nhân sự. *@
+    <a class="notice" href="@Ui.To(req, "/Planning/People")" style="--nbg:var(--bad-soft);--nfg:var(--bad);border:0;width:100%;text-align:left"><span class="ic">!</span><div><b>@noTeam.Count nhân viên chưa xếp nhóm</b><div class="note">Xếp nhóm ở sơ đồ Nhân sự để Leader duyệt kế hoạch / báo cáo.</div></div></a>
 }
 
 @* Báo cáo ngày của Leader (khác artifact: mỗi Leader gửi một báo cáo cho nhóm mình). *@
@@ -61,39 +128,23 @@ else
 
 <section class="card sec"><h2>Biểu đồ tiến độ</h2>
     <div class="legend"><span><i style="background:var(--plan)"></i>Kế hoạch (đến hôm nay)</span><span><i style="background:var(--mgr)"></i>Thực tế</span></div>
-    <div class="cols" role="img" aria-label="So sánh tiến độ kế hoạch và thực tế theo dự án">
-        @foreach (var p in ps)
-        {
-            var plan = D.PjPlanPct(p.Id, d);
-            var act = D.PjPct(p.Id);
-            <div class="col"><div class="c" style="height:@(plan)%;--cc:var(--plan)"><i>@(plan)%</i></div><div class="c" style="height:@(act)%;--cc:var(--mgr)"><i>@(act)%</i></div></div>
-        }
-    </div>
-    <div class="col-lbl">
-        @foreach (var p in ps)
-        {
-            <div>@p.Name</div>
-        }
-    </div>
-</section>
-
-@{
-    // Donut nhân sự: Đang làm = working(d); Chờ phân công = còn lại; Nghỉ / Khác = NV đang nghỉ.
-    var busy = w;
-    var waiting = tot - w - onLeave;
-    var absent = onLeave;
-    var g = tot > 0
-        ? $"conic-gradient(var(--ok) 0 {ManagerText.Pct(busy * 100.0 / tot)}%, var(--warn) 0 {ManagerText.Pct((busy + waiting) * 100.0 / tot)}%, var(--bad) 0 100%)"
-        : "var(--surface-2)";
-}
-<section class="card sec"><h2>Tình hình nhân sự</h2>
-    <div class="donut-wrap"><div class="donut" style="--g:@Html.Raw(g)" role="img" aria-label="@tot người"><b>@tot</b><span>người</span></div>
-        <ul class="dl">
-            <li><i style="--c:var(--ok)"></i><b>@busy</b>Đang làm</li>
-            <li><i style="--c:var(--warn)"></i><b>@waiting</b>Chờ phân công</li>
-            <li><i style="--c:var(--bad)"></i><b>@absent</b>Nghỉ / Khác</li>
-        </ul>
-    </div>
+    @* Nhiều dự án: biểu đồ cuộn ngang, mỗi dự án một cột có nhãn là mã dự án (rê chuột xem tên đầy đủ) *@
+    <div class="chart-scroll"><div style="min-width:@(Math.Max(ps.Count * 56, 280))px">
+        <div class="cols" role="img" aria-label="So sánh tiến độ kế hoạch và thực tế theo dự án">
+            @foreach (var p in ps)
+            {
+                var plan = D.PjPlanPct(p.Id, d);
+                var act = D.PjPct(p.Id);
+                <div class="col"><div class="c" style="height:@(plan)%;--cc:var(--plan)"><i>@(plan)%</i></div><div class="c" style="height:@(act)%;--cc:var(--mgr)"><i>@(act)%</i></div></div>
+            }
+        </div>
+        <div class="col-lbl">
+            @foreach (var p in ps)
+            {
+                <div title="@p.Name" class="clip">@(string.IsNullOrEmpty(p.Code) ? p.Name : p.Code)</div>
+            }
+        </div>
+    </div></div>
 </section>
 
 <section class="card sec"><h2>Vấn đề cần TP xem xét</h2>@Blocks.IssueList(iss)</section>

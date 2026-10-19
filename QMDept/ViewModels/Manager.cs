@@ -9,6 +9,8 @@ namespace QMDept.ViewModels;
 /// <summary>/Manager/Overview (tpOverview): báo cáo ngày các Leader đã gửi trong ngày đang xem + Leader chưa gửi.</summary>
 public sealed class ManagerOverviewVm
 {
+    /// <summary>Mục đang xem của Tổng quan (?s=): "projects" (Dự án) | "people" (Nhân sự); "Kế hoạch tháng" là trang /Staff/Month?as=all.</summary>
+    public string Section { get; init; } = "projects";
     /// <summary>Báo cáo Leader của ngày đang xem (kèm Leader), theo thời điểm gửi.</summary>
     public List<LeaderReport> Reports { get; init; } = [];
     /// <summary>Leader (còn hoạt động) chưa gửi báo cáo ngày đang xem.</summary>

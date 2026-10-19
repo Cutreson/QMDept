@@ -185,3 +185,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
 31. **Leader chỉ thấy dự án được giao; thống kê Leader phụ trách dự án** (yêu cầu 2026-10-20): `Dept.ActivePj()/AllPj()/TableProjects()` lọc theo tài khoản — tài khoản Leader chỉ thấy dự án có `OwnerLeaderId` = mình
     (danh sách dự án, ô chọn dự án, bảng tình hình, tab "Dự án & đầu mục", báo cáo TP…); TP / Quản trị / nhân viên không đổi. Trang TP `/Planning/ProjectOwners`: thống kê tổng quan (tổng dự án, đã có / chưa có Leader, từng Leader đang quản lý bao nhiêu dự án
     + danh sách) và 2 mục **Đã có Leader / Chưa có Leader** (`?f=has|none`, bỏ "Tất cả").
+32. **TP: Tổng quan gồm 3 mục, bỏ hàng nút trên thanh trên** (yêu cầu 2026-10-20): thanh trên của TP / Quản trị không còn ô "Xem màn hình" + nút "Màn hình của tôi" / "Lịch của phòng" (`ChromeModel.ViewInPlan` cho mọi tài khoản không phải NV).
+    Tab **Tổng quan** (`Views/Shared/_OverviewTabs.cshtml`): **Dự án** (`/Manager/Overview`: KPI, tiến độ, biểu đồ cuộn ngang theo mã dự án, vấn đề), **Nhân sự** (`?s=people`: số đang làm / công tác / nghỉ / chưa báo, từng người làm ở đâu + việc trong ngày,
+    nhóm theo Leader), **Kế hoạch tháng** (`/Staff/Month?as=all` — lịch của phòng gồm Leader + nhân viên, bố trí như Kế hoạch tháng của Leader, có "Giao thêm việc"); ô "Xem màn hình" (xem Leader / NV, chỉ xem) nằm ở đầu Tổng quan.

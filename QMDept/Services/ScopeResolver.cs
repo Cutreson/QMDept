@@ -69,7 +69,8 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
                    .. Sorted(people.Where(p => !p.IsDeleted && p.Role == Role.Staff && p.LeaderId == gl))]
                 : [acc],
             Role.Leader => [acc, .. scope.Pool],
-            _ => scope.Pool,
+            // TP / Quản trị: lịch của phòng gồm cả Leader và nhân viên (Tổng quan → Kế hoạch tháng, yêu cầu 2026-10-20)
+            _ => subs.Where(p => p.Role is Role.Leader or Role.Staff).ToList(),
         };
 
         // Người đang xem: ?as= (ghi nhớ vào cookie) → cookie → chính mình.

@@ -485,3 +485,7 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
   .org-col{padding-left:14px;border-left:2px solid var(--oc)}
   .org-staff::before{display:none}
 }
+
+/* Biểu đồ nhiều dự án (Tổng quan TP): cuộn ngang, nhãn cắt gọn */
+.chart-scroll{overflow-x:auto;padding-bottom:6px}
+.chart-scroll .col-lbl div.clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
