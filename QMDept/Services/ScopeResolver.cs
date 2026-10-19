@@ -91,7 +91,7 @@ public sealed class ScopeResolver(ViewScope scope, DataCache cache)
 
         // Leader dùng các trang cá nhân kiểu nhân viên của chính mình (?as=mine: lịch tháng, báo cáo đầu ngày, báo cáo cuối ngày) — chỉ ở /Staff/*.
         // Ghi nhớ vào cookie để các POST của form (không có ?as=) vẫn chạy đúng; sang trang Leader thì tự về "me".
-        var ownCal = !allStaff && sel == "mine" && acc.Role == Role.Leader
+        var ownCal = !allStaff && sel == "mine" && acc.Role is Role.Leader or Role.Manager or Role.Admin
             && (http.Request.Path.Value ?? "").StartsWith("/Staff/", StringComparison.OrdinalIgnoreCase);
 
         if (explicitSel || (sel == "me" && http.Request.Cookies[ViewCookie] is { } c && c != "me"))

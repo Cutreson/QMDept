@@ -18,7 +18,7 @@
     @* Leader: Kế hoạch tháng là tab con của "Kế hoạch & phê duyệt" (yêu cầu 2026-10-16) *@
     <partial name="_PlanningTabs" model="@("month")" />
 }
-else if (Scope.IsManager && (Model.AllMode || Scope.IsViewingOther))
+else if (Scope.IsManager && (Model.AllMode || Scope.IsViewingOther || Scope.OwnCalendar))
 {
     @* TP / Quản trị: Lịch của phòng là mục "Kế hoạch tháng" của Tổng quan (yêu cầu 2026-10-20) *@
     <partial name="_OverviewTabs" model="@("month")" />
@@ -31,10 +31,10 @@ else
 {
     <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1></div></div>
 }
-@if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role == Role.Leader && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther)))
+@if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role is Role.Leader or Role.Manager or Role.Admin && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther)))
 {
     @* NV / Leader xem lịch của mình hoặc lịch cả nhóm — yêu cầu 2026-10-15 (NV), 2026-10-16 (Leader: ?as=mine, chỉ xem) *@
-    @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Leader ? "mine" : "me")), "Lịch của tôi", !Model.AllMode && !Scope.IsViewingOther, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch của phòng" : "Lịch nhóm", Model.AllMode, 0) })
+    @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Staff ? "me" : "mine")), "Lịch của tôi", !Model.AllMode && !Scope.IsViewingOther, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch phòng" : "Lịch nhóm", Model.AllMode, 0) })
 }
 @if (Scope.Account.Role == Role.Leader && Scope.Subordinates.Count > 0 && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther))
 {
@@ -106,7 +106,7 @@ else
                 <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "calE")</div></div>
                 <label class="f">Người tham gia</label>
                 <div class="optbox">
-                    @foreach (var p in ppl)
+                    @foreach (var p in (Scope.IsManager ? ppl.Where(x => x.Role == Role.Leader).ToList() : ppl))   @* Trưởng phòng chỉ giao cho Leader (không giao vượt cấp) *@
                     {
                         var n = D.TasksOn(sel, p.Id).Count(D.OkCal);
                         var leave = D.OnLeave(sel, p.Id);
@@ -141,7 +141,7 @@ else
     @if (inM)
     {
         var t = D.TasksOn(sel, me.Id).Where(D.OkCal).ToList();
-        var ownLead = Scope.OwnCalendar && me.Role == Role.Leader;   // Leader ở "Lịch của tôi": cập nhật kế hoạch cá nhân (yêu cầu 2026-10-17)
+        var ownLead = Scope.OwnCalendar && me.Role != Role.Staff;   // Leader ở "Lịch của tôi": cập nhật kế hoạch cá nhân (yêu cầu 2026-10-17)
         <section class="card wday"><h3>@Fmt.WD[Fmt.Wday(sel)] – @Fmt.Dm(sel) (@t.Count công việc)@(D.OnLeave(sel, me.Id) is not null ? " · Nghỉ" : "")</h3>
             @if (t.Count > 0)
             {

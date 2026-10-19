@@ -418,3 +418,5 @@ Cập nhật 2026-10-20: Leader chỉ thấy các dự án được TP giao cho 
 Cập nhật 2026-10-20: Tổng quan của Trưởng phòng có 3 mục: Dự án, Nhân sự (ai đang làm, làm ở đâu, việc từng người, nghỉ), Kế hoạch tháng của phòng.
 
 Cập nhật 2026-10-20: ô Xem màn hình chỉ có ở mục Kế hoạch tháng và chỉ xem được kế hoạch tháng của nhân sự được chọn (Leader hoặc nhân viên).
+
+Cập nhật 2026-10-20: Trưởng phòng — Dự án tổng hợp nhanh; Nhân sự bảng + thống kê (thông tin Leader đã duyệt); Kế hoạch tháng gồm Lịch của tôi và Lịch phòng; giao việc chỉ xuống Leader (không vượt cấp).

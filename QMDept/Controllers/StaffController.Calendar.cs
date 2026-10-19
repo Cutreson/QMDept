@@ -39,7 +39,7 @@ public partial class StaffController
 
     /// <summary>
     /// POST /Staff/AssignTask — submit của calAssignForm: giao một việc (nguồn "Leader giao") cho nhiều NV trong ngày ?d=,
-    /// đặt vai trò trong dự án (Hỗ trợ / Leader dự án). Chỉ Leader/TP, chỉ NV thuộc nhóm của tài khoản (poolFor('nv')).
+    /// đặt vai trò trong dự án (Hỗ trợ / Leader dự án). Leader: nhân viên trong nhóm (+ chính mình); TP / Quản trị: chỉ Leader (không giao vượt cấp).
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AssignTask(int projectId, int? itemId, string? title, string? start, string? end)
@@ -47,7 +47,11 @@ public partial class StaffController
         return await Do(async () =>
         {
             RequireLead();
-            var people = StaffCalendar.ReadPeople(Request.Form, Scope.TeamPeople);
+            // Không giao vượt cấp (yêu cầu 2026-10-20): Trưởng phòng / Quản trị chỉ giao cho Leader; Leader giao tiếp cho nhân viên trong nhóm.
+            var pool = Scope.IsManager ? Scope.TeamPeople.Where(p => p.Role == Role.Leader).ToList() : Scope.TeamPeople;
+            if (Scope.IsManager && Request.Form["emp"].Any(s => int.TryParse(s, out var i) && Scope.TeamPeople.Any(p => p.Id == i && p.Role == Role.Staff)))
+                throw new BizException("Trưởng phòng chỉ giao việc cho Leader — Leader giao tiếp cho nhân viên, không giao vượt cấp");
+            var people = StaffCalendar.ReadPeople(Request.Form, pool);
             // Form chỉ liệt kê activePj(): không nhận dự án đã đóng (vd. đã bàn giao sau khi trang được tải).
             if (people.Count > 0 && await Db.Projects.AnyAsync(p => p.Id == projectId && p.Closed))
                 throw new BizException("Dự án đã bàn giao, không giao thêm việc được");
@@ -64,9 +68,9 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> AddOwnTask(int projectId, int? itemId, string? title, string? start, string? end) => await Do(async () =>
     {
-        RequireSelfStaff(leaderOk: true);
+        RequireSelfStaff(leaderOk: true, managerOk: true);
         var me = Scope.Me!;
-        if (me.Role != Role.Leader) throw new BizException("Chỉ Leader dùng mục này");
+        if (me.Role is Role.Staff) throw new BizException("Chỉ Leader / Trưởng phòng dùng mục này");
         await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", [me.Id], Scope.ActorName, TaskSource.Planned);
     }, "Đã thêm công việc vào kế hoạch cá nhân");
 
@@ -74,9 +78,9 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> DeleteOwnTask(int id) => await Do(async () =>
     {
-        RequireSelfStaff(leaderOk: true);
+        RequireSelfStaff(leaderOk: true, managerOk: true);
         var me = Scope.Me!;
-        if (me.Role != Role.Leader) throw new BizException("Chỉ Leader dùng mục này");
+        if (me.Role is Role.Staff) throw new BizException("Chỉ Leader / Trưởng phòng dùng mục này");
         var t = await Db.WorkTasks.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.EmployeeId == me.Id && x.Source == TaskSource.Planned)
             ?? throw new BizException("Không tìm thấy công việc");
         await Flow.DeleteTaskAsync(t.Id);

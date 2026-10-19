@@ -191,3 +191,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
 33. **Xem màn hình người khác = chỉ xem KẾ HOẠCH THÁNG của họ** (yêu cầu 2026-10-20, thay phần "xem đủ màn hình" của quy tắc 8): ô "Xem màn hình" chỉ có ở mục **Kế hoạch tháng** (TP / Quản trị: Tổng quan → Kế hoạch tháng; Leader: Kế hoạch & duyệt → Kế hoạch tháng),
     chọn Leader / nhân viên nào thì mở `/Staff/Month?as=<id>` (chỉ xem; `ScopeResolver.viewMonth` cho người được xem dùng giao diện kiểu nhân viên ở trang này). Mọi trang GET khác khi đang xem người khác tự chuyển về
     `/Staff/Month?as=<id>` (`AppController`, áp dụng cho TP / Quản trị / Leader). Thanh tab bên trái vẫn là của tài khoản đang đăng nhập (`ChromeBuilder.away`), banner "Đang xem…" có nút về màn hình của mình.
+34. **Tổng quan TP (yêu cầu 2026-10-20, bổ sung quy tắc 32)**: **Dự án** = tổng hợp nhanh: KPI, thanh tỉ lệ trạng thái, "Cần chú ý" (Chậm / Nguy cơ), bảng "Theo Leader", danh sách gọn lọc `?pst=risk|late|ok|done` + `?pl=<leaderId|none>`
+    (rủi ro lên đầu). **Nhân sự** = bảng + thống kê (cả TP): công tác / công ty, nghỉ, báo cơm / cắt cơm, ai chưa báo / chờ duyệt / bị từ chối để nhắc — **chỉ hiện địa điểm, nghỉ, báo cơm của kế hoạch đã được Leader duyệt**
+    (Leader: TP duyệt; Leader ghi nghỉ hiện riêng). **Kế hoạch tháng** có 2 mục **Lịch của tôi** (`?as=mine`, TP thêm / xóa việc cá nhân như Leader) và **Lịch phòng** (`?as=all`).
+    **Không giao việc vượt cấp**: ở Lịch phòng TP / Quản trị chỉ giao cho Leader (`AssignTask` chặn nhân viên); Leader giao tiếp cho nhân viên nhóm mình.

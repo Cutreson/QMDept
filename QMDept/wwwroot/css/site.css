@@ -489,3 +489,7 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 /* Biểu đồ nhiều dự án (Tổng quan TP): cuộn ngang, nhãn cắt gọn */
 .chart-scroll{overflow-x:auto;padding-bottom:6px}
 .chart-scroll .col-lbl div.clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+
+/* Thanh tỉ lệ trạng thái dự án (Tổng quan TP) */
+.stk{display:flex;height:26px;border-radius:8px;overflow:hidden;background:var(--surface-2)}
+.stk span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;min-width:22px}
