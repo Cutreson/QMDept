@@ -114,9 +114,10 @@ public partial class StaffController
     public async Task<IActionResult> MoveTask(int id, string? to, int? emp) => await Do(async () =>
     {
         var t = await LoadManagedTaskAsync(id);
-        if (t.CarriedFromId is not null || t.CarriedToId is not null) throw new BizException("Việc chuyển tiếp không chuyển lịch được — xóa hoặc xử lý ở mục chuyển tiếp");
+        if (t.CarriedToId is not null) throw new BizException("Việc này đã được chuyển tiếp sang ngày khác — chuyển lịch việc mới đó");
         var day = Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày chuyển đến (dd/MM/yyyy)");
         if (day < Scope.Today) throw new BizException("Chỉ chuyển đến hôm nay trở đi");
+        if (t.FromDate is DateOnly fd && day <= fd) throw new BizException($"Việc chuyển tiếp phải đặt sau ngày của việc gốc ({Fmt.Dmy(fd)})");
         var target = emp ?? t.EmployeeId;
         if (day == t.Date && target == t.EmployeeId) throw new BizException("Chọn ngày hoặc người khác với lịch hiện tại");
         var tp = await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == target) ?? throw new BizException("Không tìm thấy người nhận");

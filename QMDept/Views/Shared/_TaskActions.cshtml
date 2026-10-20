@@ -14,7 +14,7 @@
     var pool = new List<Person> { acc };
     pool.AddRange(acc.Role == Role.Leader ? D.Team(acc.Id) : D.Leaders());
     pool = pool.GroupBy(p => p.Id).Select(g => g.First()).ToList();
-    var canMove = t.CarriedFromId is null && t.CarriedToId is null;
+    var canMove = t.CarriedToId is null;   // việc đã được chuyển tiếp đi nơi khác thì không chuyển lịch
 }
 <div class="task-actions ro-ok" style="display:flex;justify-content:flex-end;gap:14px;margin:-2px 12px 6px">
     @if (canMove) { <button type="button" class="link ro-ok" data-sheet="mv@(t.Id)">Chuyển lịch</button> }

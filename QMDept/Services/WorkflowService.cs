@@ -289,6 +289,9 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             t.Selected = true;
             db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = t.Id });
         }
+        // Việc chuyển tiếp: ngày chuyển sang ghi trên việc gốc cũng đổi theo.
+        if (t.CarriedFromId is int origId)
+            await db.WorkTasks.Where(x => x.Id == origId && x.CarriedToId == t.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.CarryDate, (DateOnly?)newDate));
         if (newEmp != oldEmp)
         {
             var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead).Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
