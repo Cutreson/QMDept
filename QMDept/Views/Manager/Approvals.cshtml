@@ -11,13 +11,13 @@
     (Ui.Here(req, ("mode", "extra")), "Phát sinh", Model.Mode == "extra", 0),
     (Ui.Here(req, ("mode", "leader")), "Của Leader", Model.Mode == "leader", Model.PendingLeader),
 })
-<form method="get" action="@req.Path">
-    @foreach (var kv in req.Query.Where(k => k.Key != "f"))
-    {
-        <input type="hidden" name="@kv.Key" value="@kv.Value">
-    }
-    <label class="row" style="margin-bottom:12px"><span class="note">Trạng thái:</span>@Ui.Select("f", ManagerApprovalsVm.Filters, Model.Filter, id: "approvalFilter", extraAttrs: "data-autosubmit")</label>
-</form>
+@* Mục nhỏ bấm chọn: Chờ duyệt → Đã duyệt → Từ chối (thay ô chọn Trạng thái; yêu cầu 2026-10-20) *@
+@Ui.Seg(new[]
+{
+    (Ui.Here(req, ("f", null)), "Chờ duyệt", Model.Filter is not ("approved" or "rejected"), Model.Mode == "plan" ? Model.PendingManager : Model.Mode == "leader" ? Model.PendingLeader : 0),
+    (Ui.Here(req, ("f", "approved")), "Đã duyệt", Model.Filter == "approved", 0),
+    (Ui.Here(req, ("f", "rejected")), "Từ chối", Model.Filter == "rejected", 0),
+})
 
 @if (Model.Mode == "plan")
 {

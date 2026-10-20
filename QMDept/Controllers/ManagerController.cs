@@ -81,7 +81,7 @@ public class ManagerController : AppController
         {
             Mode = mode, Filter = f, PendingManager = pendingManager, Plans = plans, Extras = extras, PendingLeader = pendingLeader,
             LeaderPlans = mode == "leader" ? leaderPlans : [],
-            LeaderLeaves = mode == "leader" ? (f == "pending" ? pendLeaves : await Db.LeaveRequests.AsNoTracking().Where(r => r.Role == Role.Leader && r.Status != ExtraStatus.Pending).OrderByDescending(r => r.DecidedAt).Take(15).ToListAsync()) : [],
+            LeaderLeaves = mode == "leader" ? (f == "pending" ? pendLeaves : await Db.LeaveRequests.AsNoTracking().Where(r => r.Role == Role.Leader && (f == "approved" ? r.Status == ExtraStatus.Approved : f == "rejected" ? r.Status == ExtraStatus.Rejected : r.Status != ExtraStatus.Pending)).OrderByDescending(r => r.DecidedAt).Take(15).ToListAsync()) : [],
             LeaderNotSentPlan = mode == "leader" ? D.Leaders().Where(l => D.PlanOf(Date, l.Id) is null && D.OnLeave(Date, l.Id) is null).ToList() : [],
         });
     }
