@@ -62,7 +62,11 @@ else
                 var leave = D.OnLeave(sel, p.Id) ?? D.PartLeave(sel, p.Id);   // nghỉ một phần ngày vẫn có việc
                 var ot = D.OtOf(sel, p.Id) is { Status: not OtStatus.Rejected } o ? o : null;
                 <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red" title="@Blocks.LeaveBrief(leave)">@(leave.LeaveType is null ? "Nghỉ" : Blocks.LeaveBrief(leave))</b>@(" · ")}@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
-                    @foreach (var x in t) { @D.TaskRow(x, leadOnly: true) }
+                    @foreach (var x in t)
+                    {
+                        @D.TaskRow(x, leadOnly: true)
+                        <partial name="_TaskActions" model="x" />
+                    }
                 </div>
             }
         </section>
@@ -132,14 +136,7 @@ else
                 foreach (var x in t)
                 {
                     @D.TaskRow(x)
-                    @if (ownLead && x.Source == TaskSource.Planned)
-                    {
-                        <form method="post" action="@Ui.To(req, "/Staff/DeleteOwnTask", ("d", Fmt.Key(sel)))" asp-antiforgery="true" class="inline" data-confirm="Xóa “@x.Title” khỏi kế hoạch cá nhân?" data-confirm-label="Xóa" style="display:block;text-align:right;margin:-2px 12px 6px">
-                            @Ui.ReturnField(req)
-                            <input type="hidden" name="id" value="@x.Id">
-                            <button class="link" style="color:var(--bad)">Xóa</button>
-                        </form>
-                    }
+                    @if (ownLead) { <partial name="_TaskActions" model="x" /> }
                 }
             }
             else { <p class="note" style="padding:8px 12px;margin:0">Ngày này chưa có công việc.</p> }

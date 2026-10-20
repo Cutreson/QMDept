@@ -217,3 +217,6 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
 39. **Leader: "Xin nghỉ" là tab con riêng của Kế hoạch & duyệt** (yêu cầu 2026-10-20, tách khỏi "Kế hoạch đề xuất" của quy tắc 27 / 29): `/Planning/Leave` ngay sau "Kế hoạch đề xuất", hiện số chờ duyệt, 2 mục **Chờ duyệt / Đã duyệt** (`?f=pending|approved`,
     `PlanningLeaveVm`); duyệt → ghi Nghỉ vào lịch, từ chối bắt buộc lý do (`POST /Planning/DecideLeave`). "Kế hoạch đề xuất" không còn chứa xin nghỉ (`Dept.LeaderInbox` không đếm xin nghỉ; badge tab "Kế hoạch & duyệt" vẫn cộng cả hai).
     Thông báo xin nghỉ của nhân viên dẫn tới `/Planning/Leave`.
+40. **Leader / TP xóa hoặc chuyển lịch công việc** (yêu cầu 2026-10-20): dưới mỗi dòng việc ở "Lịch của tôi" và "Lịch nhóm / Lịch phòng" có nút **Chuyển lịch** (ngày từ hôm nay trở đi + người nhận) và **Xóa**
+    (`Views/Shared/_TaskActions.cshtml`, `POST /Staff/DeleteTask` / `/Staff/MoveTask`, `StaffCalendar.OwnsTask`). Quyền: việc của chính mình; Leader thêm việc của nhân viên nhóm mình; TP / Quản trị thêm việc của Leader (không vượt cấp xuống nhân viên);
+    người nhận chuyển lịch cũng chỉ trong quyền đó. Khóa khi việc đã Hoàn thành / Chậm hoặc nhân sự đã gửi báo cáo cuối ngày; việc chuyển tiếp không chuyển lịch được (xóa thì được). Người nhận nghỉ cả ngày thì chặn; người nhận khác mình được thông báo.

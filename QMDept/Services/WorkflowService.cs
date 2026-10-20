@@ -273,6 +273,30 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (!links.Any(l => l.DayPlanId == plan.Id)) db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = n.Id });
     }
 
+    /// <summary>
+    /// Leader / TP chuyển một việc sang lịch khác (ngày khác và / hoặc người khác — yêu cầu 2026-10-20). Gỡ khỏi kế hoạch ngày cũ;
+    /// người nhận đã gửi kế hoạch ngày mới (và chưa báo cáo cuối ngày) thì việc vào kế hoạch đó. Quyền do controller kiểm.
+    /// </summary>
+    public async Task MoveTaskAsync(WorkTask t, DateOnly newDate, int newEmp, string actor)
+    {
+        var oldEmp = t.EmployeeId;
+        var links = await db.DayPlanTasks.Where(x => x.WorkTaskId == t.Id).ToListAsync();
+        db.DayPlanTasks.RemoveRange(links);
+        t.Date = newDate; t.EmployeeId = newEmp; t.Selected = false; t.UpdatedAt = VnTime.UtcNow;
+        var plan = await db.DayPlans.FirstOrDefaultAsync(p => p.Date == newDate && p.EmployeeId == newEmp);
+        if (plan is not null && !await db.DayReports.AnyAsync(r => r.Date == newDate && r.EmployeeId == newEmp))
+        {
+            t.Selected = true;
+            db.DayPlanTasks.Add(new DayPlanTask { DayPlanId = plan.Id, WorkTaskId = t.Id });
+        }
+        if (newEmp != oldEmp)
+        {
+            var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead).Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
+            await UpsertAssignmentAsync(t.ProjectId, newEmp, leadId == newEmp ? ProjectRole.Lead : ProjectRole.Support, actor, keepNote: true);
+        }
+        await db.SaveChangesAsync();
+    }
+
     /// <summary>delTask: xóa việc khỏi lịch, dọn tham chiếu chuyển tiếp.</summary>
     public async Task DeleteTaskAsync(int taskId)
     {

@@ -47,6 +47,20 @@ public sealed class StaffProjectsVm
 /// <summary>Helper cho Kế hoạch tháng / Giao thêm việc (nvMonth, teamDayList, calAssignForm).</summary>
 public static class StaffCalendar
 {
+    /// <summary>
+    /// Leader / TP được xóa / chuyển lịch việc nào (yêu cầu 2026-10-20): việc của chính mình; Leader thêm việc của nhân viên trong nhóm mình;
+    /// TP / Quản trị thêm việc của Leader (không vượt cấp xuống nhân viên). Không áp dụng khi đang xem màn hình người khác.
+    /// </summary>
+    public static bool OwnsTask(Person actor, bool isManager, bool viewingOther, Person? emp, WorkTask t)
+    {
+        if (viewingOther || emp is null || emp.IsDeleted || emp.Id != t.EmployeeId) return false;
+        if (emp.Id == actor.Id) return actor.Role is Role.Leader or Role.Manager or Role.Admin;
+        return actor.Role == Role.Leader ? emp.Role == Role.Staff && emp.LeaderId == actor.Id : isManager && emp.Role == Role.Leader;
+    }
+
+    /// <summary>Việc đã có kết quả (Hoàn thành / Chậm) hoặc NV đã gửi báo cáo cuối ngày → khóa, không xóa / chuyển được.</summary>
+    public static bool TaskLocked(Dept d, WorkTask t) => t.Status is TaskState.Done or TaskState.Late || d.ReportOf(t.Date, t.EmployeeId) is not null;
+
     /// <summary>Màu ô ngày ở chế độ một nhân viên (nvMonth): không việc / xong hết / có chậm / hôm nay / còn lại.</summary>
     public static (string Bg, string Fg) CellColor(IReadOnlyCollection<WorkTask> t, bool isToday)
     {

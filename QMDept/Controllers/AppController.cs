@@ -76,7 +76,8 @@ public abstract class AppController : Controller
         // Lịch cả nhóm (?as=all): chỉ form "Giao thêm việc" được ghi.
         if (HttpMethods.IsPost(Request.Method) && Scope.AllStaff
             && !(ctx.RouteData.Values["controller"] is string c && c.Equals("Staff", StringComparison.OrdinalIgnoreCase)
-                 && ctx.RouteData.Values["action"] is string a && a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)))
+                 && ctx.RouteData.Values["action"] is string a && (a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)
+                     || a.Equals("DeleteTask", StringComparison.OrdinalIgnoreCase) || a.Equals("MoveTask", StringComparison.OrdinalIgnoreCase))))
         {
             Toast("Lịch chỉ xem — mở màn hình của bạn để thao tác");
             ctx.Result = Redirect(BackUrl());
