@@ -5,6 +5,7 @@
     var d = Scope.Date;
     var isManager = Model.IsManager;
     var leaders = D.Leaders();
+    var sub = isManager && req.Query["s"] == "create" ? "create" : "chart";
 }
 @if (Scope.Role == Role.Manager)
 {
@@ -14,7 +15,14 @@ else
 {
     <partial name="_PlanningTabs" model="@("people")" />
 }
-<partial name="_DayBar" />
+@if (isManager)
+{
+    @Ui.Seg(new[]
+    {
+        (Ui.Here(req, ("s", null)), "Sơ đồ tổ chức", sub == "chart", 0),
+        (Ui.Here(req, ("s", "create")), "Tạo tài khoản", sub == "create", 0),
+    })
+}
 @* Sơ đồ nhân sự hình tháp (yêu cầu 2026-10-19): Trưởng phòng → Leader → nhân viên của từng nhóm (+ cột "Chưa xếp nhóm").
    TP kéo thả thẻ nhân viên sang cột Leader khác (hoặc dùng ô chọn nhóm trên thẻ) → POST /Planning/MoveToTeam: nhân viên tự vào đúng nhóm. *@
 @{
@@ -23,6 +31,8 @@ else
     var cols = leaders.Count + (unassigned.Count > 0 || isManager ? 1 : 0);
     var total = managers.Count + leaders.Count + leaders.Sum(l => D.Team(l.Id).Count) + unassigned.Count;
 }
+@if (sub == "chart")
+{
 <section class="card sec">
     <h2>@(isManager ? "Sơ đồ nhân sự" : "Sơ đồ nhân sự phòng") (@total)</h2>
     <div class="org" data-org="@(isManager ? "edit" : "view")" style="--n:@Math.Max(cols, 1)">
@@ -62,12 +72,13 @@ else
         </form>
     }
 </section>
+}
 @if (!isManager)
 {
     return;
 }
 @* openPerson(p): mỗi người một <template> sheet "Sửa tài khoản". Nút "Xóa tài khoản này" gửi form ẩn epDel{id} (data-confirm) qua thuộc tính form=. *@
-@foreach (var p in Model.People)
+@if (sub == "chart") foreach (var p in Model.People)
 {
     var self = p.Id == Scope.Account.Id;
     <template id="ep@(p.Id)">
@@ -105,6 +116,8 @@ else
     }
 }
 @* personForm *@
+@if (sub == "create")
+{
 <form id="personForm" class="card sec" method="post" action="/Planning/CreateAccount" asp-antiforgery="true">
     <h2>Tạo tài khoản</h2>
     @Ui.ReturnField(req)
@@ -124,6 +137,8 @@ else
                 <option value="@v">@Labels.Of(v)</option>
             }
         </select></div>
+        <div><label class="f" for="npP">Mật khẩu</label><input class="in mono" id="npP" name="password" value="@AccountRules.DefaultPassword" maxlength="64" autocomplete="off"></div>
     </div>
     <button class="btn btn-primary btn-block">Tạo tài khoản</button>
 </form>
+}

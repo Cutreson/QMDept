@@ -63,7 +63,7 @@
     `opus` hiện không truy cập được. Tiết kiệm hạn mức: E2E chạy tuần tự, ưu tiên ít agent.
 19. **Tài khoản & mật khẩu** (yêu cầu 2026-10-14): **mã tài khoản nhân viên = mã nhân viên của phòng** (vd. `00171`, danh sách chuẩn ở `docs/nhan-su.md`);
     mã gợi ý theo tên (Nguyễn Văn Huề → `hue.nv`) chỉ dùng khi chưa có mã nhân viên. **Mật khẩu của 10 tài khoản nhân sự chuẩn: `1`** (chủ dự án yêu cầu,
-    nên mật khẩu tối thiểu chỉ 1 ký tự — `AccountRules.MinPassword`); mật khẩu mặc định của tài khoản mới / sau khi đặt lại vẫn `Test@123`.
+    nên mật khẩu tối thiểu chỉ 1 ký tự — `AccountRules.MinPassword`); mật khẩu mặc định của tài khoản mới / sau khi đặt lại là `1` (đổi 2026-10-20; form tạo tài khoản có ô Mật khẩu điền sẵn `1`).
     Người dùng **tự đổi được mật khẩu** của mình (trang Cài đặt). Tài khoản quản trị: `admin` / `Admin@123`.
 20. **Publish web do chủ dự án làm** (yêu cầu 2026-10-14): AI không tự publish / deploy. Khi cần đưa bản mới lên web
     (qlcl.runasp.net), nhắc chủ dự án tự chạy Publish trong Visual Studio. Quy tắc 18 (không dùng `fable`) và 4 (commit + push thẳng `master`)

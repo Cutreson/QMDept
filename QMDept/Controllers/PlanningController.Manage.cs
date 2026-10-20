@@ -206,7 +206,7 @@ public partial class PlanningController
 
     /// <summary>POST personForm (chỉ TP): tạo tài khoản mới (mật khẩu mặc định).</summary>
     [HttpPost]
-    public Task<IActionResult> CreateAccount(string? name, string? code, string? role, int? leaderId, string? level) => Do(async () =>
+    public Task<IActionResult> CreateAccount(string? name, string? code, string? role, int? leaderId, string? level, string? password) => Do(async () =>
     {
         RequireManager();
         // Mã lưu chữ thường theo quy tắc chủ dự án (AccountRules.NormalizeCode; artifact dùng chữ HOA) — docs/nghiep-vu.md §1.
@@ -231,11 +231,13 @@ public partial class PlanningController
             Name = n, Code = c, Role = r, LeaderId = lid, Level = lvl, SortOrder = await Db.People.CountAsync() + 1,
             CreatedAt = VnTime.UtcNow,
         };
-        AccountRules.SetPassword(np, AccountRules.DefaultPassword, Hasher);
+        var pw = string.IsNullOrEmpty(password) ? AccountRules.DefaultPassword : password;
+        AccountRules.ValidatePassword(pw);
+        AccountRules.SetPassword(np, pw, Hasher);
         Db.People.Add(np);
         try { await Db.SaveChangesAsync(); }
         catch (DbUpdateException) { throw new BizException("Mã nhân viên đã tồn tại"); }
-        Toast($"Đã tạo tài khoản {c} — mật khẩu mặc định {AccountRules.DefaultPassword}");
+        Toast($"Đã tạo tài khoản {c}");
     });
 
     /// <summary>POST openPerson (chỉ TP): sửa họ tên, mã, vai trò, nhóm, cấp bậc; đặt lại mật khẩu.</summary>

@@ -17,7 +17,7 @@ public static class AccountRules
     public const int MaxCode = 20;
 
     /// <summary>Mật khẩu mặc định của tài khoản mới / sau khi đặt lại (yêu cầu chủ dự án 2026-10-14). Người dùng tự đổi ở trang Cài đặt.</summary>
-    public const string DefaultPassword = "Test@123";
+    public const string DefaultPassword = "1";
 
     public static string NormalizeCode(string? code) => (code ?? "").Trim().ToLowerInvariant();
 

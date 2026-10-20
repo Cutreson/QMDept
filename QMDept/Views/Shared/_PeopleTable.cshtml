@@ -16,9 +16,9 @@
     return (plan is null ? 3 : st == PlanState.Rejected ? 2 : 1, plan, lv);
 }
 }
-<section class="card sec"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
+<section class="card sec" style="grid-column:1/-1"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
     <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
+        <thead><tr><th>#</th><th>Họ tên</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
         <tbody>
         @{ var no = 0; }
         @foreach (var (p, group, g) in rows.Select(r => (r.P, r.Group, G: Get(r.P))))
@@ -32,7 +32,6 @@
             <tr>
                 <td class="n">@no</td>
                 <td style="white-space:nowrap">@if (p.Role == Role.Manager) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
-                <td>@group</td>
                 @* Trạng thái làm việc: tại công ty / công tác trong ngày / công tác dài ngày / nghỉ phép / nghỉ không lương (kèm thời gian nghỉ) *@
                 <td>@if (g.Info == 9) { <span class="note">—</span> }
                     else if (onLeave)
