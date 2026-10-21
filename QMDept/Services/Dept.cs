@@ -380,4 +380,14 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         + ExtrasOn(d).Count(x => x.Status == ExtraStatus.Pending)
         + _reports.Values.Count(r => r.Date == d && EodSt(r) == EodState.Pending && IsTeamStaff(r.EmployeeId))
         + CarriesFrom(d).Count(t => !t.CarryOk);
+
+    // ---- Số đỏ trên thanh tab: đếm MỌI ngày đã nạp (không chỉ ngày đang xem) để số không lúc có lúc không (yêu cầu 2026-10-21) ----
+    public int LeaderPendingAll() =>
+        _plans.Values.Count(p => PlanSt(p) == PlanState.Pending && IsTeamStaff(p.EmployeeId))
+        + _extras.Values.Count(x => x.Status == ExtraStatus.Pending && InScope(x.EmployeeId))
+        + _reports.Values.Count(r => EodSt(r) == EodState.Pending && IsTeamStaff(r.EmployeeId))
+        + _tasks.Values.Count(t => t.Source == TaskSource.CarryOver && t.FromDate != null && !t.CarryOk && InScope(t.EmployeeId));
+    public IEnumerable<Overtime> OtPendingAll() => _ots.Values.Where(x => InScope(x.PersonId) && (scope.Role == Role.Leader
+        ? x.Role == Role.Staff
+        : x.Role == Role.Leader || (x.Role == Role.Staff && (x.Status is OtStatus.Approved or OtStatus.PendingManager || (x.Status == OtStatus.Rejected && x.LeaderAt != null)))));
 }
