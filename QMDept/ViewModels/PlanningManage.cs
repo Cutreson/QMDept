@@ -192,4 +192,6 @@ public sealed class PlanningLeaveVm
     public List<LeaveRequest> Requests { get; init; } = [];
     public int PendingTotal { get; init; }
     public int ApprovedTotal { get; init; }
+    /// <summary>Đề xuất chờ duyệt ở NGÀY KHÁC ngày đang chọn: (ngày nghỉ, số đề xuất) — để Leader không bỏ sót.</summary>
+    public List<(DateOnly Date, int Count)> OtherPending { get; init; } = [];
 }

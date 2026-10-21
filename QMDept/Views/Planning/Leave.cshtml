@@ -7,14 +7,19 @@
     var canWrite = Scope.CanLead && !Scope.IsReadOnly;
 }
 <partial name="_PlanningTabs" model="@("leave")" />
+<partial name="_DayBar" />
 @Ui.Seg(new[]
 {
     (Ui.Here(req, ("f", "pending")), $"Chờ duyệt ({Model.PendingTotal})", pend, 0),
     (Ui.Here(req, ("f", "approved")), $"Đã duyệt ({Model.ApprovedTotal})", !pend, 0),
 })
+@if (Model.OtherPending.Count > 0)
+{
+    <p class="note" style="margin:0 0 8px">Còn chờ duyệt ở ngày khác: @foreach (var (od, oc) in Model.OtherPending) { <a class="link" href="@Ui.Here(req, ("d", Fmt.Key(od)), ("f", "pending"))">@Fmt.Dmy(od) (@oc)</a><text> </text> }</p>
+}
 @if (Model.Requests.Count == 0)
 {
-    <div class="empty">@(pend ? "Không còn đề xuất xin nghỉ nào chờ duyệt." : "Chưa có đề xuất xin nghỉ nào đã xử lý.")</div>
+    <div class="empty">@(pend ? "Không có đề xuất xin nghỉ nào chờ duyệt ngày này." : "Chưa có đề xuất xin nghỉ nào đã xử lý ngày này.")</div>
 }
 else
 {

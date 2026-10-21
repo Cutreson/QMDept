@@ -308,3 +308,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-21) Mọi ô chọn / lọc dự án gồm cả dự án đã hoàn thành + nhãn Mã · Tên (quy tắc 53); bỏ chặn dự án đã bàn giao ở server. Đã thử NV / Leader Huề / TP / Quản trị trên DB thật (156, 157): ô chọn có đủ, thêm / giao / sửa / đề xuất / đăng ký làm thêm / chọn Leader dự án đều chạy; đã xóa dữ liệu thử + 3 dòng phân công Support tạo ra khi thử.
 - (2026-10-21) Leader: ĐK làm thêm gộp vào tab Trạng thái làm việc (mục con ĐK làm thêm + Tổng hợp suất ăn), bỏ tab riêng (quy tắc 54). Đã thử Huề / Tân / Hùng + TP + NV không đổi.
 - (2026-10-21) Bỏ mục Tổng hợp suất ăn của Leader (quy tắc 54 cập nhật); /Overtime?tab=summary của Leader chuyển hướng.
+- (2026-10-21) Leader → Xin nghỉ: thêm bộ lọc ngày (_DayBar) + liên kết ngày khác còn chờ duyệt (quy tắc 55). Đã test trên DB thật và xóa dữ liệu thử.

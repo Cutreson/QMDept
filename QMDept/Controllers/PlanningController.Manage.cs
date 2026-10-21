@@ -440,11 +440,14 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Xin nghỉ";
         var ids = D.Staff().Select(p => p.Id).ToList();
-        var pend = D.LeavesFor(Scope.Account.Id);
-        var done = await Db.LeaveRequests.AsNoTracking().Where(r => ids.Contains(r.PersonId) && r.Status != ExtraStatus.Pending)
-            .OrderByDescending(r => r.DecidedAt).Take(50).ToListAsync();
+        // Lọc theo NGÀY NGHỈ đang chọn (thanh ngày như Kế hoạch đề xuất / Báo cáo — yêu cầu 2026-10-21); đề xuất chờ duyệt ở ngày khác hiện thành dòng gợi ý có liên kết.
+        var pendAll = D.LeavesFor(Scope.Account.Id);
+        var pend = pendAll.Where(x => x.Date == Date).ToList();
+        var done = await Db.LeaveRequests.AsNoTracking().Where(r => ids.Contains(r.PersonId) && r.Status != ExtraStatus.Pending && r.Date == Date)
+            .OrderByDescending(r => r.DecidedAt).ToListAsync();
         var pending = f != "approved";
-        return View(new PlanningLeaveVm { Filter = pending ? "pending" : "approved", Requests = pending ? pend : done, PendingTotal = pend.Count, ApprovedTotal = done.Count });
+        var other = pendAll.Where(x => x.Date != Date).GroupBy(x => x.Date).OrderBy(g => g.Key).Select(g => (g.Key, g.Count())).ToList();
+        return View(new PlanningLeaveVm { Filter = pending ? "pending" : "approved", Requests = pending ? pend : done, PendingTotal = pend.Count, ApprovedTotal = done.Count, OtherPending = other });
     }
 
     /// <summary>POST /Planning/DecideLeave — Leader duyệt (v=ok → ghi Nghỉ vào lịch) / từ chối (bắt buộc lý do) đề xuất xin nghỉ của NV trong nhóm.</summary>
