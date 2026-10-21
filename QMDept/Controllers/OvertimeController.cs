@@ -29,6 +29,8 @@ public class OvertimeController : AppController
         var d = Date;
         await D.EnsureAsync(d, d);
         var role = Scope.Role;
+        // Leader không còn mục Tổng hợp suất ăn (yêu cầu 2026-10-21): đường cũ chuyển về ĐK làm thêm của mình; Leader phụ trách nhân sự (HrDuty) xem ở Nhân sự phòng → Làm thêm tại công ty        if (role == Role.Leader && tab == "summary") return Redirect(Scope.Account.HrDuty ? Ui.To(Request, "/Leader/Department", ("s", "meal")) : Ui.To(Request, "/Overtime", ("tab", "mine")));
+        if (role == Role.Leader && tab == "summary") return Redirect(Scope.Account.HrDuty ? Ui.To(Request, "/Leader/Department", ("s", "meal")) : Ui.To(Request, "/Overtime", ("tab", "mine")));
         var t = role == Role.Staff ? "mine" : tab is "summary" || (tab == "approve" && role != Role.Staff) ? tab : "mine";
         var pending = role == Role.Staff ? 0 : D.OtPending(d).Count(x => role == Role.Manager ? x.NeedsTpDecision : x.NeedsDecision);
 

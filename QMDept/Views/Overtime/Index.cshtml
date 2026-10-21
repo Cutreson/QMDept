@@ -22,7 +22,7 @@ else
     @Ui.Head(0, "Đăng ký làm thêm tại công ty")
     @if (Scope.Role is Role.Manager or Role.Leader)
     {
-        <partial name="_MgrStatusTabs" model="@(Model.Tab == "summary" ? "summary" : "ot")" />
+        <partial name="_MgrStatusTabs" model="@("ot")" />
     }
 }
 <partial name="_DayBar" />
