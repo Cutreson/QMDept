@@ -72,7 +72,7 @@ public class ManagerController : AppController
         else
         {
             // Artifact liệt kê mọi phát sinh (mới nhất trước); bản này giới hạn 200 mục gần nhất.
-            IQueryable<Extra> q = Db.Extras.AsNoTracking();
+            IQueryable<Extra> q = Db.Extras.AsNoTracking().Where(x => x.Date == Date);   // lọc theo ngày đang chọn (_DayBar)
             q = f switch
             {
                 "pending" => q.Where(x => x.Status == ExtraStatus.Pending),

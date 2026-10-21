@@ -278,3 +278,4 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     người nhận (NV hoặc Leader) nhận thông báo `TaskAssigned` (Leader mở `/Staff/Month?as=mine`), thấy nút **"Xác nhận đã nhận việc"** (`_TaskAck`, `POST /Staff/AckTask`, chỉ người nhận, một lần) → người giao nhận thông báo `NotifyType.TaskAcked`;
     mọi dòng việc (`Blocks.TaskRow`) hiện "Giao bởi … · Chờ xác nhận / ✓ Đã xác nhận hh:mm dd/MM/yyyy" cho cả người giao và người nhận.
     Số đỏ tính theo TÀI KHOẢN đăng nhập (không theo scope) nên không mất khi vào Trạng thái làm việc (?as=mine) — `LeaderPendingAll(lid)`, `OtPendingAll(role, me)`.
+58. **TP: Phê duyệt → Phát sinh có thanh lọc ngày** (yêu cầu 2026-10-21): `/Manager/Approvals?mode=extra` có `_DayBar` như Hỗ trợ nhân sự / Của Leader; danh sách phát sinh lọc theo ngày đang chọn.
