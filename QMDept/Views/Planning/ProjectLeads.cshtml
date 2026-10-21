@@ -1,9 +1,23 @@
 @model PlanningLeadsVm
-@* Chọn Leader dự án cho từng dự án đang triển khai. Dự án đã có Leader dự án mới hiện ở "Thông tin dự án" của người đó. *@
+@* Chọn Leader dự án cho từng dự án đang triển khai. Dự án đã có Leader dự án mới hiện ở "Thông tin dự án" của người đó.
+   Ô "Dự án" (ô chọn có tìm kiếm như Giao thêm việc — quy tắc 45): chọn dự án → hiện đúng dự án đó + Leader dự án; "Tất cả dự án" → danh sách theo mục. *@
 @{
     var req = Context.Request;
 }
 <partial name="_PlanningTabs" model="@("leads")" />
+@if (Model.Staff.Count == 0)
+{
+    <div class="empty">Chưa có nhân viên để chọn.</div>
+    return;
+}
+<div style="margin:6px 0 10px">
+    <label class="f" for="pjSearch" style="margin-top:0">Dự án</label>
+    @Ui.Select("pjSearch", new[] { ("", "— Tất cả dự án —") }.Concat(Model.AllProjects.Select(p => (p.Id.ToString(), string.IsNullOrEmpty(p.Code) ? p.Name : p.Code + " · " + p.Name))), "", id: "pjSearch")
+</div>
+<div id="pjResults" hidden>
+    @foreach (var p in Model.AllProjects) { <partial name="_LeadCard" model="@((p, "pa", Model.Staff))" /> }
+</div>
+<div id="pjList">
 @Ui.Seg(new[]
 {
     (Ui.Here(req, ("f", "has")), $"Đã có Leader dự án ({Model.HasCount})", Model.Filter == "has", 0),
@@ -12,35 +26,26 @@
 @if (Model.Projects.Count == 0)
 {
     <div class="empty">@(Model.Filter == "has" ? "Chưa có dự án nào được chọn Leader dự án." : "Mọi dự án đã được chọn Leader dự án.")</div>
-    return;
-}
-@if (Model.Staff.Count == 0)
-{
-    <div class="empty">Chưa có nhân viên để chọn.</div>
-    return;
 }
 @foreach (var p in Model.Projects)
 {
-    var lead = D.ProjectLead(p.Id);
-    <form class="card sec" method="post" action="/Planning/SetProjectLead" asp-antiforgery="true">
-        @Ui.ReturnField(req)
-        <input type="hidden" name="projectId" value="@p.Id">
-        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.SubLine(p)</div></div>
-            <span class="note" style="margin-left:auto">@(lead is null ? "Chưa chọn Leader dự án" : "Leader dự án: " + lead.Name)</span></div>
-        <label class="f" for="pl@(p.Id)">Leader dự án</label>
-        <div class="row" style="gap:8px">
-            <select class="in" id="pl@(p.Id)" name="emp" style="flex:1;min-width:0">
-                <option value="" selected="@(lead is null)">— Chưa chọn —</option>
-                @foreach (var s in Model.Staff)
-                {
-                    <option value="@s.Id" selected="@(lead?.Id == s.Id)">@s.Name@(s.Level is Level lv ? " · " + Labels.Of(lv) : "")</option>
-                }
-                @if (lead is not null && Model.Staff.All(s => s.Id != lead.Id))
-                {
-                    <option value="" disabled>Hiện tại: @lead.Name (ngoài nhóm)</option>
-                }
-            </select>
-            <button class="btn btn-primary">Lưu</button>
-        </div>
-    </form>
+    <partial name="_LeadCard" model="@((p, "pl", Model.Staff))" />
+}
+</div>
+@section Scripts {
+    <script>
+    (function () {
+        var sel = document.getElementById('pjSearch'), res = document.getElementById('pjResults'), list = document.getElementById('pjList');
+        if (!sel) return;
+        var cards = [].slice.call(res.querySelectorAll('[data-pj-id]'));
+        function run() {
+            var v = sel.value;
+            if (!v) { res.hidden = true; list.hidden = false; return; }
+            cards.forEach(function (c) { c.hidden = c.getAttribute('data-pj-id') !== v; });
+            res.hidden = false; list.hidden = true;
+        }
+        sel.addEventListener('change', run);
+        run();
+    })();
+    </script>
 }

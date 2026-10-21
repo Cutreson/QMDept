@@ -49,6 +49,8 @@ public sealed class PlanningLeadsVm
     public string Filter { get; init; } = "has";
     public int HasCount { get; init; }
     public int NoneCount { get; init; }
+    /// <summary>Mọi dự án Leader được quản lý (cả hai mục) — cho ô chọn dự án.</summary>
+    public List<Project> AllProjects { get; init; } = [];
 }
 
 /// <summary>ldAssign: phân công.</summary>

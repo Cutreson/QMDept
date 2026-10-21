@@ -354,7 +354,7 @@ public partial class PlanningController
         var has = projects.Where(p => D.ProjectLead(p.Id) is not null).ToList();
         var none = projects.Where(p => D.ProjectLead(p.Id) is null).ToList();
         var filter = f == "has" || f == "none" ? f : has.Count > 0 ? "has" : "none";
-        return View(new PlanningLeadsVm { Projects = filter == "has" ? has : none, Staff = D.Staff(), Filter = filter, HasCount = has.Count, NoneCount = none.Count });
+        return View(new PlanningLeadsVm { Projects = filter == "has" ? has : none, Staff = D.Staff(), Filter = filter, HasCount = has.Count, NoneCount = none.Count, AllProjects = projects });
     }
 
     /// <summary>POST: chọn (hoặc bỏ chọn khi emp trống) Leader dự án của một dự án. Mỗi dự án một Leader dự án; người cũ về "Hỗ trợ".</summary>

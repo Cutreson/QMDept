@@ -1,0 +1,28 @@
+@model (Project P, string Prefix, List<Person> Staff)
+@* Thẻ một dự án ở trang "Leader dự án": tên, Leader dự án hiện tại, ô chọn người + Lưu. Dùng cho danh sách theo mục và kết quả lọc dự án. *@
+@{
+    var p = Model.P;
+    var req = Context.Request;
+    var lead = D.ProjectLead(p.Id);
+}
+<form class="card sec" method="post" action="/Planning/SetProjectLead" asp-antiforgery="true" data-pj-id="@p.Id">
+    @Ui.ReturnField(req)
+    <input type="hidden" name="projectId" value="@p.Id">
+    <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.SubLine(p)</div></div>
+        <span class="note" style="margin-left:auto">@(lead is null ? "Chưa chọn Leader dự án" : "Leader dự án: " + lead.Name)</span></div>
+    <label class="f" for="@(Model.Prefix)@(p.Id)">Leader dự án</label>
+    <div class="row" style="gap:8px">
+        <select class="in" id="@(Model.Prefix)@(p.Id)" name="emp" style="flex:1;min-width:0">
+            <option value="" selected="@(lead is null)">— Chưa chọn —</option>
+            @foreach (var s in Model.Staff)
+            {
+                <option value="@s.Id" selected="@(lead?.Id == s.Id)">@s.Name@(s.Level is Level lv ? " · " + Labels.Of(lv) : "")</option>
+            }
+            @if (lead is not null && Model.Staff.All(s => s.Id != lead.Id))
+            {
+                <option value="" disabled>Hiện tại: @lead.Name (ngoài nhóm)</option>
+            }
+        </select>
+        <button class="btn btn-primary">Lưu</button>
+    </div>
+</form>
