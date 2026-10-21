@@ -40,63 +40,22 @@ else
 @* Khách hàng / Địa điểm: nhập mới hoặc chọn từ dữ liệu các dự án đã có (datalist) — yêu cầu 2026-10-21 *@
 <datalist id="dlCustomers">@foreach (var c in D.AllPj().Select(x => x.Factory).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().OrderBy(s => s, Fmt.ViCompare)) { <option value="@c"></option> }</datalist>
 <datalist id="dlPlaces">@foreach (var c in D.AllPj().Select(x => x.Location).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().OrderBy(s => s, Fmt.ViCompare)) { <option value="@c"></option> }</datalist>
-@if (p is not null)
-{
-    @* Thông tin dự án: hiển thị khóa, bấm "Sửa" mới mở form chỉnh (yêu cầu 2026-10-21) *@
-    <section class="card sec" id="projInfo">
-        <h2>Thông tin dự án</h2>
-        <dl class="kvl">
-            <dt>Tên dự án</dt><dd><b>@p.Name</b></dd>
-            <dt>Mã dự án</dt><dd class="mono">@(string.IsNullOrEmpty(p.Code) ? "—" : p.Code)</dd>
-            <dt>Số lượng</dt><dd>@(p.Quantity is int q0 ? q0.ToString() : "—")</dd>
-            <dt>Khách hàng</dt><dd>@(string.IsNullOrEmpty(p.Factory) ? "—" : p.Factory)</dd>
-            <dt>Địa điểm</dt><dd>@(string.IsNullOrEmpty(p.Location) ? "—" : p.Location)</dd>
-            <dt>Bắt đầu</dt><dd>@(p.StartDate is DateOnly sd ? Fmt.Dmy(sd) : "—")</dd>
-            <dt>Kết thúc</dt><dd>@(p.EndDate is DateOnly ed ? Fmt.Dmy(ed) : "—")</dd>
-            <dt>Trạng thái</dt><dd>@(p.StatusOverride is ProjectStatus so ? Labels.Of(so) : "Tự động theo tiến độ")</dd>
-            <dt>Bàn giao</dt><dd>@(p.Closed ? "Đã bàn giao" : "Chưa bàn giao")</dd>
-        </dl>
-        <button type="button" class="btn btn-block" id="projEditBtn" style="margin-top:12px">Sửa</button>
-    </section>
+@{
+    // Chế độ sửa (?edit=1): thông tin dự án thành form, đầu mục sửa được thời gian từng đầu mục + thêm / xóa đầu mục (yêu cầu 2026-10-21). Lưu xong vẫn ở chế độ sửa; "Xong" thoát.
+    var editing = p is not null && req.Query["edit"] == "1";
 }
-<form id="projForm" class="card sec" method="post" action="/Planning/SaveProject" asp-antiforgery="true"hidden="@(p is not null)">
-    <h2>@(p is not null ? "Thông tin dự án" : "Dự án mới")</h2>
-    @Ui.ReturnField(req)
-    @if (p is not null)
-    {
-        <input type="hidden" name="id" value="@p.Id">
-    }
-    <label class="f" for="fpN" style="margin-top:0">Tên dự án</label><input class="in" id="fpN" name="name" value="@(p?.Name ?? "")" maxlength="200" required>
-    <div class="grid2"><div><label class="f" for="fpCode">Mã dự án</label><input class="in mono" id="fpCode" name="code" value="@(p?.Code ?? "")" maxlength="80"></div><div><label class="f" for="fpQ">Số lượng</label><input class="in" type="number" min="0" id="fpQ" name="quantity" value="@(p?.Quantity)"></div></div>
-    <div class="grid2"><div><label class="f" for="fpF">Khách hàng</label><input class="in" id="fpF" name="factory" list="dlCustomers" data-combo-free autocomplete="off" value="@(p?.Factory ?? "")" maxlength="200"></div><div><label class="f" for="fpL">Địa điểm</label><input class="in" id="fpL" name="location" list="dlPlaces" data-combo-free autocomplete="off" value="@(p?.Location ?? "")" maxlength="200"></div>
-        <div><label class="f" for="fpS">Bắt đầu</label>@Ui.DateInput("start", p?.StartDate, "fpS")</div><div><label class="f" for="fpE">Kết thúc</label>@Ui.DateInput("end", p?.EndDate, "fpE")</div>
-        <div><label class="f" for="fpO">Trạng thái</label><select class="in" id="fpO" name="statusOverride"><option value="">Tự động theo tiến độ</option>
-            @foreach (var s in PlanningManage.OverrideStates)
-            {
-                <option value="@s" selected="@(p?.StatusOverride == s)">@Labels.Of(s)</option>
-            }
-        </select></div></div>
-    @if (p is not null)
-    {
-        <label class="row" style="margin-top:10px"><input type="checkbox" id="fpC" name="closed" value="true" checked="@p.Closed"> Đã bàn giao (chuyển sang Đã hoàn thành)</label>
-    }
-    @if (p is not null)
-    {
-        <div class="btn-row" style="margin-top:12px"><button type="button" class="btn" id="projCancelBtn">Hủy</button><button class="btn btn-primary">Lưu thông tin</button></div>
-    }
-    else
-    {
-    <button class="btn btn-primary btn-block" style="margin-top:12px">@(p is not null ? "Lưu thông tin" : "Tạo dự án")</button>
-    }
-</form>
 @if (p is not null)
 {
     var it = D.ItemsOf(p.Id);
     var done = it.Count(i => i.Status == TaskState.Done);
-    <section class="card sec"><h2>Đầu mục kế hoạch (@done/@it.Count xong)</h2>
-        @if (it.Count > 0)
+    <section class="card sec" style="grid-column:1/-1"><h2>Đầu mục kế hoạch (@done/@it.Count xong)</h2>
+        @if (it.Count == 0)
         {
-            <div class="tbl-wrap"><table><thead><tr><th class="n">#</th><th>Đầu mục</th><th class="n">Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+            <p class="note">Chưa có đầu mục.</p>
+        }
+        else if (!editing)
+        {
+            <div class="tbl-wrap"><table><thead><tr><th class="n">#</th><th>Đầu mục</th><th class="n">Thời gian</th><th>Trạng thái</th></tr></thead><tbody>
                 @for (int k = 0; k < it.Count; k++)
                 {
                     var i = it[k];
@@ -107,33 +66,82 @@ else
                                 {
                                     <option value="@s" selected="@(i.Status == s)">@Labels.Of(s)</option>
                                 }
-                            </select></form></td>
-                        <td><form method="post" action="/Planning/DeleteItem" asp-antiforgery="true" class="inline" data-confirm="Xóa đầu mục này khỏi kế hoạch dự án?" data-confirm-label="Xóa">@Ui.ReturnField(req)<input type="hidden" name="id" value="@i.Id"><button class="link" style="color:var(--bad)" aria-label="Xóa đầu mục">✕</button></form></td></tr>
+                            </select></form></td></tr>
                 }
             </tbody></table></div>
         }
         else
         {
-            <p class="note">Chưa có đầu mục.</p>
+            @* Sửa thời gian bắt đầu / kết thúc từng đầu mục (một lần lưu cho cả danh sách); xóa đầu mục bằng nút ✕ (form ẩn delItem{id} đặt ngoài) *@
+            <form id="itemsForm" method="post" action="/Planning/SaveItems" asp-antiforgery="true">
+                @Ui.ReturnField(req)
+                <input type="hidden" name="projectId" value="@p.Id">
+                @for (int k = 0; k < it.Count; k++)
+                {
+                    var i = it[k];
+                    <div class="asg" style="margin-bottom:8px">
+                        <div class="row"><b style="flex:1;min-width:0">@(k + 1). @i.Title</b><button type="submit" class="link" form="delItem@(i.Id)" style="color:var(--bad)" aria-label="Xóa đầu mục">✕</button></div>
+                        <input type="hidden" name="id" value="@i.Id">
+                        <div class="grid2"><div><label class="f" for="isS@(i.Id)">Bắt đầu</label>@Ui.DateInput("start", i.StartDate, "isS" + i.Id)</div><div><label class="f" for="isE@(i.Id)">Kết thúc</label>@Ui.DateInput("end", i.EndDate, "isE" + i.Id)</div></div>
+                    </div>
+                }
+                <button class="btn btn-primary btn-block" style="margin-top:6px">Lưu thời gian đầu mục</button>
+            </form>
+            @foreach (var i in it)
+            {
+                <form id="delItem@(i.Id)" method="post" action="/Planning/DeleteItem" asp-antiforgery="true" hidden data-confirm="Xóa đầu mục “@i.Title” khỏi kế hoạch dự án?" data-confirm-label="Xóa">@Ui.ReturnField(req)<input type="hidden" name="id" value="@i.Id"></form>
+            }
         }
-        <form id="itemForm" style="margin-top:10px" method="post" action="/Planning/AddItem" asp-antiforgery="true">
-            @Ui.ReturnField(req)
-            <input type="hidden" name="projectId" value="@p.Id">
-            <label class="f" for="niT">Thêm đầu mục</label><input class="in" id="niT" name="title" maxlength="300" required>
-            <div class="grid2"><div><label class="f" for="niS">Bắt đầu</label>@Ui.DateInput("start", p.StartDate, "niS")</div><div><label class="f" for="niE">Kết thúc</label>@Ui.DateInput("end", p.EndDate, "niE")</div></div>
-            <button class="btn btn-primary btn-block" style="margin-top:10px">Thêm đầu mục</button>
-        </form>
+        @if (editing)
+        {
+            <form id="itemForm" style="margin-top:10px" method="post" action="/Planning/AddItem" asp-antiforgery="true">
+                @Ui.ReturnField(req)
+                <input type="hidden" name="projectId" value="@p.Id">
+                <label class="f" for="niT">Thêm đầu mục</label><input class="in" id="niT" name="title" maxlength="300" required>
+                <div class="grid2"><div><label class="f" for="niS">Bắt đầu</label>@Ui.DateInput("start", p.StartDate, "niS")</div><div><label class="f" for="niE">Kết thúc</label>@Ui.DateInput("end", p.EndDate, "niE")</div></div>
+                <button class="btn btn-block" style="margin-top:10px">Thêm đầu mục</button>
+            </form>
+        }
     </section>
 }
-@section Scripts {
-    <script>
-    (function () {
-        var info = document.getElementById('projInfo'), form = document.getElementById('projForm'),
-            edit = document.getElementById('projEditBtn'), cancel = document.getElementById('projCancelBtn');
-        if (!info || !edit) return;
-        // "Sửa" mở form chỉnh (ẩn phần hiển thị); "Hủy" đóng lại và trả giá trị gốc
-        edit.addEventListener('click', function () { info.hidden = true; form.hidden = false; var f = document.getElementById('fpN'); if (f) f.focus(); });
-        cancel.addEventListener('click', function () { form.reset(); form.hidden = true; info.hidden = false; });
-    })();
-    </script>
+@if (p is not null && !editing)
+{
+    @* Thông tin dự án: hiển thị khóa, bấm "Sửa" mới chỉnh (thông tin + đầu mục) *@
+    <section class="card sec" id="projInfo" style="grid-column:1/-1;max-width:760px">
+        <h2>Thông tin dự án</h2>
+        <dl class="kvl">
+            <dt>Tên dự án</dt><dd><b>@p.Name</b></dd>
+            <dt>Mã dự án</dt><dd class="mono">@(string.IsNullOrEmpty(p.Code) ? "—" : p.Code)</dd>
+            <dt>Số lượng</dt><dd>@(p.Quantity is int q0 ? q0.ToString() : "—")</dd>
+            <dt>Khách hàng</dt><dd>@(string.IsNullOrEmpty(p.Factory) ? "—" : p.Factory)</dd>
+            <dt>Địa điểm</dt><dd>@(string.IsNullOrEmpty(p.Location) ? "—" : p.Location)</dd>
+            <dt>Bắt đầu</dt><dd>@(p.StartDate is DateOnly sd ? Fmt.Dmy(sd) : "—")</dd>
+            <dt>Kết thúc</dt><dd>@(p.EndDate is DateOnly ed ? Fmt.Dmy(ed) : "—")</dd>
+            <dt>Trạng thái</dt><dd>@Labels.Of(D.PjStatus(p.Id, Scope.Date))</dd>
+        </dl>
+        <a class="btn btn-block" href="@Ui.Here(req, ("edit", "1"))" style="margin-top:12px">Sửa</a>
+    </section>
+}
+@if (p is null || editing)
+{
+<form id="projForm" class="card sec" style="grid-column:1/-1;max-width:760px" method="post" action="/Planning/SaveProject" asp-antiforgery="true">
+    <h2>@(p is not null ? "Thông tin dự án" : "Dự án mới")</h2>
+    @Ui.ReturnField(req)
+    @if (p is not null)
+    {
+        <input type="hidden" name="id" value="@p.Id">
+    }
+    <label class="f" for="fpN" style="margin-top:0">Tên dự án</label><input class="in" id="fpN" name="name" value="@(p?.Name ?? "")" maxlength="200" required>
+    <div class="grid2"><div><label class="f" for="fpCode">Mã dự án</label><input class="in mono" id="fpCode" name="code" value="@(p?.Code ?? "")" maxlength="80"></div><div><label class="f" for="fpQ">Số lượng</label><input class="in" type="number" min="0" id="fpQ" name="quantity" value="@(p?.Quantity)"></div></div>
+    <div class="grid2"><div><label class="f" for="fpF">Khách hàng</label><input class="in" id="fpF" name="factory" list="dlCustomers" data-combo-free autocomplete="off" value="@(p?.Factory ?? "")" maxlength="200"></div><div><label class="f" for="fpL">Địa điểm</label><input class="in" id="fpL" name="location" list="dlPlaces" data-combo-free autocomplete="off" value="@(p?.Location ?? "")" maxlength="200"></div>
+        <div><label class="f" for="fpS">Bắt đầu</label>@Ui.DateInput("start", p?.StartDate, "fpS")</div><div><label class="f" for="fpE">Kết thúc</label>@Ui.DateInput("end", p?.EndDate, "fpE")</div></div>
+    @if (p is not null)
+    {
+        <div class="btn-row" style="margin-top:12px"><a class="btn" href="@Ui.Here(req, ("edit", null))">Xong</a><button class="btn btn-primary">Lưu thông tin</button></div>
+    }
+    else
+    {
+    <button class="btn btn-primary btn-block" style="margin-top:12px">@(p is not null ? "Lưu thông tin" : "Tạo dự án")</button>
+    }
+</form>
 }

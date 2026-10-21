@@ -17,7 +17,7 @@ public partial class PlanningController : AppController
     /// mô hình xem màn hình cấp dưới không cho TP thao tác trong giao diện Leader như artifact).</summary>
     static readonly HashSet<string> LeaderManagerActions = new(StringComparer.OrdinalIgnoreCase) { "People", "ToggleLeave", "CreateAccount", "EditAccount", "DeleteAccount", "MoveToTeam",
         // TP / Quản trị tạo + sửa dự án và đầu mục (trang /Manager/Projects chỉ xem; nút "＋ Dự án mới" dẫn tới đây)
-        "Projects", "SaveProject", "AddItem", "SetItemStatus", "DeleteItem",
+        "Projects", "SaveProject", "AddItem", "SaveItems", "SetItemStatus", "DeleteItem",
         // TP / Quản trị chọn Leader (nhóm) phụ trách từng dự án — nút ở trang Dự án
         "ProjectOwners", "SetProjectOwner" };
 

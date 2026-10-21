@@ -81,7 +81,7 @@ public partial class PlanningController
     /// <summary>POST projForm: tạo dự án mới (→ chuyển sang chip dự án vừa tạo) hoặc lưu thông tin dự án.</summary>
     [HttpPost]
     public async Task<IActionResult> SaveProject(int? id, string? name, string? factory, string? location, string? start, string? end, string? code, int? quantity,
-        int? need, string? statusOverride, bool closed, string? customerAddress = null)
+        int? need, string? statusOverride, bool? closed = null, string? customerAddress = null)
     {
         int? created = null;
         var res = await Do(async () =>
@@ -105,7 +105,10 @@ public partial class PlanningController
                 p.Code = cd; p.Quantity = qt;
                 p.Name = n; p.Factory = fa; p.Location = lo;
                 if (customerAddress is not null) p.CustomerAddress = ca;   // form không còn ô này (2026-10-21): không ghi đè dữ liệu cũ
-                p.StartDate = s; p.EndDate = e; p.Need = k ?? p.Need; p.StatusOverride = ov; p.Closed = closed;
+                p.StartDate = s; p.EndDate = e; p.Need = k ?? p.Need;
+                // Form không còn ô Trạng thái / Đã bàn giao (yêu cầu 2026-10-21: tích hết đầu mục = dự án Hoàn thành): không gửi lên thì giữ nguyên
+                if (statusOverride is not null) p.StatusOverride = ov;
+                if (closed is bool cl) p.Closed = cl;
                 await Db.SaveChangesAsync();
                 Toast("Đã lưu dự án");
             }
@@ -142,6 +145,27 @@ public partial class PlanningController
         });
         await Db.SaveChangesAsync();
     }, "Đã thêm đầu mục");
+
+    /// <summary>POST itemsForm (chế độ Sửa): lưu thời gian bắt đầu / kết thúc của từng đầu mục trong một lần (danh sách id / start / end song song theo thứ tự). Kiểm tra hết rồi mới ghi.</summary>
+    [HttpPost]
+    public Task<IActionResult> SaveItems(int projectId, List<int>? id, List<string?>? start, List<string?>? end) => Do(async () =>
+    {
+        RequireLead();
+        var ids = id ?? [];
+        if (ids.Count == 0) throw new BizException("Không có đầu mục để lưu");
+        var items = await Db.PlanItems.Where(i => i.ProjectId == projectId).ToListAsync();
+        var changes = new List<(PlanItem Item, DateOnly? S, DateOnly? E)>();
+        for (var k = 0; k < ids.Count; k++)
+        {
+            var it = items.Find(x => x.Id == ids[k]) ?? throw new BizException("Đầu mục không thuộc dự án này — tải lại trang");
+            var s = PlanningManage.Date(start is not null && k < start.Count ? start[k] : null);
+            var e = PlanningManage.Date(end is not null && k < end.Count ? end[k] : null);
+            if (s is DateOnly s0 && e is DateOnly e0 && e0 < s0) throw new BizException($"Đầu mục “{it.Title}”: ngày kết thúc phải sau ngày bắt đầu");
+            changes.Add((it, s, e));
+        }
+        foreach (var (it, s, e) in changes) { it.StartDate = s; it.EndDate = e; }
+        await Db.SaveChangesAsync();
+    }, "Đã lưu thời gian các đầu mục");
 
     /// <summary>POST itemSt: đổi trạng thái đầu mục (Hoàn thành → ghi ngày xong / người xong).</summary>
     [HttpPost]
