@@ -77,7 +77,7 @@ public abstract class AppController : Controller
         if (HttpMethods.IsPost(Request.Method) && Scope.AllStaff
             && !(ctx.RouteData.Values["controller"] is string c && c.Equals("Staff", StringComparison.OrdinalIgnoreCase)
                  && ctx.RouteData.Values["action"] is string a && (a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)
-                     || a.Equals("DeleteTask", StringComparison.OrdinalIgnoreCase) || a.Equals("MoveTask", StringComparison.OrdinalIgnoreCase))))
+                     || a.Equals("DeleteTask", StringComparison.OrdinalIgnoreCase) || a.Equals("MoveTask", StringComparison.OrdinalIgnoreCase) || a.Equals("EditTask", StringComparison.OrdinalIgnoreCase))))
         {
             Toast("Lịch chỉ xem — mở màn hình của bạn để thao tác");
             ctx.Result = Redirect(BackUrl());

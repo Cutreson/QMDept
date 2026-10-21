@@ -98,6 +98,14 @@ public partial class StaffController
         return t;
     }
 
+    /// <summary>POST /Staff/EditTask — Leader / TP sửa dự án, nội dung, giờ của việc trong quyền của mình (lịch của tôi, lịch nhóm / phòng, trang Trạng thái làm việc).</summary>
+    [HttpPost]
+    public async Task<IActionResult> EditTask(int id, int projectId, string? title, string? start, string? end) => await Do(async () =>
+    {
+        var t = await LoadManagedTaskAsync(id);
+        await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName);
+    }, "Đã sửa công việc");
+
     /// <summary>POST /Staff/DeleteTask — Leader / TP xóa công việc khỏi lịch của mình hoặc của người thuộc quyền (lịch của tôi, lịch nhóm / phòng).</summary>
     [HttpPost]
     public async Task<IActionResult> DeleteTask(int id) => await Do(async () =>

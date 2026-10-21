@@ -16,6 +16,25 @@
     return (plan is null ? 3 : st == PlanState.Rejected ? 2 : 1, plan, lv);
 }
 }
+@{
+    // Tổng hợp ngày: nhân sự làm việc / nghỉ / số suất cơm — cùng tiêu chí với bảng (chỉ kế hoạch đã duyệt; yêu cầu 2026-10-21)
+    int nOffice = 0, nTrip = 0, nLeave = 0, nRice = 0, nNoodle = 0;
+    foreach (var (p0, _) in rows)
+    {
+        var g0 = Get(p0); var pl0 = g0.Plan;
+        var ok0 = g0.Info == 0 && pl0 is not null;
+        if ((ok0 && LeaveRules.IsLeave(pl0!.Status)) || (g0.Info is 0 or 4 && g0.Lv is not null)) { nLeave++; continue; }
+        if (!ok0) continue;
+        if (LeaveRules.IsTrip(pl0!.Status)) nTrip++; else nOffice++;
+        if (pl0.Meal == Meal.Rice) nRice++; else if (pl0.Meal == Meal.Noodle) nNoodle++;
+    }
+}
+<div class="kpis k3" style="grid-column:1/-1">
+    <div class="kpi k-ok"><b>@(nOffice + nTrip)</b><span>Nhân sự làm việc</span></div>
+    <div class="kpi k-bad"><b>@nLeave</b><span>Nhân sự nghỉ</span></div>
+    <div class="kpi k-info"><b>@(nRice + nNoodle)</b><span>Suất cơm</span></div>
+</div>
+<p class="note" style="margin:-4px 0 10px;grid-column:1/-1">Làm việc: tại công ty @nOffice · công tác @nTrip — Suất cơm: cơm @nRice · bún @nNoodle</p>
 <section class="card sec" style="grid-column:1/-1"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
     <div class="tbl-wrap"><table>
         <thead><tr><th>#</th><th>Họ tên</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>

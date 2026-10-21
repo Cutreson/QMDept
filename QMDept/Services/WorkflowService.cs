@@ -300,6 +300,25 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         await db.SaveChangesAsync();
     }
 
+    /// <summary>Sửa nội dung / dự án / giờ của một việc (Leader / TP sửa việc trong quyền của mình — yêu cầu 2026-10-21). Quyền + khóa do controller kiểm.</summary>
+    public async Task EditTaskAsync(WorkTask t, int projectId, string? title, string start, string end, string actor)
+    {
+        var tt = (title ?? "").Trim();
+        if (tt.Length == 0) throw new BizException("Nhập nội dung công việc");
+        if (tt.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
+        if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+        var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
+        if (pj.Closed && projectId != t.ProjectId) throw new BizException("Dự án đã bàn giao, không chuyển việc sang được");
+        if (projectId != t.ProjectId)
+        {
+            t.ProjectId = projectId; t.PlanItemId = null;   // đầu mục thuộc dự án cũ
+            var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead).Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
+            await UpsertAssignmentAsync(projectId, t.EmployeeId, leadId == t.EmployeeId ? ProjectRole.Lead : ProjectRole.Support, actor, keepNote: true);
+        }
+        t.Title = tt; t.Start = start; t.End = end; t.UpdatedAt = VnTime.UtcNow;
+        await db.SaveChangesAsync();
+    }
+
     /// <summary>delTask: xóa việc khỏi lịch, dọn tham chiếu chuyển tiếp.</summary>
     public async Task DeleteTaskAsync(int taskId)
     {

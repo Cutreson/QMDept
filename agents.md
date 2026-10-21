@@ -224,3 +224,7 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     **TP không có người duyệt nên trạng thái tự được duyệt**, vẫn sửa và gửi lại được — `StaffController.SelfApproves`, không gửi thông báo duyệt) với 2 mục con **Trạng thái làm việc | ĐK làm thêm tại CTy** (đăng ký làm thêm của chính TP,
     `_MgrStatusTabs`, `/Overtime?tab=mine`). Tab **Phê duyệt** có thêm mục lớn thứ 4 **Làm thêm tại CTy** (`_MgrApprovalTabs`, dùng chung với `/Manager/Approvals`) gồm **Duyệt đăng ký làm thêm của Leader** và **Tổng hợp suất ăn**
     (`/Overtime?tab=approve|summary`, tab Phê duyệt sáng, badge Phê duyệt cộng cả số làm thêm chờ duyệt). Bỏ tab riêng "ĐK làm thêm tại CTy" của TP. Bảng Nhân sự ở Tổng quan hiện hàng của TP nếu TP đã khai trạng thái.
+42. **Leader / TP sửa + xóa công việc; tổng hợp ngày ở bảng Nhân sự** (yêu cầu 2026-10-21): mỗi việc trong quyền của mình (quy tắc 40: mình; Leader + NV nhóm; TP + Leader) có **Sửa** (dự án, nội dung, giờ — `POST /Staff/EditTask`,
+    `WorkflowService.EditTaskAsync`, sheet `Views/Shared/_TaskEdit.cshtml` + form ẩn xóa `dt{id}`) cùng **Xóa** và **Chuyển lịch** (`_TaskActions`, ở lịch tháng) và ngay trên trang **Trạng thái làm việc** (nút Sửa / Xóa trong từng dòng việc;
+    `StaffCalendar.CanManage` = quyền + chưa Hoàn thành / Chậm + chưa báo cáo cuối ngày). Bảng Nhân sự (`_PeopleTable`, Tổng quan của TP và Leader) có 3 ô tổng hợp ngày: **Nhân sự làm việc** (tại công ty + công tác), **Nhân sự nghỉ**,
+    **Suất cơm** (cơm + bún), cùng tiêu chí với bảng (chỉ kế hoạch đã duyệt). Bảng bỏ cột Nhóm (quy tắc 35 cũ).

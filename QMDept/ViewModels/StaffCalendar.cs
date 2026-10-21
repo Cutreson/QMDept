@@ -58,6 +58,9 @@ public static class StaffCalendar
         return actor.Role == Role.Leader ? emp.Role == Role.Staff && emp.LeaderId == actor.Id : isManager && emp.Role == Role.Leader;
     }
 
+    /// <summary>Hiện nút Sửa / Xóa / Chuyển lịch cho việc này không (quyền + chưa khóa).</summary>
+    public static bool CanManage(ViewScope s, Dept d, WorkTask t) => s.CanLead && OwnsTask(s.Account, s.IsManager, s.IsViewingOther, d.P(t.EmployeeId), t) && !TaskLocked(d, t);
+
     /// <summary>Việc đã có kết quả (Hoàn thành / Chậm) hoặc NV đã gửi báo cáo cuối ngày → khóa, không xóa / chuyển được.</summary>
     public static bool TaskLocked(Dept d, WorkTask t) => t.Status is TaskState.Done or TaskState.Late || d.ReportOf(t.Date, t.EmployeeId) is not null;
 

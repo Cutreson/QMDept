@@ -1,12 +1,11 @@
 @model WorkTask
-@* Xóa / Chuyển lịch một công việc (Leader / TP — yêu cầu 2026-10-20): hiện dưới dòng việc ở "Lịch của tôi" và "Lịch nhóm / phòng".
-   Server kiểm quyền lại (StaffController.DeleteTask / MoveTask). Form .ro-ok để dùng được ở chế độ lịch nhóm (chỉ xem). *@
+@* Sửa / Xóa / Chuyển lịch một công việc (Leader / TP — yêu cầu 2026-10-20, thêm Sửa 2026-10-21): hiện dưới dòng việc ở "Lịch của tôi" và "Lịch nhóm / phòng".
+   Server kiểm quyền lại (StaffController.EditTask / DeleteTask / MoveTask). Form .ro-ok để dùng được ở chế độ lịch nhóm (chỉ xem). *@
 @{
     var t = Model;
     var req = Context.Request;
     var acc = Scope.Account;
-    var emp = D.P(t.EmployeeId);
-    if (!Scope.CanLead || !StaffCalendar.OwnsTask(acc, Scope.IsManager, Scope.IsViewingOther, emp, t) || StaffCalendar.TaskLocked(D, t)) { return; }
+    if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
     var asq = req.Query["as"].ToString();
     var back = ("d", Fmt.Key(t.Date));
     var asKv = ("as", asq.Length > 0 ? asq : null);
@@ -17,13 +16,11 @@
     var canMove = t.CarriedToId is null;   // việc đã được chuyển tiếp đi nơi khác thì không chuyển lịch
 }
 <div class="task-actions ro-ok" style="display:flex;justify-content:flex-end;gap:14px;margin:-2px 12px 6px">
+    <button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
     @if (canMove) { <button type="button" class="link ro-ok" data-sheet="mv@(t.Id)">Chuyển lịch</button> }
-    <form method="post" action="@Ui.To(req, "/Staff/DeleteTask", back, asKv)" asp-antiforgery="true" class="inline ro-ok" data-confirm="Xóa “@t.Title” khỏi lịch?" data-confirm-label="Xóa">
-        @Ui.ReturnField(req)
-        <input type="hidden" name="id" value="@t.Id">
-        <button class="link" style="color:var(--bad)">Xóa</button>
-    </form>
+    <button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>
 </div>
+<partial name="_TaskEdit" model="t" />
 @if (canMove)
 {
     <template id="mv@(t.Id)">
