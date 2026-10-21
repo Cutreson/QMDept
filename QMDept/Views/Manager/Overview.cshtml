@@ -8,10 +8,24 @@
     var people = Model.Section == "people";
 }
 <partial name="_OverviewTabs" model="@(people ? "people" : "projects")" />
+@if (people)
+{
+    @* 2 mục con (yêu cầu 2026-10-21): Làm việc hành chính (bảng nhân sự) | Làm thêm tại công ty (đăng ký làm thêm cả phòng, tổng hợp suất ăn, gửi HCNS) *@
+    @Ui.Subtabs(new List<(string Href, string Label, bool Active)>
+    {
+        (Ui.Here(req, ("k", null)), "Làm việc hành chính", Model.PeopleKind == "work"),
+        (Ui.Here(req, ("k", "ot")), "Làm thêm tại công ty", Model.PeopleKind == "ot"),
+    })
+}
 <partial name="_DayBar" />
 @if (people)
 {
-    // ================= NHÂN SỰ: một bảng — chỉ hiện thông tin đã được Leader phê duyệt =================
+    if (Model.Ot is not null)
+    {
+        <partial name="~/Views/Overtime/_Summary.cshtml" model="Model.Ot" />
+        return;
+    }
+    // ================= NHÂN SỰ (Làm việc hành chính): một bảng — chỉ hiện thông tin đã được Leader phê duyệt =================
     var leaders = D.Leaders();
     var rows = new List<(Person P, string Group)>();
     foreach (var m in D.Active.Where(x => x.Role == Role.Manager).OrderBy(x => x.SortOrder)) rows.Add((m, "Trưởng phòng"));

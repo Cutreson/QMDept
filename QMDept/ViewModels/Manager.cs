@@ -11,6 +11,10 @@ public sealed class ManagerOverviewVm
 {
     /// <summary>Mục đang xem của Tổng quan (?s=): "projects" (Dự án) | "people" (Nhân sự); "Kế hoạch tháng" là trang /Staff/Month?as=all.</summary>
     public string Section { get; init; } = "projects";
+    /// <summary>Mục con của Nhân sự (?k=): "work" (Làm việc hành chính) | "ot" (Làm thêm tại công ty) — yêu cầu 2026-10-21.</summary>
+    public string PeopleKind { get; init; } = "work";
+    /// <summary>Dữ liệu mục "Làm thêm tại công ty" (đăng ký làm thêm cả phòng + tổng hợp suất ăn + gửi HCNS); null ở mục khác.</summary>
+    public OvertimeVm? Ot { get; init; }
     /// <summary>Báo cáo Leader của ngày đang xem (kèm Leader), theo thời điểm gửi.</summary>
     public List<LeaderReport> Reports { get; init; } = [];
     /// <summary>Leader (còn hoạt động) chưa gửi báo cáo ngày đang xem.</summary>

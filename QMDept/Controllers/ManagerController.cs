@@ -19,16 +19,26 @@ public class ManagerController : AppController
 
     /// <summary>GET /Manager/Overview — tpOverview: KPI, báo cáo Leader đã gửi, tiến độ, biểu đồ, nhân sự, vấn đề.</summary>
     [HttpGet]
-    public async Task<IActionResult> Overview(string? s)
+    public async Task<IActionResult> Overview(string? s, string? k)
     {
         await D.EnsureAsync(Date, Date.AddDays(1)); // issuesOf(d) cần d và d+1
         // Khác artifact: báo cáo khóa theo (ngày, Leader) → có thể nhiều báo cáo trong một ngày.
         var reports = await Db.LeaderReports.AsNoTracking().Include(r => r.Leader)
             .Where(r => r.Date == Date).OrderBy(r => r.SentAt).ThenBy(r => r.Id).ToListAsync();
         var sent = reports.Select(r => r.LeaderId).ToHashSet();
+        // Nhân sự → "Làm thêm tại công ty": đăng ký làm thêm cả phòng trong ngày + tổng hợp suất ăn / gửi HCNS (dùng lại Overtime/_Summary)
+        OvertimeVm? ot = null;
+        if (s == "people" && k == "ot")
+        {
+            var all = D.Ots.Where(x => x.Date == Date && x.Status != OtStatus.Rejected)
+                .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
+            ot = new OvertimeVm { Tab = "summary", Summary = all, Send = await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Date == Date) };
+        }
         return View(new ManagerOverviewVm
         {
             Section = s == "people" ? "people" : "projects",
+            PeopleKind = ot is null ? "work" : "ot",
+            Ot = ot,
             Reports = reports,
             NotSent = D.Leaders().Where(l => !sent.Contains(l.Id)).ToList(),
         });
