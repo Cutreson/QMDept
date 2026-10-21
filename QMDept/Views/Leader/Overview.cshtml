@@ -14,23 +14,8 @@
 @if (ViewData["Section"] as string == "people")
 {
     @* Mục Nhân sự: bảng nhóm của Leader (Leader + nhân viên nhóm mình) — yêu cầu 2026-10-20 *@
-    var rows = new List<(Person P, string Group)>();
-    if (Scope.Account.HrDuty)
-    {
-        // Leader được giao quản lý nhân sự / báo cơm / làm thêm (yêu cầu 2026-10-21): bảng nhân sự CẢ PHÒNG như Trưởng phòng
-        foreach (var m in D.Active.Where(x => x.Role == Role.Manager).OrderBy(x => x.SortOrder)) rows.Add((m, "Trưởng phòng"));
-        foreach (var l in D.Leaders())
-        {
-            rows.Add((l, "Leader"));
-            foreach (var s in D.Team(l.Id)) rows.Add((s, "Nhóm " + l.Name));
-        }
-        foreach (var s in D.Unassigned()) rows.Add((s, "Chưa xếp nhóm"));
-    }
-    else
-    {
-        rows.Add((Scope.Account, "Leader"));
-        foreach (var s in D.Team(Scope.Account.Id)) rows.Add((s, "Nhóm " + Scope.Account.Name));
-    }
+    var rows = new List<(Person P, string Group)> { (Scope.Account, "Leader") };
+    foreach (var s in D.Team(Scope.Account.Id)) rows.Add((s, "Nhóm " + Scope.Account.Name));
     <partial name="_PeopleTable" model="rows" />
     return;
 }

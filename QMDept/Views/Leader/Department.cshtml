@@ -1,0 +1,24 @@
+@model OvertimeVm
+@* Nhân sự phòng (chỉ Leader có cờ HrDuty — quy tắc 47): bảng nhân sự CẢ PHÒNG như Trưởng phòng, và Báo cơm & làm thêm cả phòng (tổng hợp suất ăn + gửi HCNS). *@
+@{
+    var meal = Model.Tab == "summary";
+}
+@Ui.Head(0, "Nhân sự phòng")
+<partial name="_HrTabs" model="@(meal ? "meal" : "people")" />
+<partial name="_DayBar" />
+@if (meal)
+{
+    <partial name="~/Views/Overtime/_Summary.cshtml" model="Model" />
+}
+else
+{
+    var rows = new List<(Person P, string Group)>();
+    foreach (var m in D.Active.Where(x => x.Role == Role.Manager).OrderBy(x => x.SortOrder)) rows.Add((m, "Trưởng phòng"));
+    foreach (var l in D.Leaders())
+    {
+        rows.Add((l, "Leader"));
+        foreach (var s in D.Team(l.Id)) rows.Add((s, "Nhóm " + l.Name));
+    }
+    foreach (var s in D.Unassigned()) rows.Add((s, "Chưa xếp nhóm"));
+    <partial name="_PeopleTable" model="rows" />
+}

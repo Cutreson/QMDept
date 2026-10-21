@@ -30,6 +30,20 @@ public partial class LeaderController : AppController
         return View();
     }
 
+    /// <summary>GET /Leader/Department — "Nhân sự phòng" của Leader được giao quản lý nhân sự / báo cơm / làm thêm (Person.HrDuty): ?s=meal → Báo cơm & làm thêm cả phòng.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Department(string? s)
+    {
+        if (!Scope.Account.HrDuty || Scope.Account.Role != Role.Leader) return Redirect("/");
+        await D.EnsureAsync(Date, Date.AddDays(1));
+        ViewData["Title"] = "Nhân sự phòng";
+        if (s != "meal") return View(new OvertimeVm { Tab = "people" });
+        var all = D.Ots.Where(x => x.Date == Date && x.Status != OtStatus.Rejected)
+            .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
+        var send = await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Date == Date);
+        return View(new OvertimeVm { Tab = "summary", Summary = all, Send = send });
+    }
+
     /// <summary>GET /Leader/Tracking?mode=staff|project&amp;pj= — ldTrack.</summary>
     [HttpGet]
     public async Task<IActionResult> Tracking(string? mode, string? pj)

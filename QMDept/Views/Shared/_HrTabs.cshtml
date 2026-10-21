@@ -1,0 +1,10 @@
+@model string
+@* Leader được giao quản lý nhân sự / báo cơm / làm thêm (Person.HrDuty): mục riêng "Nhân sự phòng" gồm Nhân sự phòng | Báo cơm & làm thêm (yêu cầu 2026-10-21). Model = mục đang mở: people | meal. *@
+@{
+    var req = Context.Request;
+}
+@Ui.Subtabs(new List<(string Href, string Label, bool Active)>
+{
+    (Ui.To(req, "/Leader/Department"), "Nhân sự phòng", Model == "people"),
+    (Ui.To(req, "/Leader/Department", ("s", "meal")), "Báo cơm & làm thêm", Model == "meal"),
+})
