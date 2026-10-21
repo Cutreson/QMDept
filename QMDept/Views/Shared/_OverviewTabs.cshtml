@@ -6,12 +6,14 @@
     // Leader (yêu cầu 2026-10-20) cũng có 3 mục này: Dự án / Nhân sự (nhóm mình) / Kế hoạch tháng (đã chuyển từ Kế hoạch & duyệt)
     var ld = Scope.Account.Role == Role.Leader;
     var home = ld ? "/Leader/Overview" : "/Manager/Overview";
-    var tabs = new (string Key, string Path, string Label)[]
+    // Leader: "Nhân sự nhóm" (nhóm mình); Leader được giao quản lý nhân sự (HrDuty) có thêm "Nhân sự phòng" ngay sau (yêu cầu 2026-10-21); TP: "Nhân sự" (cả phòng)
+    var tabs = new List<(string Key, string Path, string Label)>
     {
         ("projects", home, "Dự án"),
-        ("people", home + "?s=people", "Nhân sự"),
-        ("month", ld ? "/Staff/Month?as=mine" : "/Staff/Month?as=all", "Kế hoạch tháng"),
+        ("people", home + "?s=people", ld ? "Nhân sự nhóm" : "Nhân sự"),
     };
+    if (ld && Scope.Account.HrDuty) tabs.Add(("dept", "/Leader/Department", "Nhân sự phòng"));
+    tabs.Add(("month", ld ? "/Staff/Month?as=mine" : "/Staff/Month?as=all", "Kế hoạch tháng"));
 }
 @Ui.Head(1, "Tổng quan")
 @Ui.Subtabs(tabs.Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))

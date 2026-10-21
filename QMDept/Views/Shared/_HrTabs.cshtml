@@ -5,6 +5,6 @@
 }
 @Ui.Subtabs(new List<(string Href, string Label, bool Active)>
 {
-    (Ui.To(req, "/Leader/Department"), "Nhân sự phòng", Model == "people"),
-    (Ui.To(req, "/Leader/Department", ("s", "meal")), "Báo cơm & làm thêm", Model == "meal"),
+    (Ui.To(req, "/Leader/Department"), "Làm việc hành chính", Model == "people"),
+    (Ui.To(req, "/Leader/Department", ("s", "meal")), "Làm thêm tại công ty", Model == "meal"),
 })

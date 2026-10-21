@@ -3,7 +3,7 @@
 @{
     var meal = Model.Tab == "summary";
 }
-@Ui.Head(0, "Nhân sự phòng")
+<partial name="_OverviewTabs" model="@("dept")" />
 <partial name="_HrTabs" model="@(meal ? "meal" : "people")" />
 <partial name="_DayBar" />
 @if (meal)
