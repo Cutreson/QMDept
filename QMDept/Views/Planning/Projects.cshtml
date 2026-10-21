@@ -40,7 +40,26 @@ else
 @* Khách hàng / Địa điểm: nhập mới hoặc chọn từ dữ liệu các dự án đã có (datalist) — yêu cầu 2026-10-21 *@
 <datalist id="dlCustomers">@foreach (var c in D.AllPj().Select(x => x.Factory).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().OrderBy(s => s, Fmt.ViCompare)) { <option value="@c"></option> }</datalist>
 <datalist id="dlPlaces">@foreach (var c in D.AllPj().Select(x => x.Location).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().OrderBy(s => s, Fmt.ViCompare)) { <option value="@c"></option> }</datalist>
-<form id="projForm" class="card sec" method="post" action="/Planning/SaveProject" asp-antiforgery="true">
+@if (p is not null)
+{
+    @* Thông tin dự án: hiển thị khóa, bấm "Sửa" mới mở form chỉnh (yêu cầu 2026-10-21) *@
+    <section class="card sec" id="projInfo">
+        <h2>Thông tin dự án</h2>
+        <dl class="kvl">
+            <dt>Tên dự án</dt><dd><b>@p.Name</b></dd>
+            <dt>Mã dự án</dt><dd class="mono">@(string.IsNullOrEmpty(p.Code) ? "—" : p.Code)</dd>
+            <dt>Số lượng</dt><dd>@(p.Quantity is int q0 ? q0.ToString() : "—")</dd>
+            <dt>Khách hàng</dt><dd>@(string.IsNullOrEmpty(p.Factory) ? "—" : p.Factory)</dd>
+            <dt>Địa điểm</dt><dd>@(string.IsNullOrEmpty(p.Location) ? "—" : p.Location)</dd>
+            <dt>Bắt đầu</dt><dd>@(p.StartDate is DateOnly sd ? Fmt.Dmy(sd) : "—")</dd>
+            <dt>Kết thúc</dt><dd>@(p.EndDate is DateOnly ed ? Fmt.Dmy(ed) : "—")</dd>
+            <dt>Trạng thái</dt><dd>@(p.StatusOverride is ProjectStatus so ? Labels.Of(so) : "Tự động theo tiến độ")</dd>
+            <dt>Bàn giao</dt><dd>@(p.Closed ? "Đã bàn giao" : "Chưa bàn giao")</dd>
+        </dl>
+        <button type="button" class="btn btn-block" id="projEditBtn" style="margin-top:12px">Sửa</button>
+    </section>
+}
+<form id="projForm" class="card sec" method="post" action="/Planning/SaveProject" asp-antiforgery="true"hidden="@(p is not null)">
     <h2>@(p is not null ? "Thông tin dự án" : "Dự án mới")</h2>
     @Ui.ReturnField(req)
     @if (p is not null)
@@ -61,7 +80,14 @@ else
     {
         <label class="row" style="margin-top:10px"><input type="checkbox" id="fpC" name="closed" value="true" checked="@p.Closed"> Đã bàn giao (chuyển sang Đã hoàn thành)</label>
     }
+    @if (p is not null)
+    {
+        <div class="btn-row" style="margin-top:12px"><button type="button" class="btn" id="projCancelBtn">Hủy</button><button class="btn btn-primary">Lưu thông tin</button></div>
+    }
+    else
+    {
     <button class="btn btn-primary btn-block" style="margin-top:12px">@(p is not null ? "Lưu thông tin" : "Tạo dự án")</button>
+    }
 </form>
 @if (p is not null)
 {
@@ -98,4 +124,16 @@ else
             <button class="btn btn-primary btn-block" style="margin-top:10px">Thêm đầu mục</button>
         </form>
     </section>
+}
+@section Scripts {
+    <script>
+    (function () {
+        var info = document.getElementById('projInfo'), form = document.getElementById('projForm'),
+            edit = document.getElementById('projEditBtn'), cancel = document.getElementById('projCancelBtn');
+        if (!info || !edit) return;
+        // "Sửa" mở form chỉnh (ẩn phần hiển thị); "Hủy" đóng lại và trả giá trị gốc
+        edit.addEventListener('click', function () { info.hidden = true; form.hidden = false; var f = document.getElementById('fpN'); if (f) f.focus(); });
+        cancel.addEventListener('click', function () { form.reset(); form.hidden = true; info.hidden = false; });
+    })();
+    </script>
 }
