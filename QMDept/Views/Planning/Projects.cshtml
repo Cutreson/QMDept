@@ -42,7 +42,8 @@ else
 <datalist id="dlPlaces">@foreach (var c in D.AllPj().Select(x => x.Location).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim()).Distinct().OrderBy(s => s, Fmt.ViCompare)) { <option value="@c"></option> }</datalist>
 @{
     // Chế độ sửa (?edit=1): thông tin dự án thành form, đầu mục sửa được thời gian từng đầu mục + thêm / xóa đầu mục (yêu cầu 2026-10-21). Lưu xong vẫn ở chế độ sửa; "Xong" thoát.
-    var editing = p is not null && req.Query["edit"] == "1";
+    var editing = p is not null && req.Query["edit"] == "1";          // sửa thông tin dự án
+    var editingItems = p is not null && req.Query["ei"] == "1";      // sửa đầu mục (riêng, không chung với thông tin dự án)
 }
 @if (p is not null)
 {
@@ -53,7 +54,7 @@ else
         {
             <p class="note">Chưa có đầu mục.</p>
         }
-        else if (!editing)
+        else if (!editingItems)
         {
             <div class="tbl-wrap"><table><thead><tr><th class="n">#</th><th>Đầu mục</th><th class="n">Thời gian</th><th>Trạng thái</th></tr></thead><tbody>
                 @for (int k = 0; k < it.Count; k++)
@@ -85,14 +86,14 @@ else
                         <div class="grid2"><div><label class="f" for="isS@(i.Id)">Bắt đầu</label>@Ui.DateInput("start", i.StartDate, "isS" + i.Id)</div><div><label class="f" for="isE@(i.Id)">Kết thúc</label>@Ui.DateInput("end", i.EndDate, "isE" + i.Id)</div></div>
                     </div>
                 }
-                <button class="btn btn-primary btn-block" style="margin-top:6px">Lưu thời gian đầu mục</button>
+                <div class="btn-row" style="margin-top:6px"><a class="btn" href="@Ui.Here(req, ("ei", null))">Hủy sửa</a><button class="btn btn-primary">Lưu thời gian đầu mục</button></div>
             </form>
             @foreach (var i in it)
             {
                 <form id="delItem@(i.Id)" method="post" action="/Planning/DeleteItem" asp-antiforgery="true" hidden data-confirm="Xóa đầu mục “@i.Title” khỏi kế hoạch dự án?" data-confirm-label="Xóa">@Ui.ReturnField(req)<input type="hidden" name="id" value="@i.Id"></form>
             }
         }
-        @if (editing)
+        @if (editingItems)
         {
             <form id="itemForm" style="margin-top:10px" method="post" action="/Planning/AddItem" asp-antiforgery="true">
                 @Ui.ReturnField(req)
@@ -101,7 +102,11 @@ else
                 <div class="grid2"><div><label class="f" for="niS">Bắt đầu</label>@Ui.DateInput("start", p.StartDate, "niS")</div><div><label class="f" for="niE">Kết thúc</label>@Ui.DateInput("end", p.EndDate, "niE")</div></div>
                 <button class="btn btn-block" style="margin-top:10px">Thêm đầu mục</button>
             </form>
+            @if (it.Count == 0) { <a class="btn btn-block" href="@Ui.Here(req, ("ei", null))" style="margin-top:8px">Hủy sửa</a> }
         }
+        else
+        {
+            <a class="btn btn-block" href="@Ui.Here(req, ("ei", "1"))" style="margin-top:12px">Sửa</a>        }
     </section>
 }
 @if (p is not null && !editing)
@@ -137,7 +142,7 @@ else
         <div><label class="f" for="fpS">Bắt đầu</label>@Ui.DateInput("start", p?.StartDate, "fpS")</div><div><label class="f" for="fpE">Kết thúc</label>@Ui.DateInput("end", p?.EndDate, "fpE")</div></div>
     @if (p is not null)
     {
-        <div class="btn-row" style="margin-top:12px"><a class="btn" href="@Ui.Here(req, ("edit", null))">Xong</a><button class="btn btn-primary">Lưu thông tin</button></div>
+        <div class="btn-row" style="margin-top:12px"><a class="btn" href="@Ui.Here(req, ("edit", null))">Hủy sửa</a><button class="btn btn-primary">Lưu thông tin</button></div>
     }
     else
     {

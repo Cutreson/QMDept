@@ -84,6 +84,7 @@ public partial class PlanningController
         int? need, string? statusOverride, bool? closed = null, string? customerAddress = null)
     {
         int? created = null;
+        var saved = false;   // sửa thông tin dự án thành công → thoát chế độ sửa (bỏ ?edit=1)
         var res = await Do(async () =>
         {
             RequireLead();
@@ -111,6 +112,7 @@ public partial class PlanningController
                 if (closed is bool cl) p.Closed = cl;
                 await Db.SaveChangesAsync();
                 Toast("Đã lưu dự án");
+                saved = true;
             }
             else
             {
@@ -125,7 +127,7 @@ public partial class PlanningController
                 Toast("Đã tạo dự án " + n);
             }
         });
-        return created is int nid ? Redirect(PlanningManage.WithQuery(BackUrl(), "pj", nid.ToString())) : res;
+        return created is int nid ? Redirect(PlanningManage.WithQuery(BackUrl(), "pj", nid.ToString())) : saved ? Redirect(OvertimeUi.WithoutParam(BackUrl(), "edit")) : res;
     }
 
     /// <summary>POST itemForm: thêm đầu mục kế hoạch vào cuối danh sách của dự án.</summary>
@@ -165,7 +167,7 @@ public partial class PlanningController
         }
         foreach (var (it, s, e) in changes) { it.StartDate = s; it.EndDate = e; }
         await Db.SaveChangesAsync();
-    }, "Đã lưu thời gian các đầu mục");
+    }, "Đã lưu thời gian các đầu mục", OvertimeUi.WithoutParam(BackUrl(), "ei"));
 
     /// <summary>POST itemSt: đổi trạng thái đầu mục (Hoàn thành → ghi ngày xong / người xong).</summary>
     [HttpPost]
