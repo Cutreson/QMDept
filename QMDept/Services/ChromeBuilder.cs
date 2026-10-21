@@ -118,11 +118,11 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var onMgrOvertime = onOvertime && !otApprove;   // ĐK làm thêm của chính TP thuộc tab Trạng thái làm việc
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
-        // Leader được giao quản lý nhân sự / báo cơm / làm thêm (HrDuty): thêm mục riêng "Nhân sự phòng" trước "ĐK làm thêm tại CTy" (yêu cầu 2026-10-21)
+        // Leader được giao quản lý nhân sự / báo cơm / làm thêm (HrDuty): thêm mục riêng "Nhân sự phòng" ở cuối thanh trái (yêu cầu 2026-10-21)
         if (tabRole == Role.Leader && acc.Role == Role.Leader && acc.HrDuty)
         {
-            var tl = defs.ToList(); var oi = tl.FindIndex(t => t.Id == "overtime");
-            tl.Insert(oi < 0 ? tl.Count : oi, new TabDef("dept", "Nhân sự phòng", "grid", "/Leader/Department", "Leader", "Department"));
+            var tl = defs.ToList();   // cuối cùng của thanh trái (yêu cầu 2026-10-21)
+            tl.Add(new TabDef("dept", "Nhân sự phòng", "grid", "/Leader/Department", "Leader", "Department"));
             defs = tl;
         }
         var tabs = defs.Any()
