@@ -953,6 +953,10 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("varchar(80)");
 
+                    b.Property<string>("CustomerAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
                     b.Property<DateTime?>("DeliveryDate")
                         .HasColumnType("date");
 

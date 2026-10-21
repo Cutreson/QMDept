@@ -34,6 +34,7 @@ public class Project
     [MaxLength(200)] public string Name { get; set; } = "";
     [MaxLength(200)] public string? Factory { get; set; }           // Nhà máy (= khách hàng)
     [MaxLength(200)] public string? Location { get; set; }
+    [MaxLength(300)] public string? CustomerAddress { get; set; }      // Địa chỉ khách hàng (trụ sở); Location = địa chỉ site
     // --- Thông tin nạp từ file "thông tin DA.xlsx" (2026-10-16) ---
     [MaxLength(80)] public string? Code { get; set; }                 // Mã dự án (vd. TC0625-03-P1)
     public int? Quantity { get; set; }                                // Số lượng (máy / bộ)

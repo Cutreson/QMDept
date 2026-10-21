@@ -174,6 +174,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         if (!string.IsNullOrEmpty(p.Code)) l.Add(("Mã dự án", p.Code));
         if (p.Quantity is int q) l.Add(("Số lượng", q.ToString()));
         if (p.OwnerLeaderId is int o && P(o) is { } ol) l.Add(("Leader phụ trách", ol.Name));
+        if (!string.IsNullOrEmpty(p.CustomerAddress)) l.Add(("Địa chỉ khách hàng", p.CustomerAddress));
         if (!string.IsNullOrEmpty(p.Category)) l.Add(("Loại", p.Category));
         if (!string.IsNullOrEmpty(p.Level)) l.Add(("Cấp độ", p.Level));
         if (p.PoDate is DateOnly po) l.Add(("Ngày PO", Fmt.Dmy(po)));

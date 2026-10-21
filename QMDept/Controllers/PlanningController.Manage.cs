@@ -81,7 +81,7 @@ public partial class PlanningController
     /// <summary>POST projForm: tạo dự án mới (→ chuyển sang chip dự án vừa tạo) hoặc lưu thông tin dự án.</summary>
     [HttpPost]
     public async Task<IActionResult> SaveProject(int? id, string? name, string? factory, string? location, string? start, string? end, string? code, int? quantity,
-        int? need, string? statusOverride, bool closed)
+        int? need, string? statusOverride, bool closed, string? customerAddress = null)
     {
         int? created = null;
         var res = await Do(async () =>
@@ -90,6 +90,7 @@ public partial class PlanningController
             var n = PlanningManage.Text(name, 200, "Tên dự án") ?? throw new BizException("Nhập tên dự án");
             var fa = PlanningManage.Text(factory, 200, "Nhà máy");
             var lo = PlanningManage.Text(location, 200, "Địa điểm");
+            var ca = PlanningManage.Text(customerAddress, 300, "Địa chỉ khách hàng");
             var cd = PlanningManage.Text(code, 80, "Mã dự án");
             var qt = quantity is int q0 && q0 >= 0 ? q0 : (int?)null;
             var s = PlanningManage.Date(start);
@@ -101,7 +102,7 @@ public partial class PlanningController
             {
                 var p = await Db.Projects.FirstOrDefaultAsync(x => x.Id == pid) ?? throw new BizException("Không tìm thấy dự án");
                 p.Code = cd; p.Quantity = qt;
-                p.Name = n; p.Factory = fa; p.Location = lo; p.StartDate = s; p.EndDate = e; p.Need = k; p.StatusOverride = ov; p.Closed = closed;
+                p.Name = n; p.Factory = fa; p.Location = lo; p.CustomerAddress = ca; p.StartDate = s; p.EndDate = e; p.Need = k; p.StatusOverride = ov; p.Closed = closed;
                 await Db.SaveChangesAsync();
                 Toast("Đã lưu dự án");
             }
@@ -109,7 +110,7 @@ public partial class PlanningController
             {
                 var p = new Project
                 {
-                    Code = cd, Quantity = qt, Name = n, Factory = fa, Location = lo, StartDate = s, EndDate = e, Need = k, StatusOverride = ov, Closed = false,
+                    Code = cd, Quantity = qt, Name = n, Factory = fa, Location = lo, CustomerAddress = ca, StartDate = s, EndDate = e, Need = k, StatusOverride = ov, Closed = false,
                     SortOrder = await Db.Projects.CountAsync() + 1, CreatedAt = VnTime.UtcNow,
                 };
                 Db.Projects.Add(p);
