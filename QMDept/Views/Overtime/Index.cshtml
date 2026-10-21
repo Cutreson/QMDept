@@ -20,22 +20,13 @@
 else
 {
     @Ui.Head(0, "Đăng ký làm thêm tại công ty")
-    @if (Scope.Role == Role.Manager)
+    @if (Scope.Role is Role.Manager or Role.Leader)
     {
-        <partial name="_MgrStatusTabs" model="@("ot")" />
+        <partial name="_MgrStatusTabs" model="@(Model.Tab == "summary" ? "summary" : "ot")" />
     }
 }
 <partial name="_DayBar" />
 @if (!mgrApprove) { @OvertimeUi.Deadline(d) }
-@if (Scope.Role != Role.Staff && Scope.Role != Role.Manager)
-{
-    // Leader: duyệt đăng ký làm thêm của NV nằm ở Kế hoạch & duyệt → Kế hoạch đề xuất (yêu cầu 2026-10-19); chỉ TP còn tab "Duyệt Leader".
-    var tabsList = new List<(string Href, string Label, bool Active)> { (Ui.Here(req, ("tab", "mine"), ("edit", null)), "Của tôi", Model.Tab == "mine") };
-    if (Scope.Role == Role.Manager)
-        tabsList.Add((Ui.Here(req, ("tab", "approve"), ("edit", null)), $"Duyệt Leader{(Model.Pending > 0 ? $" ({Model.Pending})" : "")}", Model.Tab == "approve"));
-    tabsList.Add((Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"));
-    @Ui.Subtabs(tabsList)
-}
 @if (Model.Tab == "approve")
 {
     <partial name="_Approve" model="Model" />

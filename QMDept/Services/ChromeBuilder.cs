@@ -63,7 +63,6 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             new("planning", "Kế hoạch & duyệt", "check", "/Planning/Proposals", "Planning", null),
             new("tracking", "Theo dõi", "eye", "/Leader/Tracking", "Leader", "Tracking"),
             new("reports", "Báo cáo TP", "send", "/Leader/Reports", "Leader", "Reports"),
-            new("overtime", "ĐK làm thêm tại CTy", "clock", "/Overtime", "Overtime", null),
         ],
         [Role.Manager] =
         [
@@ -114,8 +113,8 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var onDept = acc.Role == Role.Leader && !away && string.Equals(controller, "Leader", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Department", StringComparison.OrdinalIgnoreCase);   // Nhân sự phòng (Leader có cờ HrDuty) thuộc tab Tổng quan
         var tabRole = away ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
         // TP / Quản trị: tab "Trạng thái làm việc" gồm cả Đăng ký làm thêm (/Overtime) — sáng ở cả hai trang (yêu cầu 2026-10-21)
-        var onOvertime = tabRole == Role.Manager && !away && string.Equals(controller, "Overtime", StringComparison.OrdinalIgnoreCase);
-        var otApprove = onOvertime && ctx.Request.Query["tab"].ToString() is "approve" or "summary";   // duyệt làm thêm của Leader + tổng hợp suất ăn thuộc tab Phê duyệt
+        var onOvertime = tabRole is Role.Manager or Role.Leader && !away && string.Equals(controller, "Overtime", StringComparison.OrdinalIgnoreCase);   // ĐK làm thêm của TP / Leader thuộc tab Trạng thái làm việc (yêu cầu 2026-10-21)
+        var otApprove = onOvertime && tabRole == Role.Manager && ctx.Request.Query["tab"].ToString() is "approve" or "summary";   // duyệt làm thêm của Leader + tổng hợp suất ăn thuộc tab Phê duyệt
         var onMgrOvertime = onOvertime && !otApprove;   // ĐK làm thêm của chính TP thuộc tab Trạng thái làm việc
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);

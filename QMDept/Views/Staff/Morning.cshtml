@@ -18,7 +18,7 @@
     <script src="~/js/staff.js" asp-append-version="true"></script>
 }
 @Ui.Head(3, lead ? "Trạng thái làm việc trong ngày" : "Báo cáo đầu ngày")
-@if (selfOk)
+@if (lead)
 {
     <partial name="_MgrStatusTabs" model="@("status")" />
 }
