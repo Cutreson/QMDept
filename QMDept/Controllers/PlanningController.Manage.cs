@@ -452,7 +452,7 @@ public partial class PlanningController
         if (!Scope.IsManager) return Redirect("/");
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader phụ trách dự án";
-        var all = D.ActivePj();
+        var all = D.AllPj();   // gồm cả dự án đã bàn giao (yêu cầu 2026-10-21: dự án đã hoàn thành cũng phải có Leader phụ trách)
         var has = all.Where(p => p.OwnerLeaderId is not null).ToList();
         var none = all.Where(p => p.OwnerLeaderId is null).ToList();
         // 2 mục: Đã có Leader / Chưa có Leader (thay "Tất cả"); mặc định mục đầu tiên có dự án

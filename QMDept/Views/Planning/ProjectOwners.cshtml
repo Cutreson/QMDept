@@ -8,7 +8,7 @@
 @Ui.Head(0, "Leader phụ trách dự án")
 @* Thống kê tổng quan *@
 <div class="kpis k3">
-    <div class="kpi k-info"><b>@Model.Total</b><span>Dự án đang triển khai</span></div>
+    <div class="kpi k-info"><b>@Model.Total</b><span>Tổng số dự án</span></div>
     <div class="kpi k-ok"><b>@Model.Assigned</b><span>Đã có Leader</span></div>
     <div class="kpi @(Model.Unassigned > 0 ? "k-bad" : "k-idle")"><b>@Model.Unassigned</b><span>Chưa có Leader</span></div>
 </div>
