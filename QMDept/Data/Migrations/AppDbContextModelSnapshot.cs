@@ -658,6 +658,13 @@ namespace QMDept.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
+                    b.Property<DateTime?>("LeaderAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("LeaderBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<DateTime?>("DoneSentAt")
                         .HasColumnType("datetime(6)");
 

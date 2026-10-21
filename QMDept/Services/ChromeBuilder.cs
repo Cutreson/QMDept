@@ -172,8 +172,8 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (scope.Role == Role.Leader && id == "planning") return d.LeaderPending(date) + d.OtPending(date).Count(x => x.NeedsDecision) + (scope.MeId is int lid ? d.ProposalsFor(lid).Count + d.LeavesFor(lid).Count : 0);
             if (scope.Role == Role.Manager && id == "approvals")
                 return d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
-                    + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPending(date).Count(x => x.NeedsDecision);
-            if (id == "overtime") return scope.Role == Role.Manager ? d.OtPending(date).Count(x => x.NeedsDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
+                    + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPending(date).Count(x => x.NeedsTpDecision);
+            if (id == "overtime") return scope.Role == Role.Manager ? d.OtPending(date).Count(x => x.NeedsTpDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
                 return d.ExtrasOn(date).Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
             return 0;

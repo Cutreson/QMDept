@@ -13,7 +13,7 @@
     <partial name="_MgrApprovalTabs" model="@("ot")" />
     @Ui.Subtabs(new List<(string Href, string Label, bool Active)>
     {
-        (Ui.Here(req, ("tab", "approve"), ("edit", null)), "Duyệt đăng ký làm thêm của Leader" + (Model.Pending > 0 ? $" ({Model.Pending})" : ""), Model.Tab == "approve"),
+        (Ui.Here(req, ("tab", "approve"), ("edit", null)), "Duyệt đăng ký làm thêm" + (Model.Pending > 0 ? $" ({Model.Pending})" : ""), Model.Tab == "approve"),
         (Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"),
     })
 }

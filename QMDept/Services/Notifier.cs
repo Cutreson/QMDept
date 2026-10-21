@@ -221,6 +221,10 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync(to, NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)}", $"{start}–{end}", Q("/Overtime?tab=approve", d));
     }
 
+    /// <summary>Đăng ký làm thêm của NV kết thúc sau 20:00: Leader đã duyệt → mọi TP duyệt tiếp (yêu cầu 2026-10-21).</summary>
+    public async Task OvertimeToManagerAsync(int person, DateOnly d, string start, string end) =>
+        await SendAsync(await Managers(), NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)} (sau 20:00)", $"{start}–{end} · Leader đã duyệt, chờ bạn duyệt.", Q("/Overtime?tab=approve", d));
+
     /// <summary>NV / Leader cập nhật kết quả làm thêm (giờ thực tế + công việc) → người duyệt (Leader nhóm / mọi TP).</summary>
     public async Task OvertimeDoneSubmittedAsync(int person, Role role, DateOnly d, string start, string end)
     {
@@ -230,10 +234,11 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     }
 
     /// <summary>Hủy đăng ký làm thêm (kể cả đã duyệt) → người duyệt (Leader nhóm / mọi TP).</summary>
-    public async Task OvertimeCancelledAsync(int person, Role role, DateOnly d, string start, string end, bool wasApproved)
+    public async Task OvertimeCancelledAsync(int person, Role role, DateOnly d, string start, string end, bool wasApproved, bool alsoManagers = false)
     {
         if (role == Role.Manager) return;
         var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
+        if (alsoManagers && role == Role.Staff) to.AddRange(await Managers());   // đăng ký sau 20:00 đã qua Leader → TP cũng cần biết
         await SendAsync(to, NotifyType.OvertimeCancelled, $"{await Name(person)} hủy đăng ký làm thêm {Fmt.Dm(d)}",
             $"{start}–{end}{(wasApproved ? " · đã duyệt trước đó" : "")}", Q("/Overtime?tab=approve", d));
     }

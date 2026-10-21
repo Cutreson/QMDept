@@ -6,7 +6,7 @@
 }
 @if (Model.Approve.Count == 0)
 {
-    <div class="empty">Chưa có @(forStaff ? "nhân viên" : "Leader") đăng ký làm thêm ngày này.</div>
+    <div class="empty">@(forStaff ? "Chưa có nhân viên đăng ký làm thêm ngày này." : "Chưa có đăng ký làm thêm cần Trưởng phòng ngày này.")</div>
 }
 @foreach (var x in Model.Approve)
 {

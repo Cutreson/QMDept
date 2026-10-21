@@ -7,6 +7,10 @@
 <dl class="kvl">
     <dt>Thời gian</dt><dd><b class="mono">@x.Start–@x.End</b> · @Fmt.Num(x.Hours) giờ · @(x.DayType == OtDayType.Holiday ? "ngày nghỉ / lễ" : "ngoài giờ hành chính")</dd>
     <dt>Mức</dt><dd>@x.Tier</dd>
+    @if (x.Role == Role.Staff)
+    {
+        <dt>Cấp duyệt</dt><dd>@(x.NeedsManager ? "Leader → Trưởng phòng (làm thêm sau 20:00)" : "Leader (đã duyệt thì cập nhật lên Trưởng phòng)")@(x.LeaderAt is not null ? $" · Leader {x.LeaderBy} duyệt lúc {VnTime.Hm(x.LeaderAt)}" : "")</dd>
+    }
     <dt>Nghỉ giải lao</dt><dd class="mono">@x.Break</dd>
     <dt>Suất ăn</dt><dd>@OtRules.MealText(x)</dd>
     @if (x.Allowance > 0)

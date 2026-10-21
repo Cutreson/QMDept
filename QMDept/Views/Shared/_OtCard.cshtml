@@ -1,5 +1,7 @@
 @model Overtime
-@* Thẻ đăng ký làm thêm cần duyệt: duyệt / từ chối đăng ký, rồi duyệt / từ chối kết quả làm thêm (otApprove). Dùng ở Overtime/_Approve (TP) và Planning/Proposals (Leader). *@
+@* Thẻ đăng ký làm thêm cần duyệt: duyệt / từ chối đăng ký, rồi duyệt / từ chối kết quả làm thêm (otApprove). Dùng ở Overtime/_Approve (TP) và Planning/Proposals (Leader).
+   Luồng (yêu cầu 2026-10-21): NV làm thêm kết thúc ≤ 20:00 → Leader duyệt → thông tin cập nhật lên Trưởng phòng (chỉ xem);
+   NV làm thêm kết thúc SAU 20:00 → Leader duyệt → Trưởng phòng duyệt → mới được duyệt. Leader đăng ký → Trưởng phòng duyệt. Kết quả làm thêm: Leader (NV) / TP (Leader). *@
 @{
     var x = Model;
     var req = Context.Request;
@@ -8,6 +10,14 @@
     var doneUrl = OvertimeUi.PostUrl(req, "DecideDone", Scope.Date);
     var undoDoneUrl = OvertimeUi.PostUrl(req, "UndoDone", Scope.Date);
     var name = D.PName(x.PersonId);
+    var tp = Scope.Role == Role.Manager;
+    var tpStaff = tp && x.Role == Role.Staff;                                   // TP xem đăng ký của nhân viên
+    // Nút Duyệt / Từ chối đăng ký: Leader khi chờ Leader; TP khi (Leader đăng ký chờ duyệt) hoặc (NV sau 20:00 đã qua Leader)
+    var canDecide = tpStaff ? x.Status == OtStatus.PendingManager && x.NeedsManager : x.Status == OtStatus.Pending;
+    // Hoàn tác: TP với đăng ký của Leader / NV sau 20:00 đã quyết định; Leader với đăng ký chờ TP hoặc do mình quyết định (không hoàn tác quyết định của TP)
+    var canUndo = !canDecide && x.Status != OtStatus.Pending && (tp ? (tpStaff ? x.NeedsManager && x.LeaderAt != null && x.Status != OtStatus.PendingManager : true)
+        : (x.Status == OtStatus.PendingManager || x.LeaderAt is null));
+    var canResult = !tpStaff;                                                   // duyệt kết quả: Leader (NV) / TP (Leader)
 }
     <section class="card apv">
         <div class="hd">@Ui.Av(name)<b>@name</b>@Ui.Pill(x.Status)</div>
@@ -23,7 +33,7 @@
             else
             {
                 <partial name="_OtDone" model="x" />
-                @if (x.Completion == OtCompletion.Pending)
+                @if (canResult && x.Completion == OtCompletion.Pending)
                 {
                     <div class="btn-row" style="margin-top:12px">
                         <form method="post" action="@doneUrl" asp-antiforgery="true"
@@ -41,7 +51,7 @@
                         </form>
                     </div>
                 }
-                else
+                else if (canResult && x.Completion != OtCompletion.Pending)
                 {
                     <form method="post" action="@undoDoneUrl" asp-antiforgery="true" style="margin-top:6px">
                         @Ui.ReturnField(req)
@@ -51,7 +61,7 @@
                 }
             }
         }
-        @if (x.Status == OtStatus.Pending)
+        @if (canDecide)
         {
             <div class="btn-row" style="margin-top:12px">
                 <form method="post" action="@approveUrl" asp-antiforgery="true"
@@ -69,12 +79,23 @@
                 </form>
             </div>
         }
-        else
+        else if (x.Status != OtStatus.Pending && x.Status != OtStatus.PendingManager)
         {
-            <p class="note" style="margin-bottom:0">@OvertimeUi.DecidedText(x) <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
+            <p class="note" style="margin-bottom:0">@OvertimeUi.DecidedText(x)@if (canUndo) { <text> </text><button class="link" form="otUndo@(x.Id)">Hoàn tác</button> }</p>
+        }
+        else if (x.Status == OtStatus.PendingManager && canUndo)
+        {
+            <p class="note" style="margin-bottom:0">Đang chờ Trưởng phòng duyệt <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
+        }
+        else if (x.Status == OtStatus.PendingManager)
+        {
+            <p class="note" style="margin-bottom:0">Đang chờ Trưởng phòng duyệt</p>
+        }
+        @if (canUndo)
+        {
             <form id="otUndo@(x.Id)" method="post" action="@undoUrl" asp-antiforgery="true" hidden>
                 @Ui.ReturnField(req)
                 <input type="hidden" name="id" value="@x.Id">
             </form>
         }
-    </section>
+    </section>

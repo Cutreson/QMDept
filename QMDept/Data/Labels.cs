@@ -47,6 +47,7 @@ public static class Labels
         [OtStatus.Pending] = new("Chờ duyệt", "p-warn", "var(--warn)"),
         [OtStatus.Approved] = new("Đã duyệt", "p-ok", "var(--ok)"),
         [OtStatus.Rejected] = new("Từ chối", "p-bad", "var(--bad)"),
+        [OtStatus.PendingManager] = new("Chờ Trưởng phòng", "p-warn", "var(--warn)"),
         // OT_REG
         [OtReg.Early] = new("Dự trù đúng hạn", "p-ok", "var(--ok)"),
         [OtReg.OnTime] = new("Chính thức đúng hạn", "p-info", "var(--brand)"),

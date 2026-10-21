@@ -5,7 +5,7 @@
     var d = Scope.Date;
     var all = Model.Summary;
     int rice = all.Count(x => OtRules.IsFullMeal(x.Meal)), snack = all.Count(x => x.Meal == OtMeal.Snack), allowance = all.Count(x => x.Allowance > 0);
-    int pendingCount = all.Count(x => x.Status == OtStatus.Pending), lateCount = all.Count(x => x.Reg == OtReg.Late);
+    int pendingCount = all.Count(x => x.Status is OtStatus.Pending or OtStatus.PendingManager), lateCount = all.Count(x => x.Reg == OtReg.Late);
     // Giờ làm thêm được tính = kết quả đã được duyệt (bị từ chối / chưa duyệt kết quả thì không tính).
     var counted = all.Where(x => x.Completion == OtCompletion.Approved).Sum(x => x.ActualHours ?? 0);
     int doneRejected = all.Count(x => x.Completion == OtCompletion.Rejected), donePending = all.Count(x => x.Status == OtStatus.Approved && x.Completion == OtCompletion.Pending);

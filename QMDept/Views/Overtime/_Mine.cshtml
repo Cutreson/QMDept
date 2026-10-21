@@ -53,6 +53,7 @@ else if (x is not null && (!Model.Edit || !self))
             }
         }
         <p class="note">@(role == Role.Manager ? "Trưởng phòng tự ghi nhận, không cần duyệt."
+            : x.Status == OtStatus.PendingManager ? "Chờ Trưởng phòng duyệt."
             : !string.IsNullOrEmpty(x.DecidedBy) ? OvertimeUi.DecidedText(x)
             : $"Chờ {(role == Role.Staff ? "Leader" : "Trưởng phòng")} duyệt.")</p>
         @if (self)

@@ -125,6 +125,7 @@ public enum ExtraStatus
     Pending,  // 'cho_duyet'
     Approved, // 'da_duyet'
     Rejected, // 'tu_choi'
+    PendingManager, // Leader đã duyệt đăng ký của NV làm thêm sau 20:00 — chờ Trưởng phòng duyệt (yêu cầu 2026-10-21)
 }
 
 /// <summary>Trạng thái HIỂN THỊ của phát sinh (XS) — tính bởi Dept.ExSt.</summary>
@@ -143,6 +144,7 @@ public enum OtStatus
     Pending,  // 'cho_duyet'
     Approved, // 'da_duyet'
     Rejected, // 'tu_choi'
+    PendingManager, // Leader đã duyệt đăng ký của NV làm thêm sau 20:00 — chờ Trưởng phòng duyệt (yêu cầu 2026-10-21)
 }
 
 /// <summary>Hạn đăng ký làm thêm (OT_REG).</summary>

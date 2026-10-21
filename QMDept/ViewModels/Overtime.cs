@@ -105,7 +105,7 @@ public static class OvertimeUi
         : "Làm thêm dưới 2 giờ không có chế độ suất ăn.";
 
     /// <summary>Thứ tự trạng thái trong danh sách duyệt (otApprove: cho_duyet, da_duyet, tu_choi).</summary>
-    public static int StatusOrder(OtStatus s) => s switch { OtStatus.Pending => 0, OtStatus.Approved => 1, _ => 2 };
+    public static int StatusOrder(OtStatus s) => s switch { OtStatus.Pending or OtStatus.PendingManager => 0, OtStatus.Approved => 1, _ => 2 };
 
     /// <summary>"Duyệt" / "Từ chối" bởi … lúc hh:mm.</summary>
     public static string DecidedText(Overtime x) => $"{(x.Status == OtStatus.Rejected ? "Từ chối" : "Duyệt")} bởi {x.DecidedBy ?? ""} lúc {VnTime.Hm(x.DecidedAt)}";

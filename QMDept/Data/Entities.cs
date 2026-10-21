@@ -332,7 +332,19 @@ public class Overtime
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>Cần người duyệt xử lý: đăng ký chờ duyệt, hoặc đăng ký đã duyệt và NV vừa cập nhật kết quả.</summary>
+    // ---- Cấp duyệt thứ hai (yêu cầu 2026-10-21): đăng ký làm thêm của NV kết thúc SAU 20:00 → Leader duyệt rồi Trưởng phòng duyệt ----
+    [MaxLength(100)] public string? LeaderBy { get; set; }           // Leader đã duyệt (khi đăng ký của NV cần thêm Trưởng phòng duyệt)
+    public DateTime? LeaderAt { get; set; }
+
+    /// <summary>Ngưỡng giờ: làm thêm kết thúc sau mốc này (phát sinh sau 20:00 tối) cần thêm Trưởng phòng duyệt.</summary>
+    public const string LateFrom = "20:00";
+    /// <summary>Đăng ký của nhân viên kết thúc sau 20:00 → sau Leader còn phải có Trưởng phòng duyệt (Leader đăng ký thì Trưởng phòng duyệt sẵn).</summary>
+    public bool NeedsManager => Role == Role.Staff && string.CompareOrdinal(End, LateFrom) > 0;
+
+    /// <summary>Cần LEADER xử lý: đăng ký chờ duyệt (của NV), hoặc đăng ký đã duyệt và NV vừa cập nhật kết quả. (Đăng ký chờ Trưởng phòng thì Leader không còn việc.)</summary>
     public bool NeedsDecision => Status == OtStatus.Pending || (Status == OtStatus.Approved && Completion == OtCompletion.Pending);
+    /// <summary>Cần TRƯỞNG PHÒNG xử lý: đăng ký của Leader (chờ duyệt / kết quả chờ duyệt), hoặc đăng ký của NV sau 20:00 mà Leader đã duyệt.</summary>
+    public bool NeedsTpDecision => (Role == Role.Leader && NeedsDecision) || (Role == Role.Staff && Status == OtStatus.PendingManager);
 
     public ICollection<OvertimeTask> Items { get; set; } = new List<OvertimeTask>();
 }

@@ -354,8 +354,10 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<Overtime> OtPending(DateOnly d)
     {
         Guard(d);
-        var r = scope.Role == Role.Leader ? Role.Staff : Role.Leader;
-        return _ots.Values.Where(x => x.Date == d && x.Role == r && InScope(x.PersonId)).ToList();
+        if (scope.Role == Role.Leader) return _ots.Values.Where(x => x.Date == d && x.Role == Role.Staff && InScope(x.PersonId)).ToList();
+        // TP: đăng ký của Leader + đăng ký của NV mà Leader đã duyệt (kết thúc sau 20:00 thì TP duyệt tiếp; còn lại TP chỉ xem thông tin đã cập nhật lên) — yêu cầu 2026-10-21.
+        return _ots.Values.Where(x => x.Date == d && InScope(x.PersonId) && (x.Role == Role.Leader
+            || (x.Role == Role.Staff && (x.Status is OtStatus.Approved or OtStatus.PendingManager || (x.Status == OtStatus.Rejected && x.LeaderAt != null))))).ToList();
     }
 
     // ======================= Đếm cho badge thanh tab =======================
