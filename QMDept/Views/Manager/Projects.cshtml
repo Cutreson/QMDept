@@ -15,9 +15,10 @@
 }
 else
 {
+    @Ui.Head(0, "Dự án")
     @if (!Scope.IsViewingOther)
     {
-        <div class="row" style="margin-top:14px;gap:8px">
+        <div class="row" style="margin-top:0;gap:8px">
             <a class="btn btn-primary" href="@Ui.To(req, "/Planning/Projects", ("pj", "new"))">＋ Dự án mới</a>
             <a class="btn" href="@Ui.To(req, "/Planning/Projects", ("pj", Model.Pid.ToString()))">Sửa dự án &amp; đầu mục</a>
             <a class="btn" href="@Ui.To(req, "/Planning/ProjectOwners")">Leader phụ trách dự án</a>
