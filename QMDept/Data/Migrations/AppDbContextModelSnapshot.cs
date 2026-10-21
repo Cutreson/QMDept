@@ -1089,6 +1089,12 @@ b.HasIndex("OwnerLeaderId");
                     b.Property<DateTime?>("FromDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("AckAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("GivenById")
+                        .HasColumnType("int");
+
                     b.Property<string>("GivenBy")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");

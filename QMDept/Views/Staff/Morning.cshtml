@@ -57,6 +57,7 @@
             foreach (var t in sel)
             {
                 @D.TaskRow(t)
+                <partial name="_TaskAck" model="t" />
                 @if (lead) { <partial name="_TaskActions" model="t" /> }
             }
         }

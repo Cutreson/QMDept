@@ -56,7 +56,8 @@ public static class NotifyCatalog
         new(NotifyType.CalendarProposed, "Đề xuất lịch mới", "Nhân viên trong nhóm đề xuất thêm công việc / người hỗ trợ ở lịch tháng", [Role.Leader]),
         new(NotifyType.CalendarDecided, "Kết quả đề xuất lịch", "Đề xuất lịch của bạn được duyệt / từ chối", [Role.Staff]),
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
-        new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff]),
+        new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff, Role.Leader]),
+        new(NotifyType.TaskAcked, "Xác nhận nhận việc", "Người bạn giao việc đã xác nhận nhận việc và bắt đầu triển khai", [Role.Leader, Role.Manager]),
         new(NotifyType.LeaveMarked, "Báo nghỉ", "Leader ghi nghỉ / bỏ nghỉ cho bạn", [Role.Staff]),
         new(NotifyType.OvertimeDecided, "Kết quả làm thêm", "Đăng ký làm thêm của bạn được duyệt / từ chối / hoàn tác", [Role.Staff, Role.Leader]),
     ];
@@ -165,8 +166,20 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync([emp], NotifyType.CarryOver, $"Việc chuyển tiếp {what}", $"{title} · {Fmt.Short(date)}", Q("/Staff/Month", date));
 
     /// <summary>Giao việc / thêm / xóa việc trong lịch (what: "Bạn được giao việc", "Việc mới trong lịch", "Việc bị xóa khỏi lịch") → NV.</summary>
-    public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc") =>
-        await SendAsync(emps.Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", $"{title} · bởi {Actor}", Q("/Staff/Month", d));
+    public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc")
+    {
+        var ppl = await People();
+        var list = emps.Distinct().ToList();
+        var leaders = list.Where(i => ppl.Find(p => p.Id == i)?.Role == Role.Leader).ToList();   // Leader mở lịch cá nhân ?as=mine
+        var body = $"{title} · bởi {Actor}";
+        await SendAsync(list.Except(leaders).Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", body, Q("/Staff/Month", d));
+        await SendAsync(leaders.Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", body, $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
+    }
+
+    /// <summary>Người được giao việc xác nhận đã nhận → người giao (yêu cầu 2026-10-21).</summary>
+    public async Task TaskAckedAsync(int giver, int emp, DateOnly d, string title) =>
+        await SendAsync([giver], NotifyType.TaskAcked, $"{await Name(emp)} đã xác nhận nhận việc ngày {Fmt.Dm(d)}", title,
+            $"/Staff/Month?as={((await People()).Find(p => p.Id == giver)?.Role == Role.Staff ? "me" : "all")}&d={Fmt.Key(d)}");
 
     /// <summary>NV đề xuất lịch (công việc / người hỗ trợ) → Leader nhóm của người đề xuất.</summary>
     public async Task CalendarProposedAsync(int proposer, DateOnly d, string title) =>

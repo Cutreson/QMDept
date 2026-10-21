@@ -136,6 +136,7 @@ else
                 foreach (var x in t)
                 {
                     @D.TaskRow(x)
+                    <partial name="_TaskAck" model="x" />
                     @if (ownLead) { <partial name="_TaskActions" model="x" /> }
                 }
             }

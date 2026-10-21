@@ -206,6 +206,7 @@ public enum NotifyType
     TeamChanged,         // TP chuyển nhân viên sang nhóm khác trên sơ đồ nhân sự → nhân viên + Leader cũ / mới
     LeaveRequested,      // NV / Leader xin nghỉ → Leader nhóm / Trưởng phòng duyệt
     LeaveDecided,        // xin nghỉ được duyệt / từ chối → người xin
+    TaskAcked,           // người được giao việc đã xác nhận → người giao (Leader / Trưởng phòng)
 }
 
 /// <summary>

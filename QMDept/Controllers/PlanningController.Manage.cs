@@ -46,7 +46,7 @@ public partial class PlanningController
         Db.WorkTasks.Add(new WorkTask
         {
             Date = date, EmployeeId = emp, ProjectId = f.ProjectId, PlanItemId = item?.Id, Title = title,
-            Start = f.Start, End = f.End, Status = TaskState.NotStarted, Source = TaskSource.Planned, Selected = false,
+            Start = f.Start, End = f.End, Status = TaskState.NotStarted, Source = TaskSource.Planned, Selected = false, GivenBy = Scope.ActorName, GivenById = emp != Scope.Account.Id ? Scope.Account.Id : null,
             CreatedAt = VnTime.UtcNow,
         });
         await Db.SaveChangesAsync();
@@ -539,7 +539,7 @@ public partial class PlanningController
         await RequireInScopeAsync(e);
         var who = PlanningManage.RequireStaff(D, e);
         PlanningManage.Text(title, 300, "Nội dung công việc");
-        await Flow.AssignTaskAsync(day, pid, itemId, title, start ?? "", end ?? "", [e], Scope.ActorName);
+        await Flow.AssignTaskAsync(day, pid, itemId, title, start ?? "", end ?? "", [e], Scope.ActorName, TaskSource.Assigned, Scope.Account.Id);
         Toast($"Đã giao việc cho {who.Name} ngày {Fmt.Dm(day)}");
     });
 

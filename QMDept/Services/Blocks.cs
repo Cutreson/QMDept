@@ -28,8 +28,12 @@ public static class Blocks
         // "Leader dự án"; người hỗ trợ không hiện.
         var leadLine = leadOnly && (lead is null || lead.Id != t.EmployeeId) ? ""
             : lead is null ? "<div class=\"s\">Leader dự án: chưa chọn</div>" : $"<div class=\"s\">Leader dự án: <b>{E(lead.Name)}</b></div>";
+        // Việc do cấp quản lý giao: hiện người giao + trạng thái xác nhận (yêu cầu 2026-10-21)
+        var ackLine = t.GivenById is null ? ""
+            : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Hm(ak)} {Fmt.Dm(VnTime.DateOf(ak))}</b></div>"
+            : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
         return H($"<div class=\"trow\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
-            + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")} · {Labels.Of(st)}</div>{leadLine}</div>"
+            + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")} · {Labels.Of(st)}</div>{leadLine}{ackLine}</div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span></div>");
     }
 

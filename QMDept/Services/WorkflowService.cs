@@ -87,7 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Nếu NV đã gửi kế hoạch ngày đó → việc được chọn sẵn và thêm vào kế hoạch. Cập nhật vai trò trong dự án.
     /// </summary>
     public async Task<int> AssignTaskAsync(DateOnly date, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned)
+        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned, int? actorId = null)
     {
         if (people.Count == 0) throw new BizException("Tích chọn ít nhất 1 người tham gia");
         var item = itemId is int iid ? await db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
@@ -107,7 +107,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             var t = new WorkTask
             {
                 Date = date, EmployeeId = emp, ProjectId = projectId, PlanItemId = item?.Id, Title = t0, Start = start, End = end,
-                Status = TaskState.NotStarted, Source = source, GivenBy = actor, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
+                Status = TaskState.NotStarted, Source = source, GivenBy = actor, GivenById = actorId is int gid && gid != emp ? gid : null, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
             };
             db.WorkTasks.Add(t);
             await db.SaveChangesAsync();
@@ -275,7 +275,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Leader / TP chuyển một việc sang lịch khác (ngày khác và / hoặc người khác — yêu cầu 2026-10-20). Gỡ khỏi kế hoạch ngày cũ;
     /// người nhận đã gửi kế hoạch ngày mới (và chưa báo cáo cuối ngày) thì việc vào kế hoạch đó. Quyền do controller kiểm.
     /// </summary>
-    public async Task MoveTaskAsync(WorkTask t, DateOnly newDate, int newEmp, string actor)
+    public async Task MoveTaskAsync(WorkTask t, DateOnly newDate, int newEmp, string actor, int? actorId = null)
     {
         var oldEmp = t.EmployeeId;
         var links = await db.DayPlanTasks.Where(x => x.WorkTaskId == t.Id).ToListAsync();
@@ -292,6 +292,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             await db.WorkTasks.Where(x => x.Id == origId && x.CarriedToId == t.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.CarryDate, (DateOnly?)newDate));
         if (newEmp != oldEmp)
         {
+            t.GivenBy = actor; t.GivenById = actorId is int gid && gid != newEmp ? gid : null; t.AckAt = null;   // người nhận mới phải xác nhận lại
             var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == t.ProjectId && a.Role == ProjectRole.Lead).Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
             await UpsertAssignmentAsync(t.ProjectId, newEmp, leadId == newEmp ? ProjectRole.Lead : ProjectRole.Support, actor, keepNote: true);
         }

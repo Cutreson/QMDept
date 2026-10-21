@@ -1,0 +1,10 @@
+@model WorkTask
+@* Nút "Xác nhận đã nhận việc" cho người được giao (việc do cấp quản lý giao, chưa xác nhận) — yêu cầu 2026-10-21. Server kiểm lại ở StaffController.AckTask. *@
+@{
+    var t = Model;
+    if (t.GivenById is null || t.AckAt is not null || t.EmployeeId != Scope.Account.Id || Scope.IsViewingOther) { return; }
+}
+<form method="post" action="/Staff/AckTask?id=@t.Id" asp-antiforgery="true" class="task-actions" style="display:flex;justify-content:flex-end;margin:-2px 12px 6px">
+    @Ui.ReturnField(Context.Request)
+    <button type="submit" class="btn btn-sm btn-primary">Xác nhận đã nhận việc</button>
+</form>

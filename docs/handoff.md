@@ -309,3 +309,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-21) Leader: ĐK làm thêm gộp vào tab Trạng thái làm việc (mục con ĐK làm thêm + Tổng hợp suất ăn), bỏ tab riêng (quy tắc 54). Đã thử Huề / Tân / Hùng + TP + NV không đổi.
 - (2026-10-21) Bỏ mục Tổng hợp suất ăn của Leader (quy tắc 54 cập nhật); /Overtime?tab=summary của Leader chuyển hướng.
 - (2026-10-21) Leader → Xin nghỉ: thêm bộ lọc ngày (_DayBar) + liên kết ngày khác còn chờ duyệt (quy tắc 55). Đã test trên DB thật và xóa dữ liệu thử.
+- (2026-10-21) Số đỏ thanh tab đếm mọi ngày (quy tắc 56); giao việc có xác nhận nhận việc + thông báo hai chiều (quy tắc 57, migration TaskAck). Đã test Huề giao NV 11 → xác nhận → Huề thấy; đã xóa dữ liệu thử.

@@ -55,7 +55,7 @@ public partial class StaffController
             if (Scope.IsManager && Request.Form["emp"].Any(s => int.TryParse(s, out var i) && Scope.TeamPeople.Any(p => p.Id == i && p.Role == Role.Staff)))
                 throw new BizException("Trưởng phòng chỉ giao việc cho Leader — Leader giao tiếp cho nhân viên, không giao vượt cấp");
             var people = StaffCalendar.ReadPeople(Request.Form, pool);
-            var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName);
+            var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName, TaskSource.Assigned, Scope.Account.Id);
             Toast($"Đã giao việc cho {n} người ngày {Fmt.Dm(Date)}");
         });
     }
@@ -96,6 +96,23 @@ public partial class StaffController
     }
 
     /// <summary>
+    /// POST /Staff/AckTask — người được cấp quản lý giao việc xác nhận đã nhận và bắt đầu triển khai (yêu cầu 2026-10-21):
+    /// ghi giờ xác nhận lên việc, người giao nhận thông báo đẩy. Chỉ người nhận, chỉ việc do người khác giao, chỉ một lần.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> AckTask(int id) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther) throw new BizException("Chế độ xem: không xác nhận thay người khác được");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc");
+        if (t.EmployeeId != Scope.Account.Id) throw new BizException("Chỉ người được giao việc mới xác nhận được");
+        if (t.GivenById is not int giver) throw new BizException("Việc này không cần xác nhận");
+        if (t.AckAt is not null) throw new BizException("Bạn đã xác nhận việc này rồi");
+        t.AckAt = VnTime.UtcNow;
+        await Db.SaveChangesAsync();
+        await Notify.TaskAckedAsync(giver, t.EmployeeId, t.Date, t.Title);
+    }, "Đã xác nhận nhận việc");
+
+    /// <summary>
     /// POST /Staff/EditTask — Leader / TP sửa việc trong quyền của mình (lịch của tôi, lịch nhóm / phòng, trang Trạng thái làm việc):
     /// dự án, nội dung, giờ, VÀ chuyển sang lịch khác (ngày từ hôm nay trở đi + người nhận: Leader → mình + nhân viên nhóm; TP → mình + Leader).
     /// Chuyển lịch gộp vào Sửa (yêu cầu 2026-10-21). Người nhận nghỉ cả ngày thì chặn; việc đã chuyển tiếp đi nơi khác không đổi ngày / người được.
@@ -122,7 +139,7 @@ public partial class StaffController
         }
         await using var tx = await Db.Database.BeginTransactionAsync();
         await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName);
-        if (moved) await Flow.MoveTaskAsync(t, day, target, Scope.ActorName);
+        if (moved) await Flow.MoveTaskAsync(t, day, target, Scope.ActorName, Scope.Account.Id);
         await tx.CommitAsync();
         if (moved && target != Scope.Account.Id) await Notify.TaskAssignedAsync([target], day, t.Title, "Bạn được chuyển việc");
         Toast(moved ? $"Đã sửa và chuyển “{t.Title}” sang {(target == Scope.Account.Id || tp is null ? "" : tp.Name + " · ")}ngày {Fmt.Dmy(day)}" : "Đã sửa công việc");
