@@ -10,13 +10,18 @@
     var me = Model.Me;
     var plan = Model.Plan;
     // Leader (chế độ cá nhân ?as=mine): trang này chỉ khai báo "Trạng thái làm việc trong ngày" + báo cơm (yêu cầu 2026-10-16), không có việc / hỗ trợ / báo cáo cuối ngày
-    var lead = me is not null && me.Role == Role.Leader;
+    var lead = me is not null && me.Role is Role.Leader or Role.Manager or Role.Admin;
+    var selfOk = me is not null && me.Role is Role.Manager or Role.Admin;   // TP / Quản trị: không có người duyệt, trạng thái tự được duyệt (yêu cầu 2026-10-21)
     if (lead) ViewData["Title"] = "Trạng thái làm việc";
 }
 @section Scripts {
     <script src="~/js/staff.js" asp-append-version="true"></script>
 }
 @Ui.Head(3, lead ? "Trạng thái làm việc trong ngày" : "Báo cáo đầu ngày")
+@if (selfOk)
+{
+    <partial name="_MgrStatusTabs" model="@("status")" />
+}
 <partial name="_DayBar" />
 @if (me is null)
 {
@@ -79,6 +84,8 @@
             <div class="leave-line">Địa điểm công tác: <b>@(plan.TripProvince ?? "—")</b> · Khách hàng: <b>@(plan.TripCustomer ?? "—")</b></div>
         }
     </section>
+    @if (!selfOk)
+    {
     <section class="card sec">
         <h2>Trạng thái duyệt</h2>
         <div class="trow">@StaffReports.DecisionCk(plan.LeaderDecision)<div class="t">@(me.Role == Role.Leader ? "Trưởng phòng" : "Leader")</div><span>@StaffReports.DecisionCell(plan.LeaderDecision, plan.LeaderAt, "<span class=\"pill p-warn\">Chờ duyệt</span>")</span></div>
@@ -99,6 +106,11 @@
             <a class="btn btn-ghost btn-block" href="@Ui.Here(req, ("edit", dkey))" style="margin-top:6px">@(lead ? "Sửa trạng thái và gửi lại" : "Sửa kế hoạch và gửi lại")</a>
         }
     </section>
+    }
+    else if (!ro)
+    {
+        <a class="btn btn-ghost btn-block" href="@Ui.Here(req, ("edit", dkey))">Sửa trạng thái và gửi lại</a>
+    }
     @if (!lead)
     {
         <a class="btn btn-primary btn-block" href="@Ui.To(req, "/Staff/Evening")">Tiếp: Báo cáo cuối ngày ›</a>

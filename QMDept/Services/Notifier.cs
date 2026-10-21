@@ -120,6 +120,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     /// <summary>NV gửi / gửi lại kế hoạch đầu ngày → Leader nhóm.</summary>
     public async Task PlanSubmittedAsync(int emp, DateOnly d)
     {
+        if ((await People()).Find(p => p.Id == emp)?.Role is Role.Manager or Role.Admin) return;   // TP / Quản trị tự duyệt, không ai cần duyệt
         // Leader nhóm tự gửi kế hoạch của mình → Trưởng phòng duyệt (yêu cầu 2026-10-16).
         if (await IsLeader(emp)) { await SendAsync(await Managers(), NotifyType.PlanSubmitted, $"{await Name(emp)} (Leader) báo trạng thái làm việc ngày {Fmt.Dm(d)}", "Trạng thái làm việc của Leader đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d)); return; }
         await SendAsync([await LeaderOf(emp)], NotifyType.PlanSubmitted, $"{await Name(emp)} gửi kế hoạch ngày {Fmt.Dm(d)}", "Kế hoạch đầu ngày đang chờ bạn duyệt.", Q("/Planning/Approvals?ap=pending", d));

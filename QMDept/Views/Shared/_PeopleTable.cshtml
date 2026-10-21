@@ -9,7 +9,7 @@
 {
     var plan = D.PlanOf(d, p.Id);
     var lv = D.OnLeave(d, p.Id);
-    if (p.Role == Role.Manager) return (9, plan, lv);
+    if (p.Role == Role.Manager && plan is null) return (9, plan, lv);   // TP có khai trạng thái làm việc thì hiện như người khác (tự được duyệt)
     var st = Dept.PlanSt(plan);
     if (plan is not null && st == PlanState.Approved) return (0, plan, lv);
     if (lv is not null) return (4, plan, lv);

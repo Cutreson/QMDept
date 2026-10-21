@@ -14,6 +14,9 @@ public partial class StaffController
 {
     // ======================= Báo cáo đầu ngày =======================
 
+    /// <summary>TP / Quản trị tự duyệt trạng thái làm việc của mình (không có cấp trên duyệt).</summary>
+    static bool SelfApproves(Person? p) => p is { Role: Role.Manager or Role.Admin };
+
     /// <summary>nvMorning. ?edit=yyyy-MM-dd (= ngày đang xem) → sửa kế hoạch đã gửi (S.editPlan).</summary>
     [HttpGet]
     public async Task<IActionResult> Morning()
@@ -22,7 +25,7 @@ public partial class StaffController
         var me = Scope.Me;
         var plan = me is null ? null : D.PlanOf(Date, me.Id);
         // artifact chỉ có nút "Sửa kế hoạch và gửi lại" khi kế hoạch CHƯA được duyệt → ?edit= bị bỏ qua khi đã duyệt.
-        var editing = plan is not null && Dept.PlanSt(plan) != PlanState.Approved && Request.Query["edit"] == Fmt.Key(Date);
+        var editing = plan is not null && (Dept.PlanSt(plan) != PlanState.Approved || SelfApproves(me)) && Request.Query["edit"] == Fmt.Key(Date);
         var showForm = plan is null || editing;
         // Dữ liệu vừa gửi bị lỗi kiểm tra (SubmitPlan) → điền lại form, không mất dữ liệu đã nhập.
         var draft = StaffReports.ReadDraft(TempData[StaffReports.DraftKey] as string, Date);
@@ -43,10 +46,10 @@ public partial class StaffController
     {
         try
         {
-            RequireSelfStaff(leaderOk: true);
+            RequireSelfStaff(leaderOk: true, managerOk: true);
             var me = Scope.Me!;
             var plan = await Db.DayPlans.Include(p => p.PlanTasks).FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == me.Id);
-            StaffReports.RequireEditable(plan);
+            if (!SelfApproves(me)) StaffReports.RequireEditable(plan);
             var status = StaffReports.ParseEnum<WorkStatus>(input.Status) ?? throw new BizException("Chọn trạng thái làm việc");
             var leave = LeaveRules.TypeOf(status) is LeaveType lt ? StaffReports.ReadLeave(lt, input) : null;
             var meal = StaffReports.ParseEnum<Meal>(input.Meal) ?? throw new BizException("Chọn báo cơm");
@@ -96,6 +99,8 @@ public partial class StaffController
             // artifact .set() thay cả bản ghi → mọi quyết định duyệt / góp ý cũ bị xóa
             plan.LeaderDecision = null; plan.LeaderBy = null; plan.LeaderAt = null; plan.LeaderNote = null;
             plan.ManagerDecision = null; plan.ManagerBy = null; plan.ManagerAt = null; plan.ManagerNote = null;
+            // TP / Quản trị không có người duyệt: trạng thái làm việc của chính mình tự được duyệt (vẫn sửa và gửi lại được) — yêu cầu 2026-10-21.
+            if (SelfApproves(me)) { plan.LeaderDecision = Decision.Ok; plan.LeaderBy = me.Name; plan.LeaderAt = VnTime.UtcNow; }
             // taskIds = picks
             var have = plan.PlanTasks.Select(x => x.WorkTaskId).ToHashSet();
             foreach (var x in plan.PlanTasks.Where(x => !picks.Contains(x.WorkTaskId)).ToList())
@@ -149,10 +154,10 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> AddUnplannedTask(TaskFieldsInput input) => await Do(async () =>
     {
-        RequireSelfStaff(leaderOk: true);
+        RequireSelfStaff(leaderOk: true, managerOk: true);
         // Nút "Thêm công việc ngoài kế hoạch" chỉ có trên form kế hoạch (chưa gửi / đang sửa, chưa được duyệt).
         var sent = await Db.DayPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == Scope.Me!.Id);
-        StaffReports.RequireEditable(sent);
+        if (!SelfApproves(Scope.Me)) StaffReports.RequireEditable(sent);
         await StaffReports.RequireActiveProjectAsync(Db, input.ProjectId);
         var (title, item) = await input.ResolveAsync(Db);
         StaffReports.Clip(title, 300);

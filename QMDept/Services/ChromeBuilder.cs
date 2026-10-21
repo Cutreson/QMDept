@@ -68,10 +68,11 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         [Role.Manager] =
         [
             new("overview", "Tổng quan", "grid", "/Manager/Overview", "Manager", "Overview"),
+            // Trạng thái làm việc của TP / Quản trị (yêu cầu 2026-10-21) — gộp luôn Đăng ký làm thêm (Của tôi / Duyệt Leader / Tổng hợp suất ăn); chế độ cá nhân ?as=mine
+            new("status", "Trạng thái làm việc", "sun", "/Staff/Morning", "Staff", "Morning"),
             new("approvals", "Phê duyệt", "check", "/Manager/Approvals", "Manager", "Approvals"),
             new("projects", "Dự án", "folder", "/Manager/Projects", "Manager", "Projects"),
             new("reports", "Báo cáo", "doc", "/Manager/Reports", "Manager", "Reports"),
-            new("overtime", "ĐK làm thêm tại CTy", "clock", "/Overtime", "Overtime", null),
             // Không có trong tab TP của artifact (TP quản lý tài khoản ở giao diện Leader) — xem ViewScope.
             new("people", "Nhân sự", "eye", "/Planning/People", "Planning", "People"),
         ],
@@ -111,11 +112,13 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var onPlanMonth = acc.Role == Role.Leader && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng của Leader thuộc tab "Tổng quan" (yêu cầu 2026-10-20; trước đó nằm ở "Kế hoạch & duyệt")
         var onOverviewMonth = acc.Role is Role.Manager or Role.Admin && away && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Month", StringComparison.OrdinalIgnoreCase);   // Kế hoạch tháng của phòng thuộc tab "Tổng quan" của TP
         var tabRole = away ? ScopeResolver.UiRoleOf(acc.Role) : scope.Role;
+        // TP / Quản trị: tab "Trạng thái làm việc" gồm cả Đăng ký làm thêm (/Overtime) — sáng ở cả hai trang (yêu cầu 2026-10-21)
+        var onMgrOvertime = tabRole == Role.Manager && !away && string.Equals(controller, "Overtime", StringComparison.OrdinalIgnoreCase);
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
         var tabs = defs.Any()
             ? defs.Select(t => new TabLink(t.Id, t.Label, t.Icon, WithQ(t.Path, t.Id == "status" ? "mine" : away ? "me" : null),
-                (t.Id == "overview" && (onOverviewMonth || onPlanMonth)) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
+                (t.Id == "overview" && (onOverviewMonth || onPlanMonth)) || (t.Id == "status" && onMgrOvertime) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
                 away ? 0 : Badge(t.Id))).ToList()
@@ -168,7 +171,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (scope.Role == Role.Manager && id == "approvals")
                 return d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
                     + d.Plans.Count(p => p.Date == date && d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count;
-            if (id == "overtime") return scope.Role == Role.Manager ? d.OtPending(date).Count(x => x.NeedsDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
+            if (id is "overtime" or "status") return scope.Role == Role.Manager ? d.OtPending(date).Count(x => x.NeedsDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
             if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
                 return d.ExtrasOn(date).Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
             return 0;
