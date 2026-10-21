@@ -91,6 +91,10 @@ public static class Ui
         return new HtmlString(sb.Append("</select>").ToString());
     }
 
+    /// <summary>Tùy chọn ô chọn dự án: "Mã · Tên" (có mã để phân biệt dự án trùng tên). Dùng với D.AllPj() — dự án đã hoàn thành cũng phải chọn / lọc được (yêu cầu 2026-10-21).</summary>
+    public static IEnumerable<(string Value, string Label)> PjOptions(IEnumerable<Project> ps) =>
+        ps.Select(p => (p.Id.ToString(), string.IsNullOrEmpty(p.Code) ? p.Name : p.Code + " · " + p.Name));
+
     /// <summary>Dòng "Leader dự án: …" dưới ô chọn dự án (id = <paramref name="forId"/>): site.js cập nhật theo dự án đang chọn (yêu cầu 2026-10-16).</summary>
     public static IHtmlContent ProjectLeadHint(Dept d, IEnumerable<Project> pjs, string forId, int? current)
     {

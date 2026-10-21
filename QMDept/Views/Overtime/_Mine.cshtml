@@ -127,8 +127,8 @@ else
             }
         </div>
         <label class="f" for="otOP">Dự án</label>
-        @Ui.Select("otP", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), D.MainProject(me.Id, d)?.ToString(), id: "otOP")
-        @Ui.ProjectLeadHint(D, D.ActivePj(), "otOP", D.MainProject(me.Id, d))
+        @Ui.Select("otP", Ui.PjOptions(D.AllPj()), D.MainProject(me.Id, d)?.ToString(), id: "otOP")
+        @Ui.ProjectLeadHint(D, D.AllPj(), "otOP", D.MainProject(me.Id, d))
         <label class="f" for="otOT">Tên công việc</label>
         <div class="row" style="gap:8px"><input class="in" id="otOT" maxlength="300" autocomplete="off" style="flex:1;min-width:0"><button type="button" class="btn" id="otAddOther" style="white-space:nowrap">＋ Thêm</button></div>
         <button class="btn btn-primary btn-block" style="margin-top:12px">@(x is not null ? "Lưu thay đổi" : "Gửi đăng ký")</button>

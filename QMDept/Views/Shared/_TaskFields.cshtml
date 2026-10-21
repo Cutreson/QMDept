@@ -9,8 +9,8 @@
 {
     <div class="grid2" style="margin-top:8px">
         <div><label class="f" for="@(px)P">Dự án</label>
-            @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: px + "P", extraAttrs: $"data-items-for=\"{px}I\" required")
-            @Ui.ProjectLeadHint(D, D.ActivePj(), px + "P", pid)</div>
+            @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pid?.ToString(), id: px + "P", extraAttrs: $"data-items-for=\"{px}I\" required")
+            @Ui.ProjectLeadHint(D, D.AllPj(), px + "P", pid)</div>
         <div><label class="f" for="@(px)I">Đầu mục kế hoạch</label>
             <select class="in" id="@(px)I" name="itemId"><option value="">— Việc khác (tự nhập) —</option>
                 @if (pid is int p0) { foreach (var i in D.ItemsOf(p0)) { <option value="@i.Id">@i.Title</option> } }
@@ -20,8 +20,8 @@
 else
 {
     <label class="f" for="@(px)P" style="margin-top:8px">Dự án</label>
-    @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: px + "P", extraAttrs: "required")
-    @Ui.ProjectLeadHint(D, D.ActivePj(), px + "P", pid)
+    @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pid?.ToString(), id: px + "P", extraAttrs: "required")
+    @Ui.ProjectLeadHint(D, D.AllPj(), px + "P", pid)
 }
 <label class="f" for="@(px)T">Nội dung công việc</label>
 <input class="in" id="@(px)T" name="title">

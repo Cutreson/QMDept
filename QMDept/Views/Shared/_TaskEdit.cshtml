@@ -27,7 +27,7 @@
         <input type="hidden" name="id" value="@t.Id">
         <h3>Sửa công việc</h3>
         <label class="f" for="etP@(t.Id)" style="margin-top:0">Dự án</label>
-        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), t.ProjectId.ToString(), id: "etP" + t.Id, extraAttrs: "required")
+        @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), t.ProjectId.ToString(), id: "etP" + t.Id, extraAttrs: "required")
         <label class="f" for="etT@(t.Id)">Nội dung công việc</label>
         <input class="in" id="etT@(t.Id)" name="title" maxlength="300" value="@t.Title" required>
         <div class="pick2 eq"><div><label class="f" for="etS@(t.Id)">Bắt đầu</label>@Ui.TimeSelect("start", t.Start, id: "etS" + t.Id)</div><div><label class="f" for="etE@(t.Id)">Kết thúc</label>@Ui.TimeSelect("end", t.End, end: true, id: "etE" + t.Id)</div></div>

@@ -18,7 +18,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     {
         var x = await db.Extras.FirstOrDefaultAsync(e => e.Id == extraId) ?? throw new BizException("Không tìm thấy phát sinh");
         if (x.TaskId is not null || x.Status != ExtraStatus.Pending) return;
-        if (!await db.Projects.AnyAsync(p => p.Id == x.ProjectId && !p.Closed)) throw new BizException("Dự án đã bàn giao, không duyệt phát sinh được");
+        if (!await db.Projects.AnyAsync(p => p.Id == x.ProjectId)) throw new BizException("Không tìm thấy dự án");
         await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
         // Giành quyền duyệt bằng một câu UPDATE có điều kiện: hai người duyệt cùng lúc chỉ một người tạo việc.
         var claimed = await db.Extras.Where(e => e.Id == extraId && e.Status == ExtraStatus.Pending && e.TaskId == null)
@@ -65,7 +65,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if ((desc?.Trim().Length ?? 0) > 2000) throw new BizException("Mô tả tối đa 2000 ký tự");
         if (start is not null && (!Fmt.IsHhmm(start) || start == "24:00")) throw new BizException("Giờ bắt đầu không hợp lệ");
         if (!string.IsNullOrEmpty(end) && (!Fmt.IsHhmm(end) || (start is not null && end.Le(start)))) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
-        if (!await db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Chọn dự án");
+        if (!await db.Projects.AnyAsync(p => p.Id == projectId)) throw new BizException("Chọn dự án");
         var x = new Extra
         {
             Date = date, EmployeeId = employeeId, ProjectId = projectId, Title = title, Description = desc?.Trim(),
@@ -96,7 +96,6 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (t0.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không giao thêm việc được");
         // Vai trò do dự án quyết định: Leader dự án đã chọn = Leader dự án, những người còn lại = hỗ trợ (yêu cầu 2026-10-14).
         var leadId = await db.Assignments.AsNoTracking().Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead)
             .Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
@@ -135,7 +134,6 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             ?? throw new BizException("Không tìm thấy nhân viên");
         if (me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm nên chưa có Leader duyệt đề xuất");
         var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không đề xuất thêm việc được");
         var item = itemId is int iid ? await db.PlanItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
         var t0 = string.IsNullOrWhiteSpace(title) ? item?.Title : title.Trim();
         if (string.IsNullOrEmpty(t0)) throw new BizException("Nhập nội dung công việc hoặc chọn đầu mục");
@@ -308,7 +306,6 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (tt.Length > 300) throw new BizException("Nội dung công việc tối đa 300 ký tự");
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (pj.Closed && projectId != t.ProjectId) throw new BizException("Dự án đã bàn giao, không chuyển việc sang được");
         if (projectId != t.ProjectId)
         {
             t.ProjectId = projectId; t.PlanItemId = null;   // đầu mục thuộc dự án cũ

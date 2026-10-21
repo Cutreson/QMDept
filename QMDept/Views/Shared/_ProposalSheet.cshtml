@@ -29,7 +29,7 @@
         <div data-work-block>
         <h4 class="f" data-work-title hidden style="margin:14px 0 0">Công việc làm trong thời gian còn lại</h4>
         <label class="f" for="@(id)P">Dự án</label>
-        @Ui.Select("projectId", Model.Projects.Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(),
+        @Ui.Select("projectId", Ui.PjOptions(Model.Projects), pid?.ToString(),
             id: id + "P")
         @Ui.ProjectLeadHint(D, Model.Projects, id + "P", pid)
         <label class="f" for="@(id)T">Nội dung công việc</label>

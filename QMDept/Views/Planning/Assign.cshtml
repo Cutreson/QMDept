@@ -14,7 +14,7 @@
 @{
     var teamProjects = D.TeamProjects();
     var mine = D.Assigns.Where(a => D.InScope(a.EmployeeId) && D.P(a.EmployeeId) is { Role: Role.Staff, IsDeleted: false } && D.PJ(a.ProjectId) is { Closed: false }).ToList();
-    var pjs = D.ActivePj();
+    var pjs = D.AllPj();
     var pj0 = pjs.FirstOrDefault()?.Id;
 }
 @* assignForm *@
@@ -25,7 +25,7 @@
             @Ui.Select("emp", list.Select(p => (p.Id.ToString(), p.Name + (p.Level is Level level ? " · " + Labels.Of(level) : ""))), null, placeholder: "Chọn nhân viên", id: "asgW")</div>
         <div><label class="f" for="asgD" style="margin-top:0">Ngày làm</label>@Ui.DateInput("date", Scope.Date, "asgD")</div>
         <div><label class="f" for="asgP">Dự án</label>
-            @Ui.Select("projectId", pjs.Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "asgP")
+            @Ui.Select("projectId", Ui.PjOptions(pjs), pj0?.ToString(), id: "asgP")
             @Ui.ProjectLeadHint(D, pjs, "asgP", pj0)</div></div>
     <label class="f" for="asgT">Nội dung công việc phát sinh</label><input class="in" id="asgT" name="title" maxlength="300">
     <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "asgE")</div></div>

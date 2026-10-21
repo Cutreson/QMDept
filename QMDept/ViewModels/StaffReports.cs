@@ -151,7 +151,7 @@ public static class StaffReports
     /// <summary>Dự án phải đang triển khai (select của artifact chỉ liệt kê activePj()).</summary>
     public static async Task RequireActiveProjectAsync(AppDbContext db, int projectId)
     {
-        if (!await db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Chọn dự án");
+        if (!await db.Projects.AnyAsync(p => p.Id == projectId)) throw new BizException("Chọn dự án");
     }
 
     /// <summary>Địa điểm + khách hàng công tác từ các dự án của việc đã chọn (không trùng, cắt cho vừa cột; rỗng → null).</summary>

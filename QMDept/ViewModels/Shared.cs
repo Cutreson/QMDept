@@ -42,7 +42,6 @@ public sealed class TaskFieldsInput
     public async Task<(string Title, PlanItem? Item)> ResolveAsync(AppDbContext db)
     {
         var pj = await db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == ProjectId) ?? throw new BizException("Chọn dự án");
-        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không thêm việc được");
         var item = ItemId is int iid ? await db.PlanItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == ProjectId) : null;
         var title = string.IsNullOrWhiteSpace(Title) ? item?.Title ?? "" : Title.Trim();
         if (title.Length == 0) throw new BizException("Nhập nội dung hoặc chọn đầu mục");

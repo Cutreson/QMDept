@@ -85,7 +85,7 @@ public partial class LeaderController : AppController
         RequireViewedLeader();
         await D.EnsureAsync(Date, Date);
         if (input.EmployeeId is not int emp || !D.Staff().Any(p => p.Id == emp)) throw new BizException("Chọn nhân viên thực hiện");
-        if (D.PJ(input.ProjectId) is not { Closed: false }) throw new BizException("Chọn dự án");
+        if (D.PJ(input.ProjectId) is null) throw new BizException("Chọn dự án");
         if ((input.Title ?? "").Trim().Length > 300) throw new BizException("Tên công việc phát sinh tối đa 300 ký tự");
         if ((input.Desc ?? "").Trim().Length > LeaderUi.NoteMax) throw new BizException($"Mô tả / lý do tối đa {LeaderUi.NoteMax} ký tự");
         await Flow.CreateExtraAsync(Date, emp, input.ProjectId, input.Title ?? "", input.Desc,
@@ -127,7 +127,7 @@ public partial class LeaderController : AppController
     {
         RequireLead();
         if (Fmt.ParseKey(date) is not DateOnly d) throw new BizException("Ngày không hợp lệ");
-        if (!await Db.Projects.AnyAsync(p => p.Id == projectId && !p.Closed)) throw new BizException("Không tìm thấy dự án đang triển khai");
+        if (!await Db.Projects.AnyAsync(p => p.Id == projectId)) throw new BizException("Không tìm thấy dự án");
         // Math.max(0, Math.round(+value || 0))
         var v = double.TryParse(need, NumberStyles.Float, CultureInfo.InvariantCulture, out var x) && double.IsFinite(x) ? x : 0;
         var n = (int)Math.Clamp(Math.Floor(v + 0.5), 0, int.MaxValue);

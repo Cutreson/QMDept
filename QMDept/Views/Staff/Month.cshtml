@@ -76,7 +76,7 @@ else
             @* calAssignForm(d, ''): Giao thêm việc ngay trên lịch (form .ro-ok: dùng được ở chế độ xem) *@
             var pj0 = StaffCalendar.DefaultProject(D, sel);
             // Leader dự án của từng dự án: chọn dự án → nhãn vai trò tự đổi (khóa), ô tích để trắng (data-leads + site.js).
-            var leadMap = D.ActivePj().Select(x => (x.Id, Lead: D.ProjectLead(x.Id)?.Id)).Where(x => x.Lead is not null).ToDictionary(x => x.Id.ToString(), x => x.Lead!.Value);
+            var leadMap = D.AllPj().Select(x => (x.Id, Lead: D.ProjectLead(x.Id)?.Id)).Where(x => x.Lead is not null).ToDictionary(x => x.Id.ToString(), x => x.Lead!.Value);
             var leadDefault = pj0 is int pl ? D.ProjectLead(pl)?.Id : null;
             // Form ẩn: chỉ mở bảng trượt khi bấm nút (yêu cầu 2026-10-16), giống "Đề xuất công việc" của NV.
             <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" class="btn btn-sm ro-ok" data-sheet="calAssignTpl">＋ Giao thêm việc</button></div>
@@ -87,8 +87,8 @@ else
                 <h3>Giao thêm việc</h3>
                 <p class="note" style="margin:0 0 8px">@Fmt.WD[Fmt.Wday(sel)] @Fmt.Dm(sel)</p>
                 <label class="f" for="calP" style="margin-top:0">Dự án</label>
-                @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
-                @Ui.ProjectLeadHint(D, D.ActivePj(), "calP", pj0)
+                @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
+                @Ui.ProjectLeadHint(D, D.AllPj(), "calP", pj0)
                 <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
                 <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "calE")</div></div>
                 <label class="f">Người tham gia</label>
@@ -165,8 +165,8 @@ else
                     <div data-work-block>
                     <h4 class="f" data-work-title hidden style="margin:14px 0 0">Công việc làm trong thời gian còn lại</h4>
                     <label class="f" for="ownP" style="margin-top:0">Dự án</label>
-                    @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), StaffCalendar.DefaultProject(D, sel)?.ToString(), id: "ownP")
-                    @Ui.ProjectLeadHint(D, D.ActivePj(), "ownP", StaffCalendar.DefaultProject(D, sel))
+                    @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), StaffCalendar.DefaultProject(D, sel)?.ToString(), id: "ownP")
+                    @Ui.ProjectLeadHint(D, D.AllPj(), "ownP", StaffCalendar.DefaultProject(D, sel))
                     <label class="f" for="ownT">Nội dung công việc</label><input class="in" id="ownT" name="title" maxlength="300">
                     <div class="pick2 eq"><div><label class="f" for="ownS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "ownS")</div><div><label class="f" for="ownE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "ownE")</div></div>
                     </div>

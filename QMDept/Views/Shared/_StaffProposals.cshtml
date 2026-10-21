@@ -9,7 +9,7 @@
 @if (me.Role == Role.Staff && !Scope.IsViewingOther)
 {
             @* Đề xuất lịch (yêu cầu 2026-10-15): thêm công việc của mình / người hỗ trợ cho dự án mình là Leader dự án — Leader nhóm duyệt mới ghi vào lịch *@
-            var ledPj = D.Assigns.Where(a => a.EmployeeId == me.Id && a.Role == ProjectRole.Lead).Select(a => D.PJ(a.ProjectId)).OfType<Project>().Where(x => !x.Closed).ToList();
+            var ledPj = D.Assigns.Where(a => a.EmployeeId == me.Id && a.Role == ProjectRole.Lead).Select(a => D.PJ(a.ProjectId)).OfType<Project>().ToList();
             var action = Ui.To(req, "/Staff/ProposeCalendar", ("d", Fmt.Key(sel)));
             @* Đề xuất công việc / xin nghỉ gộp MỘT sheet (yêu cầu 2026-10-20): ô "Loại đề xuất"; xin nghỉ bắt buộc nêu lý do, nghỉ nửa ngày / vài giờ thì hiện thêm phần nội dung công việc; Leader nhóm duyệt mới ghi vào lịch *@
             var canWork = me.LeaderId is not null && ledPj.Count > 0;

@@ -55,9 +55,6 @@ public partial class StaffController
             if (Scope.IsManager && Request.Form["emp"].Any(s => int.TryParse(s, out var i) && Scope.TeamPeople.Any(p => p.Id == i && p.Role == Role.Staff)))
                 throw new BizException("Trưởng phòng chỉ giao việc cho Leader — Leader giao tiếp cho nhân viên, không giao vượt cấp");
             var people = StaffCalendar.ReadPeople(Request.Form, pool);
-            // Form chỉ liệt kê activePj(): không nhận dự án đã đóng (vd. đã bàn giao sau khi trang được tải).
-            if (people.Count > 0 && await Db.Projects.AnyAsync(p => p.Id == projectId && p.Closed))
-                throw new BizException("Dự án đã bàn giao, không giao thêm việc được");
             var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName);
             Toast($"Đã giao việc cho {n} người ngày {Fmt.Dm(Date)}");
         });

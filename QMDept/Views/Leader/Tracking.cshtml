@@ -23,9 +23,9 @@
         }
         <label class="row" style="margin-bottom:12px"><span class="note" style="white-space:nowrap">Dự án:</span><select class="in" name="pj" data-autosubmit data-combo>
             <option value="">Tất cả</option>
-            @foreach (var p in D.ActivePj())
+            @foreach (var p in D.AllPj())
             {
-                <option value="@p.Id" selected="@(pf == p.Id)">@p.Name</option>
+                <option value="@p.Id" selected="@(pf == p.Id)">@(string.IsNullOrEmpty(p.Code) ? p.Name : p.Code + " · " + p.Name)</option>
             }
         </select></label>
     </form>

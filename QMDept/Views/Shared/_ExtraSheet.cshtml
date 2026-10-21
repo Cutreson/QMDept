@@ -19,8 +19,8 @@
             @Ui.Select("employeeId", staff.Select(p => (p.Id.ToString(), p.Name)), emp?.ToString(), id: "xE")
         }
         <label class="f" for="xP">Dự án</label>
-        @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), pid?.ToString(), id: "xP")
-        @Ui.ProjectLeadHint(D, D.ActivePj(), "xP", pid)
+        @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pid?.ToString(), id: "xP")
+        @Ui.ProjectLeadHint(D, D.AllPj(), "xP", pid)
         <label class="f" for="xT">Tên công việc phát sinh</label>
         <input class="in" id="xT" name="title" required>
         <label class="f" for="xD">Mô tả / lý do</label>

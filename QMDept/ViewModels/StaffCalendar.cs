@@ -88,7 +88,7 @@ public static class StaffCalendar
     /// </summary>
     public static int? DefaultProject(Dept d, DateOnly date)
     {
-        var active = d.ActivePj();
+        var active = d.AllPj();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
         var top = d.TasksOn(date).GroupBy(t => t.ProjectId).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key;
         return top is int p && active.Any(x => x.Id == p) ? p : active.FirstOrDefault()?.Id;
     }

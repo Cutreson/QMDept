@@ -352,7 +352,7 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader dự án";
         // Chỉ Leader chọn Leader dự án (TP / Quản trị chỉ chọn Leader phụ trách dự án). Leader thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách.
-        var projects = D.ActivePj().Where(p => p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId).ToList();
+        var projects = D.AllPj().Where(p => p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId).ToList();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
         // Chia 2 mục: đã có Leader dự án (f=has) / chưa chọn Leader dự án (f=none); mặc định mục đầu có dự án (đã có → chưa chọn).
         var has = projects.Where(p => D.ProjectLead(p.Id) is not null).ToList();
         var none = projects.Where(p => D.ProjectLead(p.Id) is null).ToList();
@@ -367,7 +367,6 @@ public partial class PlanningController
         RequireLead();
         await D.EnsureAsync(Date, Date);
         var pj = await Db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (pj.Closed) throw new BizException("Dự án đã bàn giao, không đổi Leader dự án được");
         if (pj.OwnerLeaderId is int ow && ow != Scope.MeId) throw new BizException("Dự án này do Leader nhóm khác phụ trách");
         var olds = await Db.Assignments.Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead).ToListAsync();
         if (emp is int e)
