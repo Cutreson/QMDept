@@ -13,7 +13,7 @@
 <div class="org-card @(p.Role == Role.Manager ? "mgr" : p.Role == Role.Leader ? "ldr" : "stf")@(ownTeam || (Scope.Role == Role.Leader && p.Id == Scope.MeId) ? " mine" : "")" data-emp="@p.Id" draggable="@(canMove ? "true" : null)">
     <div class="org-id">@Ui.Av(p.Name, p.Role == Role.Manager)
         <div>
-            <div class="t">@if (p.Role == Role.Staff && (isManager || ownTeam)) { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a> } else { @p.Name }</div>
+            <div class="t">@if (p.Role == Role.Staff && (isManager || ownTeam)) { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)">@p.Name</a> } else { @p.Name }@if (p.HrDuty) { <text> </text><span class="pill p-info">Phụ trách nhân sự</span> }</div>
             <div class="s"><span class="mono">@(string.IsNullOrEmpty(p.Code) ? "chưa có mã" : p.Code)</span> @(p.Role == Role.Manager ? Ui.Pill("Trưởng phòng", "p-mgr") : Ui.LevelPill(p))@(isManager && !string.IsNullOrEmpty(p.Code) && p.PasswordHash is null ? " · chưa đặt mật khẩu" : "")</div>
         </div>
     </div>

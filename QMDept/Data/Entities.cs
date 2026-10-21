@@ -22,6 +22,7 @@ public class Person
     [MaxLength(200)] public string? PasswordHash { get; set; }      // null = chưa đặt mật khẩu (đặt ở lần đăng nhập đầu)
     [MaxLength(40)] public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N"); // đổi khi reset mật khẩu / đổi vai trò → cookie cũ mất hiệu lực
     public bool IsDeleted { get; set; }                              // xóa mềm: lịch sử công việc vẫn giữ
+    public bool HrDuty { get; set; }                                 // Leader được giao quản lý nhân sự / báo cơm / báo làm thêm tại công ty của cả phòng (yêu cầu 2026-10-21)
     public DateTime CreatedAt { get; set; }
 
     public ICollection<Person> Members { get; set; } = new List<Person>();

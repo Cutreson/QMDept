@@ -45,9 +45,9 @@ public class OvertimeController : AppController
         if (t == "summary")
         {
             // otSummary: mọi đăng ký chưa bị từ chối; giao diện Leader: không gồm TP và chỉ trong phạm vi nhóm.
-            var all = D.Ots.Where(x => x.Date == d && x.Status != OtStatus.Rejected && (role == Role.Manager || (x.Role != Role.Manager && D.InScope(x.PersonId))))
+            var all = D.Ots.Where(x => x.Date == d && x.Status != OtStatus.Rejected && (role == Role.Manager || Scope.Account.HrDuty || (x.Role != Role.Manager && D.InScope(x.PersonId))))
                 .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
-            var send = role == Role.Manager ? await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(s => s.Date == d) : null;
+            var send = role == Role.Manager || Scope.Account.HrDuty ? await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(s => s.Date == d) : null;
             return View(new OvertimeVm { Tab = t, Pending = pending, Summary = all, Send = send });
         }
 
@@ -355,7 +355,8 @@ public class OvertimeController : AppController
     public async Task<IActionResult> SendMealOrder() =>
         await Do(async () =>
         {
-            RequireManager();
+            // TP / Quản trị, hoặc Leader được giao quản lý nhân sự / báo cơm (HrDuty — yêu cầu 2026-10-21)
+            if (!Scope.IsManager && !(Scope.Account.HrDuty && Scope.Account.Role == Role.Leader)) throw new BizException("Chỉ Trưởng phòng hoặc Leader phụ trách báo cơm được gửi");
             var d = Date;
             var all = await Db.Overtimes.AsNoTracking().Where(o => o.Date == d && o.Status != OtStatus.Rejected).ToListAsync();
             var s = await Db.MealOrders.FirstOrDefaultAsync(o => o.Date == d);

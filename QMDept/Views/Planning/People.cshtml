@@ -103,6 +103,7 @@ else
                     }
                 </select></div></div>
             <label class="row" style="margin-top:12px;font-size:13px"><input type="checkbox" id="epP" name="resetPassword" value="true"> Đặt lại mật khẩu (người này đặt mật khẩu mới ở lần đăng nhập tới)</label>
+            <label class="row" style="margin-top:8px;font-size:13px"><input type="checkbox" name="hrDuty" value="true" checked="@p.HrDuty"> Phụ trách nhân sự, báo cơm, làm thêm tại công ty (với Leader)</label>
             @if (!self)
             {
                 <button type="submit" class="link" form="epDel@(p.Id)" style="color:var(--bad);margin-top:12px">Xóa tài khoản này</button>

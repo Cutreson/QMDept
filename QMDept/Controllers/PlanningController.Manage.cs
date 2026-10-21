@@ -272,7 +272,7 @@ public partial class PlanningController
 
     /// <summary>POST openPerson (chỉ TP): sửa họ tên, mã, vai trò, nhóm, cấp bậc; đặt lại mật khẩu.</summary>
     [HttpPost]
-    public Task<IActionResult> EditAccount(int id, string? name, string? code, string? role, int? leaderId, string? level, bool resetPassword) => Do(async () =>
+    public Task<IActionResult> EditAccount(int id, string? name, string? code, string? role, int? leaderId, string? level, bool resetPassword, bool hrDuty = false) => Do(async () =>
     {
         RequireManager();
         var p = await Db.People.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted && x.Role != Role.Admin) ?? throw new BizException("Không tìm thấy tài khoản");
@@ -300,6 +300,7 @@ public partial class PlanningController
         if (resetPassword || codeChanged) AccountRules.SetPassword(p, AccountRules.DefaultPassword, Hasher); // về mật khẩu mặc định
         if (resetPassword || codeChanged || roleChanged) p.SecurityStamp = AccountRules.NewStamp();
         p.Name = n; p.Code = c; p.Role = r; p.LeaderId = lid; p.Level = lvl;
+        p.HrDuty = r == Role.Leader && hrDuty;   // chỉ Leader: được giao quản lý nhân sự / báo cơm / báo làm thêm của cả phòng
         // Leader đổi sang vai trò khác → NV trong nhóm thành "Chưa xếp nhóm" (như AdminController.Edit).
         if (wasLeader && r != Role.Leader) await AccountRules.ClearTeamAsync(Db, id);
         try { await Db.SaveChangesAsync(); }

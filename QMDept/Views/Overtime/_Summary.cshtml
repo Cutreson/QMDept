@@ -65,7 +65,7 @@
         <p class="note">Chưa có đăng ký làm thêm ngày này.</p>
     }
 </section>
-@if (Scope.Role == Role.Manager)
+@if (Scope.Role == Role.Manager || Scope.Account.HrDuty)
 {
     var s = Model.Send;
     <section class="card sec">
