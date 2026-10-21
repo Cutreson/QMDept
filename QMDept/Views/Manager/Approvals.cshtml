@@ -5,12 +5,7 @@
     var req = Context.Request;
 }
 @Ui.Head(2, "Chi tiết & phê duyệt")
-@Ui.Seg(new[]
-{
-    (Ui.Here(req, ("mode", "plan")), "Hỗ trợ nhân sự", Model.Mode == "plan", Model.PendingManager),
-    (Ui.Here(req, ("mode", "extra")), "Phát sinh", Model.Mode == "extra", 0),
-    (Ui.Here(req, ("mode", "leader")), "Của Leader", Model.Mode == "leader", Model.PendingLeader),
-})
+<partial name="_MgrApprovalTabs" model="@Model.Mode" />
 @* Mục nhỏ bấm chọn: Chờ duyệt → Đã duyệt → Từ chối (thay ô chọn Trạng thái; yêu cầu 2026-10-20) *@
 @Ui.Seg(new[]
 {

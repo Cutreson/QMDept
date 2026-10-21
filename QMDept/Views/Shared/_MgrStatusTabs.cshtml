@@ -1,14 +1,11 @@
 @model string
-@* TP / Quản trị: tab "Trạng thái làm việc" gồm Trạng thái làm việc + Đăng ký làm thêm (Của tôi / Duyệt Leader / Tổng hợp suất ăn) — yêu cầu 2026-10-21.
-   Model = mục đang mở: status | mine | approve | summary. *@
+@* TP / Quản trị: tab "Trạng thái làm việc" chỉ gồm phần của chính mình — Trạng thái làm việc | ĐK làm thêm tại CTy (yêu cầu 2026-10-21).
+   Phần phê duyệt làm thêm của Leader + tổng hợp suất ăn nằm ở tab Phê duyệt (_MgrApprovalTabs). Model = mục đang mở: status | ot. *@
 @{
     var req = Context.Request;
-    var pend = D.OtPending(Scope.Date).Count(x => x.NeedsDecision);
 }
 @Ui.Subtabs(new List<(string Href, string Label, bool Active)>
 {
     (Ui.To(req, "/Staff/Morning", ("as", "mine"), ("edit", null)), "Trạng thái làm việc", Model == "status"),
-    (Ui.To(req, "/Overtime", ("tab", "mine"), ("edit", null), ("as", null)), "Đăng ký làm thêm", Model == "mine"),
-    (Ui.To(req, "/Overtime", ("tab", "approve"), ("edit", null), ("as", null)), "Duyệt làm thêm của Leader" + (pend > 0 ? $" ({pend})" : ""), Model == "approve"),
-    (Ui.To(req, "/Overtime", ("tab", "summary"), ("edit", null), ("as", null)), "Tổng hợp suất ăn", Model == "summary"),
+    (Ui.To(req, "/Overtime", ("tab", "mine"), ("edit", null), ("as", null)), "ĐK làm thêm tại CTy", Model == "ot"),
 })

@@ -5,13 +5,28 @@
     var req = Context.Request;
     var d = Scope.Date;
 }
-@Ui.Head(0, "Đăng ký làm thêm tại công ty")
-@if (Scope.Role == Role.Manager)
+@{ var mgrApprove = Scope.Role == Role.Manager && Model.Tab is "approve" or "summary"; }
+@if (mgrApprove)
 {
-    <partial name="_MgrStatusTabs" model="@Model.Tab" />
+    @* TP / Quản trị: duyệt làm thêm của Leader + tổng hợp suất ăn thuộc tab Phê duyệt (yêu cầu 2026-10-21) *@
+    @Ui.Head(2, "Chi tiết & phê duyệt")
+    <partial name="_MgrApprovalTabs" model="@("ot")" />
+    @Ui.Subtabs(new List<(string Href, string Label, bool Active)>
+    {
+        (Ui.Here(req, ("tab", "approve"), ("edit", null)), "Duyệt đăng ký làm thêm của Leader" + (Model.Pending > 0 ? $" ({Model.Pending})" : ""), Model.Tab == "approve"),
+        (Ui.Here(req, ("tab", "summary"), ("edit", null)), "Tổng hợp suất ăn", Model.Tab == "summary"),
+    })
+}
+else
+{
+    @Ui.Head(0, "Đăng ký làm thêm tại công ty")
+    @if (Scope.Role == Role.Manager)
+    {
+        <partial name="_MgrStatusTabs" model="@("ot")" />
+    }
 }
 <partial name="_DayBar" />
-@OvertimeUi.Deadline(d)
+@if (!mgrApprove) { @OvertimeUi.Deadline(d) }
 @if (Scope.Role != Role.Staff && Scope.Role != Role.Manager)
 {
     // Leader: duyệt đăng ký làm thêm của NV nằm ở Kế hoạch & duyệt → Kế hoạch đề xuất (yêu cầu 2026-10-19); chỉ TP còn tab "Duyệt Leader".

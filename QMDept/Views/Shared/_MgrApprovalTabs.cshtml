@@ -1,0 +1,22 @@
+@model string
+@* TP / Quản trị: các mục lớn của tab Phê duyệt (yêu cầu 2026-10-21 thêm "Làm thêm tại CTy": duyệt đăng ký làm thêm của Leader + tổng hợp suất ăn).
+   Model = mục đang mở: plan | extra | leader | ot. Số chờ duyệt tính tại chỗ để dùng được ở cả /Manager/Approvals và /Overtime. *@
+@{
+    var req = Context.Request;
+    var date = Scope.Date;
+    bool IsLeaderPerson(int emp) => D.P(emp) is { Role: Role.Leader };
+    var pendManager = D.Plans.Count(p => p.Date == date && !IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.PendingManager);
+    var pendLeader = D.Plans.Count(p => p.Date == date && IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.Pending) + D.LeaderLeaves().Count;
+    var pendOt = D.OtPending(date).Count(x => x.NeedsDecision);
+}
+@{
+    var onAppr = req.Path.StartsWithSegments("/Manager");   // ở trang Phê duyệt giữ bộ lọc Chờ duyệt / Đã duyệt / Từ chối khi đổi mục
+    string M(string m) => onAppr ? Ui.Here(req, ("mode", m)) : Ui.To(req, "/Manager/Approvals", ("mode", m));
+}
+@Ui.Seg(new[]
+{
+    (M("plan"), "Hỗ trợ nhân sự", Model == "plan", pendManager),
+    (M("extra"), "Phát sinh", Model == "extra", 0),
+    (M("leader"), "Của Leader", Model == "leader", pendLeader),
+    (Ui.To(req, "/Overtime", ("tab", "approve")), "Làm thêm tại CTy", Model == "ot", pendOt),
+})
