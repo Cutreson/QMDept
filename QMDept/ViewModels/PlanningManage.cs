@@ -62,6 +62,16 @@ public sealed class PlanningAssignVm
 /// <summary>Tiện ích dùng chung cho PlanningController.Manage.cs và các view của nó.</summary>
 public static class PlanningManage
 {
+    /// <summary>Chuỗi tìm kiếm của dự án (không dấu, chữ thường): tên + mã + khách hàng + địa điểm + Leader phụ trách.</summary>
+    public static string SearchKey(Project p, string? leader) => Norm(string.Join(" ", new[] { p.Name, p.Code, p.Factory, p.Location, leader }.Where(s => !string.IsNullOrWhiteSpace(s))));
+
+    /// <summary>Bỏ dấu tiếng Việt + chữ thường (khớp với hàm norm() trong trang).</summary>
+    public static string Norm(string s)
+    {
+        var d = (s ?? "").Normalize(System.Text.NormalizationForm.FormD).Replace("đ", "d").Replace("Đ", "D");
+        return new string(d.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray()).ToLowerInvariant();
+    }
+
     /// <summary>Trạng thái chọn được cho đầu mục (TS bỏ "Chậm").</summary>
     public static readonly TaskState[] ItemStates = [TaskState.NotStarted, TaskState.InProgress, TaskState.Done];
     /// <summary>Trạng thái ghi đè của dự án (projForm).</summary>
@@ -139,6 +149,8 @@ public sealed class PlanningOwnersVm
     public int Total { get; init; }
     public int Unassigned { get; init; }
     public int Assigned => Total - Unassigned;
+    /// <summary>Mọi dự án (cả đã hoàn thành) — cho ô tìm kiếm: kiểm tra dự án đã có trên hệ thống chưa và Leader nào phụ trách (yêu cầu 2026-10-21).</summary>
+    public List<Project> AllProjects { get; init; } = [];
     /// <summary>Thống kê tổng quan: từng Leader đang phụ trách những dự án nào (yêu cầu 2026-10-20).</summary>
     public required List<(Person Leader, List<Project> Projects)> Stats { get; init; }
 }

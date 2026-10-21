@@ -30,6 +30,18 @@
         </tr>
     </tbody></table></div>
 </section>
+@* Ô tìm dự án: gõ chữ (không cần dấu) → hiện ngay các dự án khớp (tên, mã, khách hàng, địa điểm, Leader) kèm Leader phụ trách; tìm trong MỌI dự án kể cả đã hoàn thành.
+   Không khớp = dự án chưa có trên hệ thống. Khi đang gõ thì ẩn danh sách theo mục (yêu cầu 2026-10-21). *@
+<div style="margin:6px 0 10px">
+    <input class="in" type="search" id="pjSearch" autocomplete="off" aria-label="Tìm dự án" list="pjNames">
+    <datalist id="pjNames">@foreach (var p in Model.AllProjects) { <option value="@p.Name"></option> }</datalist>
+    <p class="note" id="pjCount" style="margin:4px 0 0" hidden></p>
+</div>
+<div id="pjResults" hidden>
+    @foreach (var p in Model.AllProjects) { <partial name="_OwnerCard" model="@((p, "pa", Model.Leaders))" /> }
+    <div class="empty" id="pjNone" hidden>Chưa có dự án nào khớp trên hệ thống.</div>
+</div>
+<div id="pjList">
 @Ui.Seg(new[]
 {
     (Ui.Here(req, ("f", "has")), $"Đã có Leader ({Model.Assigned})", has, 0),
@@ -38,26 +50,34 @@
 @if (Model.Projects.Count == 0)
 {
     <div class="empty">@(has ? "Chưa có dự án nào được giao cho Leader." : "Mọi dự án đã có Leader phụ trách.")</div>
-    return;
 }
 @foreach (var p in Model.Projects)
 {
-    var owner = p.OwnerLeaderId is int oid ? D.P(oid) : null;
-    <form class="card sec" method="post" action="/Planning/SetProjectOwner" asp-antiforgery="true">
-        @Ui.ReturnField(req)
-        <input type="hidden" name="projectId" value="@p.Id">
-        <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b><div class="note">@Dept.SubLine(p)</div></div>
-            <span class="note" style="margin-left:auto">@(owner is null ? "Chưa có Leader phụ trách" : "Leader phụ trách: " + owner.Name)</span></div>
-        <label class="f" for="po@(p.Id)">Leader phụ trách</label>
-        <div class="row" style="gap:8px">
-            <select class="in" id="po@(p.Id)" name="leaderId" style="flex:1;min-width:0">
-                <option value="" selected="@(owner is null)">— Chưa chọn —</option>
-                @foreach (var l in Model.Leaders)
-                {
-                    <option value="@l.Id" selected="@(owner?.Id == l.Id)">@l.Name · nhóm @D.Team(l.Id).Count người</option>
-                }
-            </select>
-            <button class="btn btn-primary">Lưu</button>
-        </div>
-    </form>
+    <partial name="_OwnerCard" model="@((p, "po", Model.Leaders))" />
+}
+</div>
+@section Scripts {
+    <script>
+    (function () {
+        var q = document.getElementById('pjSearch'), res = document.getElementById('pjResults'), list = document.getElementById('pjList'),
+            none = document.getElementById('pjNone'), cnt = document.getElementById('pjCount');
+        if (!q) return;
+        var cards = [].slice.call(res.querySelectorAll('[data-pj-key]'));
+        // bỏ dấu tiếng Việt + chữ thường (khớp PlanningManage.Norm)
+        function norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase(); }
+        function run() {
+            var t = norm(q.value).trim();
+            if (!t) { res.hidden = true; cnt.hidden = true; list.hidden = false; return; }
+            var words = t.split(/\s+/), n = 0;
+            cards.forEach(function (c) {
+                var k = c.getAttribute('data-pj-key'), ok = words.every(function (w) { return k.indexOf(w) >= 0; });
+                c.hidden = !ok; if (ok) n++;
+            });
+            none.hidden = n > 0; res.hidden = false; list.hidden = true; cnt.hidden = false;
+            cnt.textContent = n > 0 ? 'Tìm thấy ' + n + ' dự án' : 'Không tìm thấy — dự án này chưa có trên hệ thống';
+        }
+        q.addEventListener('input', run);
+        run();
+    })();
+    </script>
 }

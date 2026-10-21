@@ -32,7 +32,7 @@ public class Project
 {
     public int Id { get; set; }
     [MaxLength(200)] public string Name { get; set; } = "";
-    [MaxLength(200)] public string? Factory { get; set; }           // Nhà máy (= khách hàng)
+    [MaxLength(200)] public string? Factory { get; set; }           // Khách hàng
     [MaxLength(200)] public string? Location { get; set; }
     [MaxLength(300)] public string? CustomerAddress { get; set; }      // Địa chỉ khách hàng (trụ sở); Location = địa chỉ site
     // --- Thông tin nạp từ file "thông tin DA.xlsx" (2026-10-16) ---

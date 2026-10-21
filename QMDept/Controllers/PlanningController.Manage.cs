@@ -88,7 +88,7 @@ public partial class PlanningController
         {
             RequireLead();
             var n = PlanningManage.Text(name, 200, "Tên dự án") ?? throw new BizException("Nhập tên dự án");
-            var fa = PlanningManage.Text(factory, 200, "Nhà máy");
+            var fa = PlanningManage.Text(factory, 200, "Khách hàng");
             var lo = PlanningManage.Text(location, 200, "Địa điểm");
             var ca = PlanningManage.Text(customerAddress, 300, "Địa chỉ khách hàng");
             var cd = PlanningManage.Text(code, 80, "Mã dự án");
@@ -97,12 +97,15 @@ public partial class PlanningController
             var e = PlanningManage.Date(end);
             if (s is DateOnly s0 && e is DateOnly e0 && e0 < s0) throw new BizException("Ngày kết thúc phải sau ngày bắt đầu");
             var ov = PlanningManage.ParseEnum(statusOverride, PlanningManage.OverrideStates);
-            var k = Math.Max(0, need ?? 0);
+            // Form không còn ô "Nhu cầu nhân sự/ngày" (yêu cầu 2026-10-21): sửa dự án giữ nguyên Need, dự án mới mặc định 2; có gửi lên thì vẫn nhận.
+            int? k = need is int n0 ? Math.Max(0, n0) : null;
             if (id is int pid)
             {
                 var p = await Db.Projects.FirstOrDefaultAsync(x => x.Id == pid) ?? throw new BizException("Không tìm thấy dự án");
                 p.Code = cd; p.Quantity = qt;
-                p.Name = n; p.Factory = fa; p.Location = lo; p.CustomerAddress = ca; p.StartDate = s; p.EndDate = e; p.Need = k; p.StatusOverride = ov; p.Closed = closed;
+                p.Name = n; p.Factory = fa; p.Location = lo;
+                if (customerAddress is not null) p.CustomerAddress = ca;   // form không còn ô này (2026-10-21): không ghi đè dữ liệu cũ
+                p.StartDate = s; p.EndDate = e; p.Need = k ?? p.Need; p.StatusOverride = ov; p.Closed = closed;
                 await Db.SaveChangesAsync();
                 Toast("Đã lưu dự án");
             }
@@ -110,7 +113,7 @@ public partial class PlanningController
             {
                 var p = new Project
                 {
-                    Code = cd, Quantity = qt, Name = n, Factory = fa, Location = lo, CustomerAddress = ca, StartDate = s, EndDate = e, Need = k, StatusOverride = ov, Closed = false,
+                    Code = cd, Quantity = qt, Name = n, Factory = fa, Location = lo, CustomerAddress = ca, StartDate = s, EndDate = e, Need = k ?? 2, StatusOverride = ov, Closed = false,
                     SortOrder = await Db.Projects.CountAsync() + 1, CreatedAt = VnTime.UtcNow,
                 };
                 Db.Projects.Add(p);
@@ -457,7 +460,7 @@ public partial class PlanningController
         return View(new PlanningOwnersVm
         {
             Projects = f == "has" ? has : none, Leaders = D.Leaders(), Filter = f,
-            Total = all.Count, Unassigned = none.Count,
+            Total = all.Count, Unassigned = none.Count, AllProjects = D.AllPj(),
             Stats = D.Leaders().Select(l => (l, has.Where(p => p.OwnerLeaderId == l.Id).ToList())).ToList(),
         });
     }

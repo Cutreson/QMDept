@@ -165,7 +165,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<PlanItem> ItemsOf(int pid) { GuardBase(); return Items.Where(i => i.ProjectId == pid).OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).ToList(); }
     /// <summary>tile(pid): màu ô dự án.</summary>
     public string Tile(int pid) { GuardBase(); var i = Math.Max(0, Projects.OrderBy(p => p.Id).ToList().FindIndex(p => p.Id == pid)); return Fmt.Tile[i % Fmt.Tile.Length]; }
-    /// <summary>Dòng phụ "Nhà máy – Địa điểm".</summary>
+    /// <summary>Dòng phụ "Khách hàng – Địa điểm".</summary>
     public static string Place(Project p) => string.Join(" – ", new[] { p.Factory, p.Location }.Where(s => !string.IsNullOrWhiteSpace(s)));
     /// <summary>Thông tin dự án nạp từ file "thông tin DA.xlsx": mã, số lượng, Leader phụ trách, loại, cấp độ, PO, giao hàng, ghi chú (chỉ dòng có dữ liệu).</summary>
     public List<(string Label, string Value)> ProjectInfo(Project p)
@@ -174,7 +174,6 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         if (!string.IsNullOrEmpty(p.Code)) l.Add(("Mã dự án", p.Code));
         if (p.Quantity is int q) l.Add(("Số lượng", q.ToString()));
         if (p.OwnerLeaderId is int o && P(o) is { } ol) l.Add(("Leader phụ trách", ol.Name));
-        if (!string.IsNullOrEmpty(p.CustomerAddress)) l.Add(("Địa chỉ khách hàng", p.CustomerAddress));
         if (!string.IsNullOrEmpty(p.Category)) l.Add(("Loại", p.Category));
         if (!string.IsNullOrEmpty(p.Level)) l.Add(("Cấp độ", p.Level));
         if (p.PoDate is DateOnly po) l.Add(("Ngày PO", Fmt.Dmy(po)));
@@ -182,7 +181,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         if (!string.IsNullOrEmpty(p.Note)) l.Add(("Ghi chú", p.Note));
         return l;
     }
-    /// <summary>Dòng phụ của dự án: "Mã · Nhà máy – Địa điểm".</summary>
+    /// <summary>Dòng phụ của dự án: "Mã · Khách hàng – Địa điểm".</summary>
     public static string SubLine(Project p) => string.Join(" · ", new[] { p.Code, Place(p) }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
     /// <summary>assignsOf(emp): phân công còn hiệu lực (dự án chưa đóng).</summary>
