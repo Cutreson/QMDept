@@ -18,10 +18,11 @@
 }
 @{
     // Tổng hợp ngày: nhân sự làm việc / nghỉ / số suất cơm — cùng tiêu chí với bảng (chỉ kế hoạch đã duyệt; yêu cầu 2026-10-21)
-    int nOffice = 0, nTrip = 0, nLeave = 0, nRice = 0, nNoodle = 0;
+    int nOffice = 0, nTrip = 0, nLeave = 0, nRice = 0, nNoodle = 0, nConfirmed = 0;
     foreach (var (p0, _) in rows)
     {
         var g0 = Get(p0); var pl0 = g0.Plan;
+        if (g0.Info == 0) nConfirmed++;   // đã duyệt (nhân sự) / đã xác nhận (TP)
         var ok0 = g0.Info == 0 && pl0 is not null;
         if ((ok0 && LeaveRules.IsLeave(pl0!.Status)) || (g0.Info is 0 or 4 && g0.Lv is not null)) { nLeave++; continue; }
         if (!ok0) continue;
@@ -29,7 +30,9 @@
         if (pl0.Meal == Meal.Rice) nRice++; else if (pl0.Meal == Meal.Noodle) nNoodle++;
     }
 }
-<div class="kpis k3" style="grid-column:1/-1">
+<div class="kpis" style="grid-column:1/-1">
+    <div class="kpi k-mgr"><b>@rows.Count</b><span>Tổng nhân sự</span></div>
+    <div class="kpi k-ok"><b>@nConfirmed</b><span>Đã duyệt / xác nhận</span></div>
     <div class="kpi k-ok"><b>@(nOffice + nTrip)</b><span>Nhân sự làm việc</span></div>
     <div class="kpi k-bad"><b>@nLeave</b><span>Nhân sự nghỉ</span></div>
     <div class="kpi k-info"><b>@(nRice + nNoodle)</b><span>Suất cơm</span></div>
@@ -71,7 +74,7 @@
                     else { <span class="red">Cắt cơm</span> }</td>
                 <td>@switch (g.Info)
                     {
-                        case 0: <span class="pill p-ok">Đã duyệt</span> break;
+                        case 0: <span class="pill p-ok">@(p.Role is Role.Manager or Role.Admin ? "Đã xác nhận" : "Đã duyệt")</span> break;
                         case 1: <span class="pill p-warn">Chờ duyệt</span> break;
                         case 2: <span class="pill p-bad">Bị từ chối</span> break;
                         case 3: <span class="pill p-idle">Chưa báo</span> break;

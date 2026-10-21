@@ -1,13 +1,20 @@
 @model WorkTask
-@* Sheet "Sửa công việc" + form ẩn Xóa cho một việc (Leader / TP — yêu cầu 2026-10-21). Nút mở: data-sheet="et{id}" và nút gửi form="dt{id}".
+@* Sheet "Sửa công việc" (gồm chuyển lịch: ngày + người nhận) + form ẩn Xóa cho một việc (Leader / TP — yêu cầu 2026-10-21). Nút mở: data-sheet="et{id}" và nút gửi form="dt{id}".
    Đặt NGOÀI mọi <form>; dùng ở _TaskActions (lịch) và trang Trạng thái làm việc. Server kiểm quyền lại (EditTask / DeleteTask). *@
 @{
     var t = Model;
     var req = Context.Request;
     if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
+    var acc = Scope.Account;
     var asq = req.Query["as"].ToString();
     var asKv = ("as", asq.Length > 0 ? asq : null);
     var back = ("d", Fmt.Key(t.Date));
+    // Người nhận khi chuyển lịch: mình + người thuộc quyền (Leader: nhân viên nhóm; TP / Quản trị: Leader).
+    var pool = new List<Person> { acc };
+    pool.AddRange(acc.Role == Role.Leader ? D.Team(acc.Id) : D.Leaders());
+    pool = pool.GroupBy(p => p.Id).Select(g => g.First()).ToList();
+    if (!pool.Any(p => p.Id == t.EmployeeId) && D.P(t.EmployeeId) is { } cur) pool.Add(cur);
+    var canMove = t.CarriedToId is null;   // việc đã được chuyển tiếp đi nơi khác thì không đổi ngày / người
 }
 <form id="dt@(t.Id)" method="post" action="@Ui.To(req, "/Staff/DeleteTask", back, asKv)" asp-antiforgery="true" class="ro-ok" hidden data-confirm="Xóa “@t.Title” khỏi lịch?" data-confirm-label="Xóa">
     @Ui.ReturnField(req)
@@ -19,12 +26,21 @@
         @Ui.ReturnField(req)
         <input type="hidden" name="id" value="@t.Id">
         <h3>Sửa công việc</h3>
-        <p class="note" style="margin:0 0 8px">@D.PName(t.EmployeeId) · @Fmt.Dmy(t.Date)</p>
         <label class="f" for="etP@(t.Id)" style="margin-top:0">Dự án</label>
         @Ui.Select("projectId", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), t.ProjectId.ToString(), id: "etP" + t.Id, extraAttrs: "required")
         <label class="f" for="etT@(t.Id)">Nội dung công việc</label>
         <input class="in" id="etT@(t.Id)" name="title" maxlength="300" value="@t.Title" required>
         <div class="pick2 eq"><div><label class="f" for="etS@(t.Id)">Bắt đầu</label>@Ui.TimeSelect("start", t.Start, id: "etS" + t.Id)</div><div><label class="f" for="etE@(t.Id)">Kết thúc</label>@Ui.TimeSelect("end", t.End, end: true, id: "etE" + t.Id)</div></div>
+        @if (canMove)
+        {
+            <label class="f" for="etD@(t.Id)">Ngày</label>
+            @Ui.DateInput("to", t.Date, "etD" + t.Id)
+            @if (pool.Count > 1)
+            {
+                <label class="f" for="etW@(t.Id)">Lịch của</label>
+                @Ui.Select("emp", pool.Select(p => (p.Id.ToString(), p.Id == acc.Id ? p.Name + " (tôi)" : p.Name)), t.EmployeeId.ToString(), id: "etW" + t.Id)
+            }
+        }
         <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
     </form>
 </template>

@@ -98,13 +98,38 @@ public partial class StaffController
         return t;
     }
 
-    /// <summary>POST /Staff/EditTask — Leader / TP sửa dự án, nội dung, giờ của việc trong quyền của mình (lịch của tôi, lịch nhóm / phòng, trang Trạng thái làm việc).</summary>
+    /// <summary>
+    /// POST /Staff/EditTask — Leader / TP sửa việc trong quyền của mình (lịch của tôi, lịch nhóm / phòng, trang Trạng thái làm việc):
+    /// dự án, nội dung, giờ, VÀ chuyển sang lịch khác (ngày từ hôm nay trở đi + người nhận: Leader → mình + nhân viên nhóm; TP → mình + Leader).
+    /// Chuyển lịch gộp vào Sửa (yêu cầu 2026-10-21). Người nhận nghỉ cả ngày thì chặn; việc đã chuyển tiếp đi nơi khác không đổi ngày / người được.
+    /// </summary>
     [HttpPost]
-    public async Task<IActionResult> EditTask(int id, int projectId, string? title, string? start, string? end) => await Do(async () =>
+    public async Task<IActionResult> EditTask(int id, int projectId, string? title, string? start, string? end, string? to, int? emp) => await Do(async () =>
     {
         var t = await LoadManagedTaskAsync(id);
+        // Kiểm tra phần chuyển lịch TRƯỚC khi ghi gì (để lỗi không ghi dở).
+        var day = string.IsNullOrWhiteSpace(to) ? t.Date : Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày đúng dạng dd/MM/yyyy");
+        var target = emp ?? t.EmployeeId;
+        var moved = day != t.Date || target != t.EmployeeId;
+        Person? tp = null;
+        if (moved)
+        {
+            if (t.CarriedToId is not null) throw new BizException("Việc này đã được chuyển tiếp sang ngày khác — sửa ngày / người ở việc mới đó");
+            if (day < Scope.Today) throw new BizException("Chỉ chuyển đến hôm nay trở đi");
+            if (t.FromDate is DateOnly fd && day <= fd) throw new BizException($"Việc chuyển tiếp phải đặt sau ngày của việc gốc ({Fmt.Dmy(fd)})");
+            tp = await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == target) ?? throw new BizException("Không tìm thấy người nhận");
+            if (!StaffCalendar.OwnsTask(Scope.Account, Scope.IsManager, false, tp, new WorkTask { EmployeeId = target }))
+                throw new BizException("Chỉ chuyển cho mình hoặc người thuộc quyền của mình");
+            if ((await Db.Leaves.AsNoTracking().Where(l => l.Date == day && l.EmployeeId == target).ToListAsync()).Any(Dept.IsFullDayLeave))
+                throw new BizException($"{tp.Name} nghỉ cả ngày {Fmt.Dmy(day)} — chọn ngày hoặc người khác");
+        }
+        await using var tx = await Db.Database.BeginTransactionAsync();
         await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName);
-    }, "Đã sửa công việc");
+        if (moved) await Flow.MoveTaskAsync(t, day, target, Scope.ActorName);
+        await tx.CommitAsync();
+        if (moved && target != Scope.Account.Id) await Notify.TaskAssignedAsync([target], day, t.Title, "Bạn được chuyển việc");
+        Toast(moved ? $"Đã sửa và chuyển “{t.Title}” sang {(target == Scope.Account.Id || tp is null ? "" : tp.Name + " · ")}ngày {Fmt.Dmy(day)}" : "Đã sửa công việc");
+    });
 
     /// <summary>POST /Staff/DeleteTask — Leader / TP xóa công việc khỏi lịch của mình hoặc của người thuộc quyền (lịch của tôi, lịch nhóm / phòng).</summary>
     [HttpPost]
@@ -113,31 +138,6 @@ public partial class StaffController
         var t = await LoadManagedTaskAsync(id);
         await Flow.DeleteTaskAsync(t.Id);
     }, "Đã xóa công việc");
-
-    /// <summary>
-    /// POST /Staff/MoveTask — chuyển công việc sang lịch khác: ngày khác (từ hôm nay trở đi) và / hoặc người khác trong quyền của mình
-    /// (Leader: mình + nhân viên nhóm; TP: mình + Leader). Việc chuyển tiếp chưa xử lý không chuyển được; người nhận nghỉ cả ngày thì chặn.
-    /// </summary>
-    [HttpPost]
-    public async Task<IActionResult> MoveTask(int id, string? to, int? emp) => await Do(async () =>
-    {
-        var t = await LoadManagedTaskAsync(id);
-        if (t.CarriedToId is not null) throw new BizException("Việc này đã được chuyển tiếp sang ngày khác — chuyển lịch việc mới đó");
-        var day = Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày chuyển đến (dd/MM/yyyy)");
-        if (day < Scope.Today) throw new BizException("Chỉ chuyển đến hôm nay trở đi");
-        if (t.FromDate is DateOnly fd && day <= fd) throw new BizException($"Việc chuyển tiếp phải đặt sau ngày của việc gốc ({Fmt.Dmy(fd)})");
-        var target = emp ?? t.EmployeeId;
-        if (day == t.Date && target == t.EmployeeId) throw new BizException("Chọn ngày hoặc người khác với lịch hiện tại");
-        var tp = await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == target) ?? throw new BizException("Không tìm thấy người nhận");
-        if (!StaffCalendar.OwnsTask(Scope.Account, Scope.IsManager, false, tp, new WorkTask { EmployeeId = target }))
-            throw new BizException("Chỉ chuyển cho mình hoặc người thuộc quyền của mình");
-        if (await Db.Leaves.AsNoTracking().Where(l => l.Date == day && l.EmployeeId == target).ToListAsync() is { } lvs && lvs.Any(Dept.IsFullDayLeave))
-            throw new BizException($"{tp.Name} nghỉ cả ngày {Fmt.Dmy(day)} — chọn ngày hoặc người khác");
-        var oldEmp = t.EmployeeId;
-        await Flow.MoveTaskAsync(t, day, target, Scope.ActorName);
-        if (target != Scope.Account.Id) await Notify.TaskAssignedAsync([target], day, t.Title, "Bạn được chuyển việc");
-        Toast($"Đã chuyển “{t.Title}” sang {(target == oldEmp ? "" : tp.Name + " · ")}ngày {Fmt.Dmy(day)}");
-    });
 
     /// <summary>POST /Staff/DeleteOwnTask — Leader xóa việc kế hoạch cá nhân của chính mình (chỉ việc nguồn Planned do mình thêm).</summary>
     [HttpPost]

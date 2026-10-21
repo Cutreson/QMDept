@@ -1,40 +1,12 @@
 @model WorkTask
-@* Sửa / Xóa / Chuyển lịch một công việc (Leader / TP — yêu cầu 2026-10-20, thêm Sửa 2026-10-21): hiện dưới dòng việc ở "Lịch của tôi" và "Lịch nhóm / phòng".
-   Server kiểm quyền lại (StaffController.EditTask / DeleteTask / MoveTask). Form .ro-ok để dùng được ở chế độ lịch nhóm (chỉ xem). *@
+@* Sửa / Xóa một công việc (Leader / TP — yêu cầu 2026-10-20, rút gọn 2026-10-21: chuyển lịch nằm trong Sửa): hiện dưới dòng việc ở "Lịch của tôi" và "Lịch nhóm / phòng".
+   Sheet + form xóa ở _TaskEdit. Server kiểm quyền lại (StaffController.EditTask / DeleteTask). *@
 @{
     var t = Model;
-    var req = Context.Request;
-    var acc = Scope.Account;
     if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
-    var asq = req.Query["as"].ToString();
-    var back = ("d", Fmt.Key(t.Date));
-    var asKv = ("as", asq.Length > 0 ? asq : null);
-    // Người nhận khi chuyển lịch: mình + người thuộc quyền (Leader: nhân viên nhóm; TP / Quản trị: Leader).
-    var pool = new List<Person> { acc };
-    pool.AddRange(acc.Role == Role.Leader ? D.Team(acc.Id) : D.Leaders());
-    pool = pool.GroupBy(p => p.Id).Select(g => g.First()).ToList();
-    var canMove = t.CarriedToId is null;   // việc đã được chuyển tiếp đi nơi khác thì không chuyển lịch
 }
-<div class="task-actions ro-ok" style="display:flex;justify-content:flex-end;gap:14px;margin:-2px 12px 6px">
+<div class="task-actions ro-ok" style="display:flex;justify-content:flex-end;gap:16px;margin:-2px 12px 6px">
     <button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
-    @if (canMove) { <button type="button" class="link ro-ok" data-sheet="mv@(t.Id)">Chuyển lịch</button> }
     <button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>
 </div>
 <partial name="_TaskEdit" model="t" />
-@if (canMove)
-{
-    <template id="mv@(t.Id)">
-        <form class="ro-ok" method="post" action="@Ui.To(req, "/Staff/MoveTask", back, asKv)">
-            @Html.AntiForgeryToken()
-            @Ui.ReturnField(req)
-            <input type="hidden" name="id" value="@t.Id">
-            <h3>Chuyển công việc sang lịch khác</h3>
-            <p class="note" style="margin:0 0 8px"><b>@t.Title</b> · @D.PjName(t.ProjectId) · @t.Start–@t.End<br>Hiện ở lịch của @D.PName(t.EmployeeId) ngày @Fmt.Dmy(t.Date)</p>
-            <label class="f" for="mvD@(t.Id)" style="margin-top:0">Chuyển đến ngày</label>
-            @Ui.DateInput("to", t.Date < Scope.Today ? Scope.Today : t.Date, "mvD" + t.Id)
-            <label class="f" for="mvE@(t.Id)">Lịch của</label>
-            @Ui.Select("emp", pool.Select(p => (p.Id.ToString(), p.Id == acc.Id ? p.Name + " (tôi)" : p.Name)), t.EmployeeId.ToString(), id: "mvE" + t.Id)
-            <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Chuyển lịch</button></div>
-        </form>
-    </template>
-}
