@@ -300,7 +300,8 @@
   // (ẩn, giữ giá trị / kiểm tra required); người dùng gõ chữ cái vào ô → danh sách mục chứa chữ đó, chọn bằng chuột / ↑ ↓ Enter.
   function enhanceSelect(sel) {
     if (sel.dataset.searchOn || sel.multiple || (sel.options.length < MIN_SEARCH && !sel.hasAttribute('data-combo'))) return;
-    if (sel.matches('.mono,[data-autosubmit],[data-nosearch],[data-pick-into]') || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
+    // select tự gửi (data-autosubmit) chỉ có ô tìm khi gắn data-combo (bộ lọc dự án / người: gõ chữ, chọn, tự lọc — như "Giao thêm việc")
+    if (sel.matches('.mono,[data-nosearch],[data-pick-into]') || (sel.matches('[data-autosubmit]') && !sel.hasAttribute('data-combo')) || /^(nextDate|date|d|m)$/.test(sel.name || '')) return;
     sel.dataset.searchOn = '1';
     const wrap = document.createElement('div'); wrap.className = 'combo';
     sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
@@ -364,8 +365,36 @@
       rows.forEach(r => { r.hidden = !!q && !fold(r.textContent).includes(q); });
     });
   }
+  // Ô nhập tự do kiểu combo (Khách hàng / Địa điểm của dự án): gõ chữ → gợi ý mục đã có (không phân biệt hoa / dấu), bấm chọn hoặc cứ gõ mới.
+  // Nguồn gợi ý = <datalist> gắn qua list=; bỏ list để không hiện gợi ý gốc của trình duyệt.
+  function enhanceFree(inp) {
+    if (inp.dataset.searchOn || !inp.getAttribute('list')) return;
+    const dl = document.getElementById(inp.getAttribute('list')); if (!dl) return;
+    inp.dataset.searchOn = '1'; inp.removeAttribute('list');
+    const items = [...dl.options].map(o => o.value).filter(Boolean);
+    const wrap = document.createElement('div'); wrap.className = 'combo';
+    inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+    const list = document.createElement('div'); list.className = 'combo-list'; list.hidden = true; list.setAttribute('role', 'listbox'); wrap.appendChild(list);
+    let active = -1, shown = [];
+    const render = () => {
+      const q = fold(inp.value.trim());
+      shown = items.filter(v => !q || fold(v).includes(q)).slice(0, 60);
+      list.innerHTML = shown.map((v, i) => `<div class="combo-item" role="option" data-i="`+i+`">`+esc(v)+`</div>`).join('');
+      list.hidden = shown.length === 0; active = -1;
+    };
+    const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('on', i === active));
+    inp.addEventListener('focus', render); inp.addEventListener('input', render);
+    inp.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 120));
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (list.hidden) render(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % Math.max(shown.length, 1); mark(); }
+      else if (e.key === 'Enter' && !list.hidden && active >= 0) { e.preventDefault(); inp.value = shown[active]; list.hidden = true; }
+      else if (e.key === 'Escape') list.hidden = true;
+    });
+    list.addEventListener('mousedown', e => { const it = e.target.closest('.combo-item'); if (!it) return; e.preventDefault(); inp.value = shown[+it.dataset.i]; list.hidden = true; });
+  }
   function enhanceSearch(root) {
     $$('select.in', root).forEach(enhanceSelect);
+    $$('input[data-combo-free]', root).forEach(enhanceFree);
     $$('.optbox', root).forEach(enhanceList);
   }
   enhanceSearch(document);

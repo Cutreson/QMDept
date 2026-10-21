@@ -6,7 +6,7 @@
     var owner = p.OwnerLeaderId is int oid ? D.P(oid) : null;
     var done = p.Closed || D.PjStatus(p.Id, Scope.Date) == ProjectStatus.Completed;
 }
-<form class="card sec" method="post" action="/Planning/SetProjectOwner" asp-antiforgery="true" data-pj-key="@PlanningManage.SearchKey(p, owner?.Name)">
+<form class="card sec" method="post" action="/Planning/SetProjectOwner" asp-antiforgery="true" data-pj-id="@p.Id">
     @Ui.ReturnField(req)
     <input type="hidden" name="projectId" value="@p.Id">
     <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b>@if (done) { <text> </text><span class="pill p-ok">Hoàn thành</span> }<div class="note">@Dept.SubLine(p)</div></div>

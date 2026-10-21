@@ -21,7 +21,7 @@
         {
             <input type="hidden" name="@kv.Key" value="@kv.Value">
         }
-        <label class="row" style="margin-bottom:12px"><span class="note" style="white-space:nowrap">Dự án:</span><select class="in" name="pj" data-autosubmit>
+        <label class="row" style="margin-bottom:12px"><span class="note" style="white-space:nowrap">Dự án:</span><select class="in" name="pj" data-autosubmit data-combo>
             <option value="">Tất cả</option>
             @foreach (var p in D.ActivePj())
             {

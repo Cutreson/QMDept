@@ -75,7 +75,7 @@
                 @if (!chrome.ViewInPlan)
                 {
                 <span class="note" style="white-space:nowrap">Xem màn hình:</span>
-                <select class="in" name="as" data-autosubmit aria-label="Chọn người để xem màn hình">
+                <select class="in" name="as" data-autosubmit data-combo aria-label="Chọn người để xem màn hình">
                     @if (!chrome.ViewOptions.Any(o => o.Selected)) { <option value="" selected disabled hidden>Chọn người</option> }
                     @foreach (var g in chrome.ViewOptions.GroupBy(o => o.Group))
                     {
