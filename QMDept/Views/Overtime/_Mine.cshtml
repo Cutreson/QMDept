@@ -114,8 +114,23 @@ else
         {
             <p class="note" style="margin:0">Không có việc chưa xong trong ngày này.</p>
         }
-        <label class="f" for="otC">Nội dung khác (nếu có)</label>
-        <textarea class="in" id="otC" name="extra" maxlength="2000">@extraText</textarea>
+        @* Công việc khác (yêu cầu 2026-10-21): chọn dự án + nhập tên công việc như "Đề xuất phát sinh" ở Báo cáo cuối ngày; thêm được nhiều mục, mỗi mục là một thẻ có ✕ *@
+        <label class="f">Công việc khác</label>
+        <div id="otOthers" class="pick-chips">
+            @foreach (var oi in (x?.Items ?? []).Where(i => i.WorkTaskId is null).OrderBy(i => i.Id))
+            {
+                <span class="pick-chip"><span>@oi.Title@(oi.ProjectId is int opj ? " · " + D.PjName(opj) : "")</span><input type="hidden" name="otherTitle" value="@oi.Title"><input type="hidden" name="otherProject" value="@oi.ProjectId"><button type="button" aria-label="Bỏ">✕</button></span>
+            }
+            @if (!string.IsNullOrEmpty(extraText))
+            {
+                <span class="pick-chip"><span>@extraText</span><input type="hidden" name="extra" value="@extraText"><button type="button" aria-label="Bỏ">✕</button></span>
+            }
+        </div>
+        <label class="f" for="otOP">Dự án</label>
+        @Ui.Select("otP", D.ActivePj().Select(p => (p.Id.ToString(), p.Name)), D.MainProject(me.Id, d)?.ToString(), id: "otOP")
+        @Ui.ProjectLeadHint(D, D.ActivePj(), "otOP", D.MainProject(me.Id, d))
+        <label class="f" for="otOT">Tên công việc</label>
+        <div class="row" style="gap:8px"><input class="in" id="otOT" maxlength="300" autocomplete="off" style="flex:1;min-width:0"><button type="button" class="btn" id="otAddOther" style="white-space:nowrap">＋ Thêm</button></div>
         <button class="btn btn-primary btn-block" style="margin-top:12px">@(x is not null ? "Lưu thay đổi" : "Gửi đăng ký")</button>
         @if (x is not null)
         {

@@ -39,14 +39,29 @@
     box.innerHTML = r.err ? r.err : `<b>${r.start}–${r.end}</b> · ${num(r.hours)} giờ${r.lunch?' (đã trừ nghỉ trưa)':''} · ${r.tier}<br>Nghỉ giải lao: ${r.breaks}<br>Suất ăn: ${r.meal==='rice'?'<b>cơm</b>':r.meal==='snack'?'ăn nhẹ, thực đơn cố định theo ngày':'không có'}${r.allow?'<br>Phụ cấp thêm <b>20.000đ</b>, trả vào lương':''}`;
   }
 
+  // "Công việc khác": chọn dự án + tên công việc → thêm thẻ (có ✕ bỏ — xử lý chung ở site.js .pick-chip); Enter ở ô tên = thêm, không gửi form
+  const addOther = () => {
+    const sel=f.querySelector('#otOP'), inp=f.querySelector('#otOT'), box=f.querySelector('#otOthers'); if(!sel||!inp||!box) return;
+    const title=inp.value.trim(); if(!title) return;
+    const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const pn=sel.value ? (sel.options[sel.selectedIndex].textContent.trim()) : '';
+    const chip=document.createElement('span'); chip.className='pick-chip';
+    chip.innerHTML='<span>'+esc(title)+(pn?' · '+esc(pn):'')+'</span><input type="hidden" name="otherTitle" value="'+esc(title)+'"><input type="hidden" name="otherProject" value="'+esc(sel.value)+'"><button type="button" aria-label="Bỏ">✕</button>';
+    box.appendChild(chip); inp.value=''; inp.focus();
+  };
+  const addBtn0=f.querySelector('#otAddOther'); if (addBtn0) addBtn0.addEventListener('click', addOther);
+  const otTitle0=f.querySelector('#otOT'); if (otTitle0) otTitle0.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); addOther(); } });
+
   otLive();
   // artifact: mọi thay đổi trong #otForm → otLive()
   f.addEventListener('change', () => otLive());
   // otForm submit (phần kiểm tra phía trình duyệt, cùng câu thông báo với artifact)
   f.addEventListener('submit', e => {
     const r=otRule(f.querySelector('#otDay').value, f.querySelector('#otS').value, f.querySelector('#otE').value);
-    const picked=f.querySelectorAll('input[name=task]:checked').length, extra=f.querySelector('#otC').value.trim();
-    const msg = r.err ? r.err : (!picked && !extra) ? 'Tích việc chưa xong cần làm tiếp hoặc nhập nội dung khác' : '';
+    // Công việc khác nhập dở (chưa bấm "＋ Thêm") thì tự thêm trước khi gửi
+    const addBtn=f.querySelector('#otAddOther'); if (addBtn && f.querySelector('#otOT').value.trim()) addBtn.click();
+    const picked=f.querySelectorAll('input[name=task]:checked').length, others=f.querySelectorAll('#otOthers .pick-chip').length;
+    const msg = r.err ? r.err : (!picked && !others) ? 'Tích việc chưa xong cần làm tiếp hoặc thêm công việc khác' : '';
     if(msg){ e.preventDefault(); e.stopPropagation(); if(window.qmToast) window.qmToast(msg); }
   });
 })();

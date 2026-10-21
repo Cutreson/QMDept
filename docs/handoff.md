@@ -304,3 +304,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-21) Tổng quan của Leader: 'Nhân sự' → 'Nhân sự nhóm' (mọi Leader); 'Nhân sự phòng' của Hùng chuyển từ thanh trái vào tab Tổng quan ngay sau Nhân sự nhóm, mục con Làm việc hành chính | Làm thêm tại công ty (quy tắc 50). Đã thử Huề / Tân / Hùng / TP.
 - (2026-10-21) Bỏ số thứ tự tròn trước tiêu đề trang + số trước tiêu đề khối ở Báo cáo đầu ngày (quy tắc 51). Đã quét 92 trang của NV / Leader / Hùng / TP / Quản trị: không còn step-n.
 - (2026-10-21) Trang Dự án (/Manager/Projects) thiếu tiêu đề → thêm Ui.Head 'Dự án'. Đã quét 50 trang của NV / Leader / Hùng / TP / Quản trị: mọi trang có <h1>.
+- (2026-10-21) Đăng ký làm thêm: thay 'Nội dung khác' bằng Công việc khác (dự án + tên công việc, nhiều mục, quy tắc 52). Đã thử 9 tài khoản (TP, 2 Leader, 6 NV) tạo / sửa / hiển thị + kiểm tra lỗi (không có việc, dự án sai, tên dài) + thêm/bỏ/Enter ở giao diện; đã xóa OT thử ngày 4/11/2026.

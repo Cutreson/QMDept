@@ -83,7 +83,7 @@ public class OvertimeController : AppController
 
     /// <summary>otForm submit: gửi / sửa đăng ký làm thêm của mình cho ngày đang chọn.</summary>
     [HttpPost]
-    public async Task<IActionResult> Save(string? dayType, string? start, string? end, string? meal, List<int>? task, string? extra)
+    public async Task<IActionResult> Save(string? dayType, string? start, string? end, string? meal, List<int>? task, string? extra, List<string?>? otherTitle = null, List<int?>? otherProject = null)
     {
         var done = OvertimeUi.WithoutParam(BackUrl(), "edit");
         try
@@ -100,10 +100,22 @@ public class OvertimeController : AppController
             var found = ids.Count == 0 ? [] : await Db.WorkTasks.AsNoTracking()
                 .Where(t => ids.Contains(t.Id) && t.Date == d && t.EmployeeId == me.Id).ToListAsync();
             var items = ids.Select(id => found.Find(t => t.Id == id)).OfType<WorkTask>().ToList();
-            var ex = (extra ?? "").Trim();
+            var ex = (extra ?? "").Trim();   // nội dung khác dạng chữ cũ (đăng ký trước 2026-10-21) — form mới dùng "Công việc khác" (dự án + tên công việc)
             if (ex.Length > 2000) throw new BizException("Nội dung khác quá dài (tối đa 2000 ký tự)");
-            var content = string.Join("; ", items.Select(t => t.Title).Append(ex).Where(s => !string.IsNullOrEmpty(s)));
-            if (content.Length == 0) throw new BizException("Tích việc chưa xong cần làm tiếp hoặc nhập nội dung khác");
+            // Công việc khác: mỗi mục = dự án + tên công việc (như đề xuất phát sinh ở báo cáo cuối ngày)
+            var others = new List<(string Title, int? Project)>();
+            for (var k = 0; k < (otherTitle?.Count ?? 0); k++)
+            {
+                var ti = (otherTitle![k] ?? "").Trim();
+                if (ti.Length == 0) continue;
+                if (ti.Length > 300) throw new BizException("Tên công việc khác tối đa 300 ký tự");
+                var pj = otherProject is not null && k < otherProject.Count ? otherProject[k] : null;
+                if (pj is int pid0 && !await Db.Projects.AnyAsync(p => p.Id == pid0)) throw new BizException("Dự án của công việc khác không tồn tại");
+                others.Add((ti, pj));
+            }
+            if (others.Count > 20) throw new BizException("Tối đa 20 công việc khác");
+            var content = string.Join("; ", items.Select(t => t.Title).Concat(others.Select(o => o.Title)).Append(ex).Where(s => !string.IsNullOrEmpty(s)));
+            if (content.Length == 0) throw new BizException("Tích việc chưa xong cần làm tiếp hoặc thêm công việc khác");
             if (content.Length > 2000) content = content[..2000];
 
             var opts = OtRules.MealOptions(r);
@@ -128,12 +140,13 @@ public class OvertimeController : AppController
             x.Meal = m;
             x.Cost = OtRules.CostOf(m);
             x.Allowance = r.Allow;
-            x.ProjectId = items.Count > 0 ? items[0].ProjectId : null;
+            x.ProjectId = items.Count > 0 ? items[0].ProjectId : others.Count > 0 ? others[0].Project : null;
             x.Content = content;
             x.ExtraContent = ex.Length > 0 ? ex : null;
             foreach (var old in x.Items.ToList()) Db.OvertimeTasks.Remove(old);
             x.Items.Clear();
             foreach (var t in items) x.Items.Add(new OvertimeTask { WorkTaskId = t.Id, Title = t.Title, ProjectId = t.ProjectId });
+            foreach (var o in others) x.Items.Add(new OvertimeTask { WorkTaskId = null, Title = o.Title, ProjectId = o.Project });
             if (role == Role.Manager) { x.Status = OtStatus.Approved; x.DecidedBy = Scope.ActorName; x.DecidedAt = now; }
             else { x.Status = OtStatus.Pending; x.DecidedBy = null; x.DecidedAt = null; }
             x.LeaderBy = null; x.LeaderAt = null;   // sửa đăng ký → duyệt lại từ Leader
