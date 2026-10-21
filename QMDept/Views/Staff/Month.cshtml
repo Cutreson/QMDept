@@ -24,7 +24,7 @@ else if (Model.AllMode)
 }
 else
 {
-    <div class="head">@if (!Model.ReadOnly) {<span class="step-n">1</span>}<div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1></div></div>
+    <div class="head"><div style="flex:1;min-width:0"><h1>Kế hoạch tháng</h1></div></div>
 }
 @if ((Scope.Account.Role == Role.Staff && Scope.TeamPeople.Count > 1) || (Scope.Account.Role is Role.Leader or Role.Manager or Role.Admin && (Scope.AllStaff || Scope.OwnCalendar || Scope.IsViewingOther)))
 {

@@ -62,7 +62,7 @@ public static class Ui
     public static IHtmlContent Head(int n, string title, string? sub = null, IHtmlContent? extra = null)
     {
         var sb = new StringBuilder("<div class=\"head\">");
-        if (n > 0) sb.Append($"<span class=\"step-n\">{n}</span>");
+        // Số thứ tự tròn trước tiêu đề đã bỏ (yêu cầu 2026-10-21) — tham số n giữ để các nơi gọi không phải đổi.
         sb.Append($"<div style=\"flex:1;min-width:0\"><h1>{E(title)}</h1>");
         if (!string.IsNullOrEmpty(sub)) sb.Append($"<div class=\"sub\">{E(sub)}</div>");
         sb.Append("</div>");

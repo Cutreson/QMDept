@@ -81,7 +81,7 @@ else
                 {
                     var i = it[k];
                     <div class="asg" style="margin-bottom:8px">
-                        <div class="row"><b style="flex:1;min-width:0">@(k + 1). @i.Title</b><button type="submit" class="link" form="delItem@(i.Id)" style="color:var(--bad)" aria-label="Xóa đầu mục">✕</button></div>
+                        <div class="row"><b style="flex:1;min-width:0">@i.Title</b><button type="submit" class="link" form="delItem@(i.Id)" style="color:var(--bad)" aria-label="Xóa đầu mục">✕</button></div>
                         <input type="hidden" name="id" value="@i.Id">
                         <div class="grid2"><div><label class="f" for="isS@(i.Id)">Bắt đầu</label>@Ui.DateInput("start", i.StartDate, "isS" + i.Id)</div><div><label class="f" for="isE@(i.Id)">Kết thúc</label>@Ui.DateInput("end", i.EndDate, "isE" + i.Id)</div></div>
                     </div>
