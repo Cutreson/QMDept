@@ -124,7 +124,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 (t.Id == "overview" && (onOverviewMonth || onPlanMonth || onDept)) || (t.Id == "status" && onMgrOvertime) || (t.Id == "approvals" && otApprove) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
-                away ? 0 : Badge(t.Id))).ToList()
+                Badge(t.Id))).ToList()
             : [];
 
         // Combobox "Xem màn hình": chỉ cấp dưới theo nhóm vai trò. "Màn hình của tôi" (HomeHref) và lịch cả nhóm (TeamHref) là hai nút riêng cạnh combobox.
@@ -170,12 +170,12 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
 
         int Badge(string id)
         {
-            if (scope.Role == Role.Leader && id == "planning") return d.LeaderPendingAll() + d.OtPendingAll().Count(x => x.NeedsDecision) + (scope.MeId is int lid ? d.ProposalsFor(lid).Count + d.LeavesFor(lid).Count : 0);
-            if (scope.Role == Role.Manager && id == "approvals")
+            if (acc.Role == Role.Leader && id == "planning") return d.LeaderPendingAll(acc.Id) + d.OtPendingAll(Role.Leader, acc.Id).Count(x => x.NeedsDecision) + d.ProposalsFor(acc.Id).Count + d.LeavesFor(acc.Id).Count;
+            if (acc.Role is Role.Manager or Role.Admin && id == "approvals")
                 return d.Plans.Count(p => d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
-                    + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll().Count(x => x.NeedsTpDecision);
-            if (id == "overtime") return scope.Role == Role.Manager ? d.OtPendingAll().Count(x => x.NeedsTpDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
-            if (scope.Role == Role.Staff && id == "evening" && scope.MeId is int me)
+                    + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);
+            if (id == "overtime") return acc.Role is Role.Manager or Role.Admin ? d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
+            if (acc.Role == Role.Staff && id == "evening" && acc.Id is int me)
                 return d.Extras.Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
             return 0;
         }
