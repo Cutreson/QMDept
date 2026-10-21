@@ -32,7 +32,7 @@ public class ManagerController : AppController
         {
             var all = D.Ots.Where(x => x.Date == Date && x.Status != OtStatus.Rejected)
                 .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
-            ot = new OvertimeVm { Tab = "summary", Summary = all, Send = await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Date == Date) };
+            ot = new OvertimeVm { Tab = "summary", Summary = all };
         }
         return View(new ManagerOverviewVm
         {

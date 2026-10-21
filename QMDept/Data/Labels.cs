@@ -51,7 +51,7 @@ public static class Labels
         // OT_REG
         [OtReg.Early] = new("Dự trù đúng hạn", "p-ok", "var(--ok)"),
         [OtReg.OnTime] = new("Chính thức đúng hạn", "p-info", "var(--brand)"),
-        [OtReg.Late] = new("Trễ hạn 14:00", "p-bad", "var(--bad)"),
+        [OtReg.Late] = new("Trễ hạn", "p-bad", "var(--bad)"),
         // OT_DAY
         [OtDayType.Workday] = new("Ngày làm việc — ngoài giờ hành chính", "p-info", "var(--brand)"),
         [OtDayType.Holiday] = new("Ngày nghỉ / lễ", "p-warn", "var(--warn)"),

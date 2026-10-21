@@ -40,8 +40,7 @@ public partial class LeaderController : AppController
         if (s != "meal") return View(new OvertimeVm { Tab = "people" });
         var all = D.Ots.Where(x => x.Date == Date && x.Status != OtStatus.Rejected)
             .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
-        var send = await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(o => o.Date == Date);
-        return View(new OvertimeVm { Tab = "summary", Summary = all, Send = send });
+        return View(new OvertimeVm { Tab = "summary", Summary = all });
     }
 
     /// <summary>GET /Leader/Tracking?mode=staff|project&amp;pj= — ldTrack.</summary>

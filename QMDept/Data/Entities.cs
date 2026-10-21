@@ -426,3 +426,10 @@ public class CalendarProposalPerson
     public int EmployeeId { get; set; }
     public Person? Employee { get; set; }
 }
+
+/// <summary>Cài đặt chung của hệ thống do Trưởng phòng chỉnh (khóa → giá trị), vd. "OtDeadline" = hạn đăng ký làm thêm "HH:mm" (yêu cầu 2026-10-21).</summary>
+public class AppSetting
+{
+    [System.ComponentModel.DataAnnotations.Key, MaxLength(60)] public string Key { get; set; } = "";
+    [MaxLength(200)] public string Value { get; set; } = "";
+}

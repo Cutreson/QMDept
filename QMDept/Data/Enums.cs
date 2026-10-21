@@ -150,9 +150,9 @@ public enum OtStatus
 /// <summary>Hạn đăng ký làm thêm (OT_REG).</summary>
 public enum OtReg
 {
-    Early,  // 'du_tru'      dự trù: trước 14:00 ngày làm việc liền trước
-    OnTime, // 'chinh_thuc'  chính thức: trước 14:00 cùng ngày
-    Late,   // 'tre_han'     sau 14:00 cùng ngày
+    Early,  // 'du_tru'      dự trù: trước hạn (OtRules.DeadlineHhmm) ngày làm việc liền trước
+    OnTime, // 'chinh_thuc'  chính thức: trước hạn cùng ngày
+    Late,   // 'tre_han'     sau hạn cùng ngày
 }
 
 /// <summary>Loại ngày làm thêm (OT_DAY).</summary>

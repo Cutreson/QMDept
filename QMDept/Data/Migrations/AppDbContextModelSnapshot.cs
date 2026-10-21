@@ -599,6 +599,22 @@ namespace QMDept.Data.Migrations
                     b.ToTable("ot_sends", (string)null);
                 });
 
+            modelBuilder.Entity("QMDept.Data.AppSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("app_settings", (string)null);
+                });
+
             modelBuilder.Entity("QMDept.Data.NotifySetting", b =>
                 {
                     b.Property<int>("PersonId")

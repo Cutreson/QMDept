@@ -101,6 +101,15 @@ if (builder.Configuration.GetValue("Database:AutoMigrate", true))
     s.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
 
+// Hạn đăng ký làm thêm do Trưởng phòng đặt (app_settings, khóa OtDeadline); chưa đặt = mặc định OtRules.DeadlineHhmm (15:00).
+try
+{
+    using var s2 = app.Services.CreateScope();
+    var dl = s2.ServiceProvider.GetRequiredService<AppDbContext>().AppSettings.AsNoTracking().FirstOrDefault(x => x.Key == "OtDeadline");
+    if (dl is not null && QMDept.Services.Fmt.IsHhmm(dl.Value)) QMDept.Services.OtRules.DeadlineHhmm = dl.Value;
+}
+catch { /* bảng chưa có (AutoMigrate tắt) — dùng mặc định */ }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

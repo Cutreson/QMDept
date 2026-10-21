@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<OvertimeTask> OvertimeTasks => Set<OvertimeTask>();
     public DbSet<MealOrder> MealOrders => Set<MealOrder>();
     public DbSet<NotifySetting> NotifySettings => Set<NotifySetting>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder b)
     {
@@ -177,6 +178,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.PersonId);
             e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Cascade);
         });
+
+        m.Entity<AppSetting>(e => { e.ToTable("app_settings"); e.HasKey(x => x.Key); });
 
         m.Entity<MealOrder>(e =>
         {

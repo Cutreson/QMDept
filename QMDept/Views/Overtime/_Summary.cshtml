@@ -1,5 +1,5 @@
 @model OvertimeVm
-@* otSummary(d): KPI, chi phí dự kiến, danh sách; TP: gửi đăng ký suất ăn cho Phòng HCNS (otSend). *@
+@* otSummary(d): KPI, giờ làm thêm, danh sách; TP / Quản trị đặt hạn đăng ký làm thêm (yêu cầu 2026-10-21; đã bỏ chi phí dự kiến và gửi HCNS). *@
 @{
     var req = Context.Request;
     var d = Scope.Date;
@@ -17,11 +17,8 @@
     <div class="kpi k-mgr"><b>@allowance</b><span>Phụ cấp 20k</span></div>
 </div>
 <section class="card sec">
-    <h2>Chi phí dự kiến</h2>
+    <h2>Giờ làm thêm</h2>
     <dl class="kvl">
-        <dt>Suất cơm</dt><dd class="mono">@rice × 35.000đ = @Fmt.Money(rice * (long)OtRules.MealCost)</dd>
-        <dt>Ăn nhẹ</dt><dd class="mono">@snack × 15.000đ = @Fmt.Money(snack * (long)OtRules.SnackCost)</dd>
-        <dt>Phụ cấp (lương)</dt><dd class="mono">@allowance × 20.000đ = @Fmt.Money(allowance * (long)OtRules.Allowance4h)</dd>
         <dt>Giờ làm thêm được tính</dt><dd class="mono">@Fmt.Num(counted) giờ <span class="note">(chỉ tính kết quả đã được duyệt)</span></dd>
     </dl>
     @if (doneRejected > 0 || donePending > 0)
@@ -35,7 +32,7 @@
                 <b>@pendingCount</b><text> đăng ký còn chờ duyệt. </text>
             }@if (lateCount > 0)
             {
-                <b class="red">@lateCount</b><text> đăng ký trễ hạn 14:00, không đảm bảo bố trí suất ăn.</text>
+                <b class="red">@lateCount</b><text> đăng ký trễ hạn @OtRules.DeadlineHhmm, không đảm bảo bố trí suất ăn.</text>
             }</p>
     }
 </section>
@@ -65,22 +62,18 @@
         <p class="note">Chưa có đăng ký làm thêm ngày này.</p>
     }
 </section>
-@if (Scope.Role == Role.Manager || Scope.Account.HrDuty)
+@if (Scope.IsManager)
 {
-    var s = Model.Send;
+    @* Hạn đăng ký làm thêm cho TOÀN BỘ nhân sự: mặc định 15:00, Trưởng phòng chỉnh linh động (08:00–20:00) *@
     <section class="card sec">
-        <h2>Gửi đăng ký suất ăn cho Phòng HCNS</h2>
-        @if (s is not null)
-        {
-            <div class="notice"><span class="ic">✓</span><div>
-                <b>Đã gửi lúc @VnTime.Hm(s.SentAt) @Fmt.Dm(VnTime.DateOf(s.SentAt)) · @(s.SentAt <= VnTime.UtcAt(d, "14:00") ? "đúng hạn" : "trễ hạn 14:00")</b>
-                <div class="note">@s.RiceCount suất cơm · @s.SnackCount ăn nhẹ · @s.AllowanceCount phụ cấp</div>
-            </div></div>
-        }
-        <p class="note" style="margin-top:0">Hạn gửi: trước 14:00 @Fmt.DayLabel(d)</p>
-        <form method="post" action="@OvertimeUi.PostUrl(req, "SendMealOrder", Scope.Date)" asp-antiforgery="true">
+        <h2>Hạn đăng ký làm thêm</h2>
+        <form method="post" action="@OvertimeUi.PostUrl(req, "SetDeadline", Scope.Date)" asp-antiforgery="true">
             @Ui.ReturnField(req)
-            <button class="btn btn-primary btn-block">@(s is not null ? "Gửi lại cho HCNS" : "Gửi cho HCNS")</button>
+            <label class="f" for="otDl" style="margin-top:0">Đăng ký làm thêm trước giờ</label>
+            <div class="row" style="gap:8px">
+                <div style="flex:1;min-width:0">@Ui.TimeSelect("deadline", OtRules.DeadlineHhmm, end: true, id: "otDl")</div>
+                <button class="btn btn-primary">Lưu</button>
+            </div>
         </form>
     </section>
 }

@@ -12,7 +12,7 @@ namespace QMDept.Controllers;
 /// Làm thêm (otScreen) — dùng chung 3 giao diện NV / Leader / TP; giao diện = vai trò của người đang xem (ViewScope).
 /// Tab con (Leader/TP): ?tab=mine|approve|summary. Đang sửa đăng ký: ?edit=yyyy-MM-dd (S.otEdit — gắn với ngày đang xem,
 /// nên chuyển ngày bằng thanh ngày là tự thoát chế độ sửa, giống artifact đặt S.otEdit=false khi đổi ngày).
-/// Port: otScreen, otMine, otApprove, otSummary + handler otForm / otDel / otDecide / otUndo / otSend.
+/// Port: otScreen, otMine, otApprove, otSummary + handler otForm / otDel / otDecide / otUndo.
 /// Luật tính dùng OtRules (Services/Rules.cs); bản JS xem trước: wwwroot/js/overtime.js.
 /// </summary>
 public class OvertimeController : AppController
@@ -47,8 +47,7 @@ public class OvertimeController : AppController
             // otSummary: mọi đăng ký chưa bị từ chối; giao diện Leader: không gồm TP và chỉ trong phạm vi nhóm.
             var all = D.Ots.Where(x => x.Date == d && x.Status != OtStatus.Rejected && (role == Role.Manager || Scope.Account.HrDuty || (x.Role != Role.Manager && D.InScope(x.PersonId))))
                 .OrderBy(x => OvertimeUi.SummaryOrder(x.Role)).ThenBy(x => D.PName(x.PersonId), Fmt.ViCompare).ToList();
-            var send = role == Role.Manager || Scope.Account.HrDuty ? await Db.MealOrders.AsNoTracking().FirstOrDefaultAsync(s => s.Date == d) : null;
-            return View(new OvertimeVm { Tab = t, Pending = pending, Summary = all, Send = send });
+            return View(new OvertimeVm { Tab = t, Pending = pending, Summary = all });
         }
 
         // otMine
@@ -350,24 +349,18 @@ public class OvertimeController : AppController
             await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, "kết quả làm thêm được hoàn tác, chờ duyệt lại");
         }, "Đã hoàn tác");
 
-    /// <summary>otSend: TP gửi tổng hợp suất ăn cho Phòng HCNS (gửi lại = cập nhật số mới nhất).</summary>
+    /// <summary>POST /Overtime/SetDeadline — Trưởng phòng / Quản trị đặt hạn đăng ký làm thêm (giờ trong ngày, 08:00–20:00; mặc định 15:00), áp dụng cho mọi nhân sự (yêu cầu 2026-10-21).</summary>
     [HttpPost]
-    public async Task<IActionResult> SendMealOrder() =>
+    public async Task<IActionResult> SetDeadline(string? deadline) =>
         await Do(async () =>
         {
-            // TP / Quản trị, hoặc Leader được giao quản lý nhân sự / báo cơm (HrDuty — yêu cầu 2026-10-21)
-            if (!Scope.IsManager && !(Scope.Account.HrDuty && Scope.Account.Role == Role.Leader)) throw new BizException("Chỉ Trưởng phòng hoặc Leader phụ trách báo cơm được gửi");
-            var d = Date;
-            var all = await Db.Overtimes.AsNoTracking().Where(o => o.Date == d && o.Status != OtStatus.Rejected).ToListAsync();
-            var s = await Db.MealOrders.FirstOrDefaultAsync(o => o.Date == d);
-            if (s is null) { s = new MealOrder { Date = d }; Db.MealOrders.Add(s); }
-            s.By = Scope.ActorName;
-            s.SentAt = VnTime.UtcNow;
-            s.RiceCount = all.Count(o => OtRules.IsFullMeal(o.Meal));
-            s.NoodleCount = all.Count(o => o.Meal == OtMeal.Noodle);
-            s.SnackCount = all.Count(o => o.Meal == OtMeal.Snack);
-            s.AllowanceCount = all.Count(o => o.Allowance > 0);
-            s.People = all.Count;
+            RequireManager();
+            if (!Fmt.IsHhmm(deadline) || string.CompareOrdinal(deadline, "08:00") < 0 || string.CompareOrdinal(deadline, "20:00") > 0)
+                throw new BizException("Chọn giờ từ 08:00 đến 20:00");
+            var s = await Db.AppSettings.FirstOrDefaultAsync(x => x.Key == "OtDeadline");
+            if (s is null) Db.AppSettings.Add(new AppSetting { Key = "OtDeadline", Value = deadline! });
+            else s.Value = deadline!;
             await Db.SaveChangesAsync();
-        }, "Đã gửi đăng ký suất ăn cho HCNS");
+            OtRules.DeadlineHhmm = deadline!;
+        }, "Đã đặt hạn đăng ký làm thêm");
 }

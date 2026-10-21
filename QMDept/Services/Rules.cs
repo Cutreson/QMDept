@@ -60,11 +60,14 @@ public static class OtRules
     public static bool IsFullMeal(OtMeal m) => m is OtMeal.Rice or OtMeal.Noodle;
     public static int CostOf(OtMeal m) => IsFullMeal(m) ? MealCost : m == OtMeal.Snack ? SnackCost : 0;
 
-    /// <summary>regType(createdAt, d): dự trù trước 14:00 ngày làm việc liền trước; chính thức trước 14:00 cùng ngày.</summary>
+    /// <summary>Hạn đăng ký làm thêm "HH:mm" (mặc định 15:00; Trưởng phòng đặt ở Tổng hợp suất ăn → bảng app_settings, khóa OtDeadline). Áp dụng cho mọi nhân sự.</summary>
+    public static string DeadlineHhmm { get; set; } = "15:00";
+
+    /// <summary>regType(createdAt, d): dự trù trước hạn ngày làm việc liền trước; chính thức trước hạn cùng ngày (hạn = <see cref="DeadlineHhmm"/>).</summary>
     public static OtReg RegType(DateTime createdUtc, DateOnly d)
     {
-        if (createdUtc <= VnTime.UtcAt(Fmt.PrevWorkDay(d), "14:00")) return OtReg.Early;
-        if (createdUtc <= VnTime.UtcAt(d, "14:00")) return OtReg.OnTime;
+        if (createdUtc <= VnTime.UtcAt(Fmt.PrevWorkDay(d), DeadlineHhmm)) return OtReg.Early;
+        if (createdUtc <= VnTime.UtcAt(d, DeadlineHhmm)) return OtReg.OnTime;
         return OtReg.Late;
     }
 
@@ -72,9 +75,9 @@ public static class OtRules
     public static (string Text, string Fg, string Bg) DeadlineState(DateOnly d)
     {
         var now = VnTime.UtcNow;
-        if (now <= VnTime.UtcAt(Fmt.PrevWorkDay(d), "14:00")) return ("Đang trong hạn đăng ký dự trù", "var(--ok)", "var(--ok-soft)");
-        if (now <= VnTime.UtcAt(d, "14:00")) return ("Đang trong hạn đăng ký chính thức", "var(--warn)", "var(--warn-soft)");
-        return ("Đã quá 14:00 — không đảm bảo bố trí suất ăn", "var(--bad)", "var(--bad-soft)");
+        if (now <= VnTime.UtcAt(Fmt.PrevWorkDay(d), DeadlineHhmm)) return ("Đang trong hạn đăng ký dự trù", "var(--ok)", "var(--ok-soft)");
+        if (now <= VnTime.UtcAt(d, DeadlineHhmm)) return ("Đang trong hạn đăng ký chính thức", "var(--warn)", "var(--warn-soft)");
+        return ("Đã quá " + DeadlineHhmm + " — không đảm bảo bố trí suất ăn", "var(--bad)", "var(--bad-soft)");
     }
 
     /// <summary>Giờ làm thêm thực tế (trừ nghỉ trưa 12:00–13:00 với ngày nghỉ / lễ như otRule); null nếu giờ sai.</summary>

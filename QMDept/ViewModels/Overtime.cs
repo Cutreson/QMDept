@@ -29,7 +29,6 @@ public sealed class OvertimeVm
 
     // ---- Tổng hợp suất ăn (otSummary) ----
     public List<Overtime> Summary { get; init; } = [];
-    public MealOrder? Send { get; init; }
 }
 
 /// <summary>Helper riêng cho màn hình Làm thêm: URL POST, khóa giá trị form, hộp xem trước otLive.</summary>
@@ -83,7 +82,7 @@ public static class OvertimeUi
     public static IHtmlContent Deadline(DateOnly d)
     {
         var (text, fg, bg) = OtRules.DeadlineState(d);
-        return new HtmlString($"<div class=\"notice\" style=\"--nbg:{bg};--nfg:{fg}\"><span class=\"ic\">i</span><div><b>{E(text)}</b><div class=\"note\">Dự trù trước 14:00 {Fmt.DayLabel(Fmt.PrevWorkDay(d))} · Chính thức trước 14:00 {Fmt.DayLabel(d)}. Tăng ca từ 3 giờ bắt buộc dùng suất cơm.</div></div></div>");
+        return new HtmlString($"<div class=\"notice\" style=\"--nbg:{bg};--nfg:{fg}\"><span class=\"ic\">i</span><div><b>{E(text)}</b><div class=\"note\">Dự trù trước {OtRules.DeadlineHhmm} {Fmt.DayLabel(Fmt.PrevWorkDay(d))} · Chính thức trước {OtRules.DeadlineHhmm} {Fmt.DayLabel(d)}. Tăng ca từ 3 giờ bắt buộc dùng suất cơm.</div></div></div>");
     }
 
     // ---------- otLive (bản render phía server cho lần tải đầu; overtime.js cập nhật khi đổi giờ) ----------

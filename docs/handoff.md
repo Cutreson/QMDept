@@ -300,3 +300,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-21) Tách 'Nhân sự phòng' của Leader Hùng thành tab riêng /Leader/Department (Nhân sự phòng | Báo cơm & làm thêm), Tổng quan → Nhân sự của Hùng trở lại nhóm mình (quy tắc 47 cập nhật). Đã thử Hùng / Huề (không có tab, bị chuyển về trang chủ) / TP.
 - (2026-10-21) Tab 'Nhân sự phòng' của Leader có cờ HrDuty chuyển xuống cuối thanh trái (sau ĐK làm thêm tại CTy).
 - (2026-10-21) TP → Tổng quan → Nhân sự: 2 mục con Làm việc hành chính | Làm thêm tại công ty (quy tắc 48). Đã thử TP + Quản trị.
+- (2026-10-21) Bỏ khối Gửi HCNS + Chi phí dự kiến; hạn đăng ký làm thêm mặc định 15:00 và TP / Quản trị cài được (app_settings.OtDeadline, quy tắc 49). Đã thử 9 tài khoản (TP, 2 Leader, 6 NV) đăng ký với hạn 15:00 / 19:00 / 16:00: nhãn Late / Early đúng; NV + Leader không đặt được hạn; giá trị ngoài 08:00–20:00 bị chặn. Đã xóa OT thử, hạn để 15:00.
