@@ -9,4 +9,5 @@
         (Ui.To(req, "/Overtime", ("tab", "mine"), ("edit", null), ("as", null)), "ĐK làm thêm tại CTy", Model == "ot"),
     };
 }
+@if (Scope.Account.Role == Role.Leader) { items.Insert(1, (Ui.To(req, "/Staff/Evening", ("as", "mine"), ("edit", null)), "Báo cáo cuối ngày", Model == "evening")); }
 @Ui.Subtabs(items)

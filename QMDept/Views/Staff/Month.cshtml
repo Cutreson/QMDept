@@ -138,7 +138,7 @@ else
                     var act = !ownLead ? null : StaffCalendar.CanManage(Scope, D, x) ? await Html.PartialStr("_TaskBtns", x) : "";
                     @D.TaskRow(x, actions: act)
                     <partial name="_TaskAck" model="x" />
-                    @if (ownLead) { <partial name="_TaskActions" model="x" /> <partial name="_LeaderResult" model="x" /> }
+                    @if (ownLead) { <partial name="_TaskActions" model="x" /> }
                 }
             }
             else { <p class="note" style="padding:8px 12px;margin:0">Ngày này chưa có công việc.</p> }

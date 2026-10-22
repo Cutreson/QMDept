@@ -14,6 +14,7 @@
     <script src="~/js/staff.js" asp-append-version="true"></script>
 }
 @Ui.Head(4, "Báo cáo cuối ngày")
+@if (Scope.Account.Role == Role.Leader && Scope.OwnCalendar) { <partial name="_MgrStatusTabs" model="@("evening")" /> }
 <partial name="_DayBar" />
 @if (me is null)
 {

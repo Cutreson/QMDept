@@ -178,8 +178,8 @@ public partial class StaffController
     [HttpGet]
     public async Task<IActionResult> Evening()
     {
-        // Leader không có báo cáo cuối ngày (yêu cầu 2026-10-16): về lịch tháng.
-        if (Scope.Account.Role == Role.Leader) return Redirect(Ui.To(Request, "/Staff/Month", ("as", "mine")));
+        // Leader có báo cáo cuối ngày kiểu người hỗ trợ (tích "Đã hỗ trợ"; Leader dự án báo kết quả) ở chế độ cá nhân ?as=mine (yêu cầu 2026-10-22); Leader ở chế độ khác: về lịch tháng.
+        if (Scope.Account.Role == Role.Leader && !Scope.OwnCalendar) return Redirect(Ui.To(Request, "/Staff/Month", ("as", "mine")));
         await D.EnsureAsync(Date, Date.AddDays(14));
         return View(new StaffEveningVm { Me = Scope.Me, Open = StaffReports.OpenIds(Request) });
     }
@@ -199,7 +199,7 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> WithdrawReport() => await Do(async () =>
     {
-        RequireSelfStaff();
+        RequireSelfStaff(leaderOk: true);
         var me = Scope.Me!.Id;
         var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me) ?? throw new BizException("Chưa có báo cáo để rút lại");
         if (r.LeaderDecision == Decision.Ok) throw new BizException("Báo cáo đã được duyệt, không rút lại được");
@@ -211,7 +211,7 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> UpdateTask(StaffUpdateInput input) => await Do(async () =>
     {
-        RequireSelfStaff();
+        RequireSelfStaff(leaderOk: true);
         await EnsureReportOpenAsync();
         var me = Scope.Me!;
         var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == input.TaskId && x.Selected)
@@ -308,7 +308,7 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> TickSupport(int taskId, bool on, string? start, string? end) => await Do(async () =>
     {
-        RequireSelfStaff();
+        RequireSelfStaff(leaderOk: true);
         await EnsureReportOpenAsync();
         var me = Scope.Me!;
         var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == taskId && x.EmployeeId == me.Id && x.Selected)
@@ -330,7 +330,7 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> ProposeExtra(ExtraInput input) => await Do(async () =>
     {
-        RequireSelfStaff();
+        RequireSelfStaff(leaderOk: true);
         await EnsureReportOpenAsync();
         await StaffReports.RequireActiveProjectAsync(Db, input.ProjectId);
         StaffReports.Clip(input.Title, 300);
@@ -344,7 +344,7 @@ public partial class StaffController
     [HttpPost]
     public async Task<IActionResult> SubmitReport(StaffEveningInput input) => await Do(async () =>
     {
-        RequireSelfStaff();
+        RequireSelfStaff(leaderOk: true);
         await EnsureReportOpenAsync();
         var me = Scope.Me!.Id;
         // Dự án đã có Leader dự án (yêu cầu 2026-10-14): người hỗ trợ chỉ cần tích "đã hỗ trợ" mọi việc của mình; Leader dự án báo cáo kết quả
@@ -371,7 +371,8 @@ public partial class StaffController
         r.Note = note;
         r.SentAt = VnTime.UtcNow;
         r.LeaderDecision = null; r.LeaderBy = null; r.LeaderAt = null; r.LeaderNote = null;
+        if (Scope.Account.Role == Role.Leader) { r.LeaderDecision = Decision.Ok; r.LeaderBy = "Tự xác nhận"; r.LeaderAt = VnTime.UtcNow; }   // Leader tự xác nhận, không qua duyệt (yêu cầu 2026-10-22)
         await Db.SaveChangesAsync();
-        await Notify.ReportSubmittedAsync(me, Date);
+        if (Scope.Account.Role != Role.Leader) await Notify.ReportSubmittedAsync(me, Date);
     }, "Đã gửi báo cáo cuối ngày");
 }
