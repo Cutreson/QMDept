@@ -50,8 +50,8 @@ else
             var tot = per.Sum(t => t.Count);
             var late = per.Any(t => t.Any(x => x.Status == TaskState.Late));
             var leaveCount = ppl.Count(p => D.OnLeave(d, p.Id) is not null);
-            var (bg, fg) = StaffCalendar.TeamCellColor(busy, late, d == today);
-            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {busy}/{ppl.Count} người có việc, {tot} việc")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@busy</span><small class="mono mg-sub">@(tot > 0 ? tot + " việc" : "–")@(leaveCount > 0 ? " · N" + leaveCount : "")</small></a>
+            var (bg, fg, lab) = StaffCalendar.DayCell(per.SelectMany(x => x).ToList(), d, today);
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {busy}/{ppl.Count} người có việc, hoàn thành {lab}")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@lab</span><small class="mono mg-sub">@(tot > 0 ? busy + " người" : "–")@(leaveCount > 0 ? " · N" + leaveCount : "")</small></a>
         }
     </div>
     @if (inM)
@@ -63,7 +63,7 @@ else
                 var t = D.TasksOn(sel, p.Id).Where(D.OkCal).ToList();
                 var leave = D.OnLeave(sel, p.Id) ?? D.PartLeave(sel, p.Id);   // nghỉ một phần ngày vẫn có việc
                 var ot = D.OtOf(sel, p.Id) is { Status: not OtStatus.Rejected } o ? o : null;
-                <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red" title="@Blocks.LeaveBrief(leave)">@(leave.LeaveType is null ? "Nghỉ" : Blocks.LeaveBrief(leave))</b>@(" · ")}@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
+                <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red" title="@Blocks.LeaveBrief(leave)">@(leave.LeaveType is null ? "Nghỉ" : Blocks.LeaveBrief(leave))</b>@(" · ")}@t.Count(x => x.Status == TaskState.Done && x.CarriedToId is null)/@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
                     @foreach (var x in t)
                     {
                         @D.TaskRow(x, leadOnly: true)
@@ -123,8 +123,8 @@ else
         {
             var d = ms.AddDays(k - 1);
             var t = D.TasksOn(d, me.Id).Where(D.OkCal).ToList();
-            var (bg, fg) = StaffCalendar.CellColor(t, d == today);
-            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {t.Count} việc")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@t.Count</span></a>
+            var (bg, fg, lab) = StaffCalendar.DayCell(t, d, today);
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: hoàn thành {lab}")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@lab</span></a>
         }
     </div>
     @if (inM)

@@ -64,22 +64,27 @@ public static class StaffCalendar
     /// <summary>Việc đã có kết quả (Hoàn thành / Chậm) hoặc NV đã gửi báo cáo cuối ngày → khóa, không xóa / chuyển được.</summary>
     public static bool TaskLocked(Dept d, WorkTask t) => t.Status is TaskState.Done or TaskState.Late || d.ReportOf(t.Date, t.EmployeeId) is not null;
 
-    /// <summary>Màu ô ngày ở chế độ một nhân viên (nvMonth): không việc / xong hết / có chậm / hôm nay / còn lại.</summary>
-    public static (string Bg, string Fg) CellColor(IReadOnlyCollection<WorkTask> t, bool isToday)
+    /// <summary>
+    /// Ô ngày của lịch tháng (yêu cầu 2026-10-22): 3 màu — xám = không việc; xanh dương nhạt = có việc; xanh dương đậm = hoàn thành hết;
+    /// đỏ nhạt = chưa hoàn thành hết (ngày đã qua còn việc chưa xong / chuyển tiếp, hoặc có việc Chậm). Nhãn "xong/tổng" (vd 8/9).
+    /// </summary>
+    public static (string Bg, string Fg, string Label) DayCell(IReadOnlyCollection<WorkTask> t, DateOnly date, DateOnly today)
     {
-        if (t.Count == 0) return ("var(--surface-2)", "var(--faint)");
-        var c = Dept.Count(t);
-        if (c.Done == t.Count) return ("var(--ok)", "#fff");
-        if (c.Late > 0) return ("var(--bad-soft)", "var(--bad)");
-        return isToday ? ("var(--brand)", "#fff") : ("var(--brand-soft)", "var(--brand)");
+        if (t.Count == 0) return ("var(--surface-2)", "var(--faint)", "0");
+        var done = t.Count(x => x.Status == TaskState.Done && x.CarriedToId is null);
+        var label = $"{done}/{t.Count}";
+        if (done == t.Count) return ("var(--brand)", "#fff", label);
+        if (date < today || t.Any(x => x.Status == TaskState.Late)) return ("var(--bad-soft)", "var(--bad)", label);
+        return ("var(--brand-soft)", "var(--brand)", label);
     }
 
-    /// <summary>Màu ô ngày ở chế độ "Tất cả nhân sự": không ai có việc / có việc chậm / hôm nay / còn lại.</summary>
-    public static (string Bg, string Fg) TeamCellColor(int busy, bool late, bool isToday)
+    /// <summary>Nhãn trạng thái từng việc: Hoàn thành / Chưa hoàn thành / Chuyển sang dd/MM/yyyy / Đang làm / Chưa làm (+ lớp màu pill).</summary>
+    public static (string Text, string Css) TaskResult(WorkTask t, DateOnly today)
     {
-        if (busy == 0) return ("var(--surface-2)", "var(--faint)");
-        if (late) return ("var(--bad-soft)", "var(--bad)");
-        return isToday ? ("var(--brand)", "#fff") : ("var(--brand-soft)", "var(--brand)");
+        if (t.CarriedToId is not null) return (t.CarryDate is DateOnly cd ? "Chuyển sang " + Fmt.Dmy(cd) : "Đã chuyển tiếp", "p-warn");
+        if (t.Status == TaskState.Done) return ("Hoàn thành", "p-blue");
+        if (t.Status == TaskState.Late || t.Date < today) return ("Chưa hoàn thành", "p-bad");
+        return t.Status == TaskState.InProgress ? ("Đang làm", "p-info") : ("Chưa làm", "p-idle");
     }
 
     /// <summary>
