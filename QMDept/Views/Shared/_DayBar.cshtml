@@ -2,6 +2,9 @@
 @{
     var d = Scope.Date;
     var req = Context.Request;
+    // Ngày khác đang có việc chờ xử lý (chấm đỏ) — yêu cầu 2026-10-22
+    await D.EnsureAsync(Scope.Today.AddDays(-30), Scope.Today.AddDays(30));
+    var pend = D.PendingDays(Scope.Account.Role, Scope.Account.Id).Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList();
 }
 <div class="daybar">
     <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(-1))), ("w", null), ("m", null), ("edit", null), ("open", null))" aria-label="Ngày trước">‹</a>
@@ -12,3 +15,13 @@
     }
     <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(1))), ("w", null), ("m", null), ("edit", null), ("open", null))" aria-label="Ngày sau">›</a>
 </div>
+@if (pend.Count > 0)
+{
+    <div class="pdays">
+        <span class="note">Chờ xử lý ngày khác:</span>
+        @foreach (var (pd, n) in pend)
+        {
+            <a class="pday" href="@Ui.Here(req, ("d", Fmt.Key(pd)), ("w", null), ("m", null), ("edit", null), ("open", null))">@Fmt.Dmy(pd) <b class="badge">@n</b></a>
+        }
+    </div>
+}

@@ -395,4 +395,41 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public IEnumerable<Overtime> OtPendingAll(Role role, int me) => _ots.Values.Where(x => P(x.PersonId) is { IsDeleted: false } p && (role == Role.Leader
         ? x.Role == Role.Staff && p.LeaderId == me
         : x.Role == Role.Leader || (x.Role == Role.Staff && (x.Status is OtStatus.Approved or OtStatus.PendingManager || (x.Status == OtStatus.Rejected && x.LeaderAt != null)))));
+
+    /// <summary>
+    /// Các ngày có việc đang chờ tài khoản này xử lý (duyệt / kiểm tra) → số lượng mỗi ngày (yêu cầu 2026-10-22): chấm đỏ trên lịch tháng + thanh ngày.
+    /// Tính theo TÀI KHOẢN đăng nhập, mọi ngày đã nạp (±30 ngày quanh hôm nay) + đề xuất / xin nghỉ ở mọi ngày.
+    /// </summary>
+    public Dictionary<DateOnly, int> PendingDays(Role role, int me)
+    {
+        var r = new Dictionary<DateOnly, int>();
+        void Add(DateOnly d, int n = 1) => r[d] = r.GetValueOrDefault(d) + n;
+        if (role == Role.Leader)
+        {
+            bool Team(int emp) => P(emp) is { IsDeleted: false, Role: Role.Staff } p && p.LeaderId == me;
+            bool Scoped(int emp) => P(emp) is { IsDeleted: false } p && (emp == me || p.LeaderId == me);
+            foreach (var p in _plans.Values) if (PlanSt(p) == PlanState.Pending && Team(p.EmployeeId)) Add(p.Date);
+            foreach (var x in _extras.Values) if (x.Status == ExtraStatus.Pending && Scoped(x.EmployeeId)) Add(x.Date);
+            foreach (var x in _reports.Values) if (EodSt(x) == EodState.Pending && Team(x.EmployeeId)) Add(x.Date);
+            foreach (var t in _tasks.Values) if (t.Source == TaskSource.CarryOver && t.FromDate is DateOnly fd && !t.CarryOk && Scoped(t.EmployeeId)) Add(fd);
+            foreach (var o in OtPendingAll(Role.Leader, me)) if (o.NeedsDecision) Add(o.Date);
+            foreach (var x in ProposalsFor(me)) Add(x.Date);
+            foreach (var x in LeavesFor(me)) Add(x.Date);
+        }
+        else if (role is Role.Manager or Role.Admin)
+        {
+            foreach (var p in _plans.Values)
+            {
+                var lead = P(p.EmployeeId) is { Role: Role.Leader };
+                if (PlanSt(p) == (lead ? PlanState.Pending : PlanState.PendingManager)) Add(p.Date);
+            }
+            foreach (var x in LeaderLeaves()) Add(x.Date);
+            foreach (var o in OtPendingAll(Role.Manager, me)) if (o.NeedsTpDecision) Add(o.Date);
+        }
+        else
+        {
+            foreach (var x in _extras.Values) if (x.EmployeeId == me && x.Status == ExtraStatus.Pending) Add(x.Date);
+        }
+        return r;
+    }
 }

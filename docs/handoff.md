@@ -312,3 +312,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-21) Số đỏ thanh tab đếm mọi ngày (quy tắc 56); giao việc có xác nhận nhận việc + thông báo hai chiều (quy tắc 57, migration TaskAck). Đã test Huề giao NV 11 → xác nhận → Huề thấy; đã xóa dữ liệu thử.
 - (2026-10-21) Sửa số đỏ biến mất ở Trạng thái làm việc (trước đây ép 0 khi ?as=mine); tính theo tài khoản đăng nhập.
 - (2026-10-21) TP → Phê duyệt → Phát sinh: thêm thanh lọc ngày (quy tắc 58).
+- (2026-10-22) Chấm đỏ ngày chờ xử lý trên thanh ngày + lịch tháng (quy tắc 59).

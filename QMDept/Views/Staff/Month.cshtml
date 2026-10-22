@@ -9,6 +9,8 @@
     var inM = Model.InMonth(sel);
     var ppl = Model.People;
     var me = Model.Me;
+    await D.EnsureAsync(today.AddDays(-30), today.AddDays(30));
+    var pendDays = Scope.IsViewingOther ? new Dictionary<DateOnly, int>() : D.PendingDays(Scope.Account.Role, Scope.Account.Id);   // chấm đỏ: ngày có việc chờ xử lý
     // pickDay: chọn ngày (S.date = d, S.month = tháng của d, S.week = null)
     string DayHref(DateOnly d) => Ui.Here(req, ("d", Fmt.Key(d)), ("m", Fmt.Key(Fmt.MonthStart(d))), ("w", null));
     string DayCls(DateOnly d) => (d == today ? "today " : "") + (d == sel ? "sel" : "");
@@ -49,7 +51,7 @@ else
             var late = per.Any(t => t.Any(x => x.Status == TaskState.Late));
             var leaveCount = ppl.Count(p => D.OnLeave(d, p.Id) is not null);
             var (bg, fg) = StaffCalendar.TeamCellColor(busy, late, d == today);
-            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {busy}/{ppl.Count} người có việc, {tot} việc")"><small>@k</small><span class="n" style="--dbg:@bg;--dfg:@fg">@busy</span><small class="mono mg-sub">@(tot > 0 ? tot + " việc" : "–")@(leaveCount > 0 ? " · N" + leaveCount : "")</small></a>
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {busy}/{ppl.Count} người có việc, {tot} việc")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@busy</span><small class="mono mg-sub">@(tot > 0 ? tot + " việc" : "–")@(leaveCount > 0 ? " · N" + leaveCount : "")</small></a>
         }
     </div>
     @if (inM)
@@ -122,7 +124,7 @@ else
             var d = ms.AddDays(k - 1);
             var t = D.TasksOn(d, me.Id).Where(D.OkCal).ToList();
             var (bg, fg) = StaffCalendar.CellColor(t, d == today);
-            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {t.Count} việc")"><small>@k</small><span class="n" style="--dbg:@bg;--dfg:@fg">@t.Count</span></a>
+            <a href="@DayHref(d)" class="@DayCls(d)" aria-pressed="@(d == sel ? "true" : "false")" aria-label="@($"{Fmt.DayLabel(d)}: {t.Count} việc")"><small>@k@if (pendDays.TryGetValue(d, out var pdn)) {<i class="pdot" title="@(pdn) chờ xử lý">@pdn</i>}</small><span class="n" style="--dbg:@bg;--dfg:@fg">@t.Count</span></a>
         }
     </div>
     @if (inM)

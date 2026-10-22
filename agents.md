@@ -279,3 +279,4 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     mọi dòng việc (`Blocks.TaskRow`) hiện "Giao bởi … · Chờ xác nhận / ✓ Đã xác nhận hh:mm dd/MM/yyyy" cho cả người giao và người nhận.
     Số đỏ tính theo TÀI KHOẢN đăng nhập (không theo scope) nên không mất khi vào Trạng thái làm việc (?as=mine) — `LeaderPendingAll(lid)`, `OtPendingAll(role, me)`.
 58. **TP: Phê duyệt → Phát sinh có thanh lọc ngày** (yêu cầu 2026-10-21): `/Manager/Approvals?mode=extra` có `_DayBar` như Hỗ trợ nhân sự / Của Leader; danh sách phát sinh lọc theo ngày đang chọn.
+59. **Chấm đỏ ngày chờ xử lý** (yêu cầu 2026-10-22): `Dept.PendingDays(role, me)` (theo tài khoản đăng nhập, ±30 ngày + đề xuất / xin nghỉ mọi ngày) → thanh ngày `_DayBar` hiện "Chờ xử lý ngày khác: dd/MM/yyyy [n]" (bấm để chuyển ngày) và ô ngày lịch tháng có chấm đỏ `.pdot`; không cần dò từng ngày để tìm việc cần duyệt.

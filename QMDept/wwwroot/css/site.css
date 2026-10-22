@@ -496,3 +496,9 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 /* Báo cáo tổng hợp cuối ngày (Views/Staff/Evening): văn bản chọn / sao chép được để dán vào nhóm Zalo dự án (yêu cầu 2026-10-20) */
 .rpt-text{margin:8px 0 0;padding:10px 12px;background:var(--surface-2);border-radius:10px;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:13.5px;line-height:1.5;user-select:text;-webkit-user-select:text}
 .rpt-blk{margin-top:2px}.rpt-blk .btn{margin-top:6px}
+
+/* Chờ xử lý ở ngày khác (thanh ngày) + chấm đỏ trên lịch tháng — yêu cầu 2026-10-22 */
+.pdays{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 0 12px}
+.pday{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--fg);text-decoration:none}
+.pday .badge,.pdot{background:var(--bad);color:#fff;border-radius:999px;font-size:10px;font-style:normal;font-weight:700;min-width:16px;height:16px;padding:0 4px;display:inline-grid;place-items:center}
+.pdot{margin-left:3px;vertical-align:middle}
