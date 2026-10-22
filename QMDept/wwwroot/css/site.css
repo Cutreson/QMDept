@@ -513,4 +513,3 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .trow-act{grid-template-columns:22px 1fr auto 142px 82px}
 .trow-act .act{display:flex;justify-content:flex-end;gap:12px}
 @media (max-width:640px){.trow-act{grid-template-columns:22px 1fr auto}.trow-act .act{grid-column:2/-1;justify-content:flex-start}}
-.row-long td{background:var(--warn-soft)}

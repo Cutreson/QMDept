@@ -51,7 +51,7 @@
             var onLeave = (ok && LeaveRules.IsLeave(plan!.Status)) || (g.Info is 0 or 4 && g.Lv is not null);
             var trip = ok && !onLeave && LeaveRules.IsTrip(plan!.Status);
             var ts = ok && !onLeave ? D.Chosen(d, p.Id) : new List<WorkTask>();
-            <tr class="@(trip && plan!.Status == WorkStatus.LongTrip ? "row-long" : null)">
+            <tr>
                 <td class="n">@no</td>
                 <td style="white-space:nowrap">@if (p.Role == Role.Manager || p.Id == Scope.Account.Id || !Scope.Subordinates.Any(sb => sb.Id == p.Id)) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
                 @* Trạng thái làm việc: tại công ty / công tác trong ngày / công tác dài ngày / nghỉ phép / nghỉ không lương (kèm thời gian nghỉ) *@
