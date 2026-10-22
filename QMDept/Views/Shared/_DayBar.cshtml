@@ -4,7 +4,10 @@
     var req = Context.Request;
     // Ngày khác đang có việc chờ xử lý (chấm đỏ) — yêu cầu 2026-10-22
     await D.EnsureAsync(Scope.Today.AddDays(-30), Scope.Today.AddDays(30));
-    var pend = D.PendingDays(Scope.Account.Role, Scope.Account.Id).Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList();
+    // Chỉ hiện ở các trang DUYỆT riêng (yêu cầu 2026-10-22): không hiện trên lịch hay trang khác
+    var ctl = Context.GetRouteValue("controller")?.ToString() ?? ""; var act = Context.GetRouteValue("action")?.ToString() ?? "";
+    var onApprove = (ctl == "Planning" && act is "Proposals" or "Leave" or "Reports") || (ctl == "Manager" && act == "Approvals") || (ctl == "Overtime" && Context.Request.Query["tab"] == "approve");
+    var pend = onApprove ? D.PendingDays(Scope.Account.Role, Scope.Account.Id).Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList() : [];
 }
 <div class="daybar">
     <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(-1))), ("w", null), ("m", null), ("edit", null), ("open", null))" aria-label="Ngày trước">‹</a>
