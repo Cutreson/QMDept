@@ -35,9 +35,9 @@ public static class Blocks
         var ackLine = t.GivenById is null ? ""
             : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Hm(ak)} {Fmt.Dm(VnTime.DateOf(ak))}</b></div>"
             : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
-        return H($"<div class=\"trow\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
+        return H($"<div class=\"trow trow-st\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")}</div>{leadLine}{ackLine}{noteLine}</div>"
-            + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}<br><span class=\"pill {res.Css}\">{E(res.Text)}</span>{tail}</span></div>");
+            + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span></span></div>");
     }
 
     /// <summary>extraRow(x)</summary>
