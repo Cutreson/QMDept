@@ -315,3 +315,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-22) Chấm đỏ ngày chờ xử lý trên thanh ngày + lịch tháng (quy tắc 59).
 - (2026-10-22) Lịch tháng hiển thị xong/tổng + 3 màu, trạng thái từng việc (quy tắc 60). Đã kiểm tra TP / Leader / NV và 375px.
 - (2026-10-22) Tách trạng thái việc thành cột riêng (.trow-st).
+- (2026-10-22) Sửa / Xóa thành cột cuối riêng của dòng việc.

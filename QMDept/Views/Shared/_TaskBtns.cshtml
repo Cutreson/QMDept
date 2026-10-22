@@ -1,0 +1,8 @@
+@model WorkTask
+@* Nút Sửa / Xóa một công việc — nằm trong CỘT CUỐI của dòng việc (Blocks.TaskRow, tham số actions; yêu cầu 2026-10-22). Sheet + form xóa ở _TaskActions / _TaskEdit. *@
+@{
+    var t = Model;
+    if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
+}
+<button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
+<button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>

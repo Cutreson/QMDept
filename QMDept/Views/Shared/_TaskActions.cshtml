@@ -1,12 +1,8 @@
 @model WorkTask
-@* Sửa / Xóa một công việc (Leader / TP — yêu cầu 2026-10-20, rút gọn 2026-10-21: chuyển lịch nằm trong Sửa): hiện dưới dòng việc ở "Lịch của tôi" và "Lịch nhóm / phòng".
-   Sheet + form xóa ở _TaskEdit. Server kiểm quyền lại (StaffController.EditTask / DeleteTask). *@
+@* Sheet Sửa + form Xóa của một công việc (Leader / TP — yêu cầu 2026-10-20, 2026-10-21: chuyển lịch nằm trong Sửa). Nút Sửa / Xóa nằm ở cột cuối dòng việc (_TaskBtns).
+   Server kiểm quyền lại (StaffController.EditTask / DeleteTask). *@
 @{
     var t = Model;
     if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
 }
-<div class="task-actions ro-ok" style="display:flex;justify-content:flex-end;gap:16px;margin:-2px 12px 6px">
-    <button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
-    <button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>
-</div>
 <partial name="_TaskEdit" model="t" />
