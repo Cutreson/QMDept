@@ -70,7 +70,7 @@ public static class Labels
         // WST — trạng thái làm việc đầu ngày
         [WorkStatus.AtOffice] = new("Làm việc tại công ty", "p-info", "var(--brand)"),
         [WorkStatus.DayTrip] = new("Công tác trong ngày", "p-info", "var(--brand)"),
-        [WorkStatus.LongTrip] = new("Công tác dài ngày", "p-info", "var(--brand)"),
+        [WorkStatus.LongTrip] = new("Công tác dài ngày", "p-warn", "var(--warn)"),
         [WorkStatus.PaidLeave] = new("Xin nghỉ phép", "p-warn", "var(--warn)"),
         [WorkStatus.UnpaidLeave] = new("Xin nghỉ không lương", "p-warn", "var(--warn)"),
         // MEAL

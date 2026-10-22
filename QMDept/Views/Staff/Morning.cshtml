@@ -59,7 +59,7 @@
                 var act = !lead ? null : StaffCalendar.CanManage(Scope, D, t) ? await Html.PartialStr("_TaskBtns", t) : "";
                 @D.TaskRow(t, actions: act)
                 <partial name="_TaskAck" model="t" />
-                @if (lead) { <partial name="_TaskActions" model="t" /> }
+                @if (lead) { <partial name="_TaskActions" model="t" /> <partial name="_LeaderResult" model="t" /> }
             }
         }
         else

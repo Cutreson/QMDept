@@ -96,6 +96,48 @@ public partial class StaffController
     }
 
     /// <summary>
+    /// POST /Staff/LeaderResult — Leader / TP tự xác nhận việc của MÌNH trong ngày: result=done | notdone (yêu cầu 2026-10-22). Không qua duyệt, Trưởng phòng xem kết quả trên lịch phòng.
+    /// notdone bắt buộc ghi lý do (note) hoặc chuyển sang ngày khác (to): chuyển = tạo việc chuyển tiếp ở ngày đó (đã duyệt sẵn), việc gốc ghi "Chuyển sang dd/MM/yyyy".
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> LeaderResult(int id, string result, string? note, string? to) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther || Scope.Account.Role == Role.Staff) throw new BizException("Chỉ Leader / Trưởng phòng tự xác nhận việc của mình");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc");
+        if (t.EmployeeId != Scope.Account.Id) throw new BizException("Chỉ xác nhận được việc của chính mình");
+        if (t.Date > Scope.Today) throw new BizException("Chưa đến ngày làm việc này");
+        if (t.CarriedToId is not null) throw new BizException("Việc này đã chuyển sang ngày khác");
+        if (result == "done")
+        {
+            t.Status = TaskState.Done; t.Note = null;
+        }
+        else
+        {
+            note = note?.Trim();
+            var day = string.IsNullOrWhiteSpace(to) ? (DateOnly?)null : Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày đúng dạng dd/MM/yyyy");
+            if (day is null && string.IsNullOrEmpty(note)) throw new BizException("Ghi lý do chưa hoàn thành hoặc chọn ngày chuyển sang");
+            if (note is { Length: > 2000 }) throw new BizException("Lý do tối đa 2000 ký tự");
+            if (day is DateOnly cd && (cd <= t.Date || cd < Scope.Today)) throw new BizException("Ngày chuyển sang phải sau ngày của việc và từ hôm nay trở đi");
+            t.Status = TaskState.Late; t.Note = string.IsNullOrEmpty(note) ? null : note;
+            if (day is DateOnly nd)
+            {
+                var n = new WorkTask
+                {
+                    Date = nd, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = t.Title, Start = t.Start, End = t.End,
+                    Status = TaskState.NotStarted, Source = TaskSource.CarryOver, FromDate = t.Date, CarriedFromId = t.Id, CarryOk = true,
+                    CarryBy = Scope.ActorName, CarryAt = VnTime.UtcNow, CreatedAt = VnTime.UtcNow,
+                };
+                Db.WorkTasks.Add(n);
+                await Db.SaveChangesAsync();
+                t.CarriedToId = n.Id; t.CarryDate = nd;
+                await Flow.SyncCarryToPlanAsync(n);
+            }
+        }
+        t.UpdatedAt = VnTime.UtcNow;
+        await Db.SaveChangesAsync();
+    }, "Đã ghi nhận kết quả công việc");
+
+    /// <summary>
     /// POST /Staff/AckTask — người được cấp quản lý giao việc xác nhận đã nhận và bắt đầu triển khai (yêu cầu 2026-10-21):
     /// ghi giờ xác nhận lên việc, người giao nhận thông báo đẩy. Chỉ người nhận, chỉ việc do người khác giao, chỉ một lần.
     /// </summary>

@@ -317,3 +317,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-22) Tách trạng thái việc thành cột riêng (.trow-st).
 - (2026-10-22) Sửa / Xóa thành cột cuối riêng của dòng việc.
 - (2026-10-22) Bỏ chấm đỏ / khối chờ duyệt khỏi lịch; chip ngày chờ xử lý chỉ ở các trang duyệt.
+- (2026-10-22) Leader/TP tự xác nhận việc (quy tắc 61, đã test trên DB thật + xóa dữ liệu thử); công tác dài ngày tô vàng (quy tắc 62).
