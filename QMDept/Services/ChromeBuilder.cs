@@ -233,6 +233,8 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             }
             return n;
         }
+        // Việc được cấp quản lý giao mà mình chưa "Xác nhận đã nhận việc" (7 ngày gần nhất trở đi) — badge đỏ trên mục Kế hoạch tháng (yêu cầu 2026-10-23).
+        int TodoAck() => scope.IsViewingOther ? 0 : d.Tasks.Count(t => t.EmployeeId == acc.Id && t.GivenById != null && t.AckAt == null && t.Date >= scope.Today.AddDays(-7));
         // Làm thêm đã được duyệt, đã tới giờ làm nhưng chưa cập nhật kết quả (hoặc kết quả bị từ chối cần làm lại).
         int TodoOt()
         {
@@ -276,8 +278,9 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                     + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);
             if (id == "overtime" && acc.Role is Role.Manager or Role.Admin) return d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);   // Leader duyệt làm thêm ở Kế hoạch đề xuất
             // Việc mình phải làm mà chưa làm (yêu cầu 2026-10-23)
-            if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); }
+            if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); if (id == "month") return TodoAck(); }
             if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "status") return TodoMorning() + TodoEvening() + TodoOt();
+            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "overview") return TodoAck();
             return 0;
         }
     }

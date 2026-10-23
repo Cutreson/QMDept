@@ -390,7 +390,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         return _plans.Values.Count(p => PlanSt(p) == PlanState.Pending && Team(p.EmployeeId))
             + _extras.Values.Count(x => x.Status == ExtraStatus.Pending && Scoped(x.EmployeeId))
             + _reports.Values.Count(r => EodSt(r) == EodState.Pending && Team(r.EmployeeId))
-            + _tasks.Values.Count(t => t.Source == TaskSource.CarryOver && t.FromDate != null && !t.CarryOk && Scoped(t.EmployeeId));
+            + _tasks.Values.Count(t => t.Source == TaskSource.CarryOver && t.FromDate != null && !t.CarryOk && Team(t.EmployeeId));
     }
     public IEnumerable<Overtime> OtPendingAll(Role role, int me) => _ots.Values.Where(x => P(x.PersonId) is { IsDeleted: false } p && (role == Role.Leader
         ? x.Role == Role.Staff && p.LeaderId == me
@@ -411,7 +411,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
             foreach (var p in _plans.Values) if (PlanSt(p) == PlanState.Pending && Team(p.EmployeeId)) Add(p.Date);
             foreach (var x in _extras.Values) if (x.Status == ExtraStatus.Pending && Scoped(x.EmployeeId)) Add(x.Date);
             foreach (var x in _reports.Values) if (EodSt(x) == EodState.Pending && Team(x.EmployeeId)) Add(x.Date);
-            foreach (var t in _tasks.Values) if (t.Source == TaskSource.CarryOver && t.FromDate is DateOnly fd && !t.CarryOk && Scoped(t.EmployeeId)) Add(fd);
+            foreach (var t in _tasks.Values) if (t.Source == TaskSource.CarryOver && t.FromDate is DateOnly fd && !t.CarryOk && Team(t.EmployeeId)) Add(fd);
             foreach (var o in OtPendingAll(Role.Leader, me)) if (o.NeedsDecision) Add(o.Date);
             foreach (var x in ProposalsFor(me)) Add(x.Date);
             foreach (var x in LeavesFor(me)) Add(x.Date);

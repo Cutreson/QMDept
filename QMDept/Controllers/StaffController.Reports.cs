@@ -234,6 +234,8 @@ public partial class StaffController
         var note = StaffReports.Clip(input.Note, 2000);
         if (s != TaskState.Done && note is null) throw new BizException("Nhập lý do chưa hoàn thành");
         var cur = t.CarriedToId is int cid ? await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == cid) : null;
+        // Việc của Leader / TP: chuyển tiếp tự duyệt (không ai duyệt Leader ở danh sách của Leader; Trưởng phòng duyệt cả báo cáo) — cả khi người báo cáo là Leader dự án (nhân viên) báo thay (yêu cầu 2026-10-23)
+        var ownerSelfOk = me.Role == Role.Leader || await Db.People.AsNoTracking().AnyAsync(p => p.Id == t.EmployeeId && (p.Role == Role.Leader || p.Role == Role.Manager || p.Role == Role.Admin));
 
         DateOnly nd = default;
         string ns = "", ne = "", nt = "";
@@ -256,7 +258,7 @@ public partial class StaffController
                     if (!(cur.Date == nd && cur.Start == ns && cur.End == ne && cur.Title == nt))
                     {
                         cur.Date = nd; cur.Start = ns; cur.End = ne; cur.Title = nt;
-                        cur.CarryOk = me.Role == Role.Leader; cur.EditedBy = null;   // Leader tự duyệt việc chuyển tiếp của mình (Trưởng phòng duyệt cả báo cáo)
+                        cur.CarryOk = ownerSelfOk; cur.EditedBy = null;   // Leader tự duyệt việc chuyển tiếp của mình (Trưởng phòng duyệt cả báo cáo)
                         await Flow.SyncCarryToPlanAsync(cur);
                         proposed = true;
                     }
@@ -267,7 +269,7 @@ public partial class StaffController
                     var n = new WorkTask
                     {
                         Date = nd, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = nt,
-                        Start = ns, End = ne, Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = me.Role == Role.Leader,
+                        Start = ns, End = ne, Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = ownerSelfOk,
                         CarriedFromId = t.Id, FromDate = t.Date, Selected = false, CreatedAt = VnTime.UtcNow,
                     };
                     Db.WorkTasks.Add(n);

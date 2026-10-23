@@ -325,3 +325,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-23) Badge cam số hạng mục đã đề xuất chưa duyệt trên các tab chính (quy tắc 69); đã test NV / Leader, máy tính + 375px, dữ liệu thử trả về cũ.
 - (2026-10-23) Badge đỏ việc mình phải làm chưa làm: báo cáo đầu / cuối ngày, kết quả làm thêm (quy tắc 70); đã kiểm tra NV + Leader + TP.
 - (2026-10-23) Số đỏ 'bí ẩn' của Leader: do việc chuyển tiếp chờ duyệt không có số ở mục con Báo cáo → đã thêm vào Báo cáo (n).
+- (2026-10-23) Sửa số đỏ mồ côi (việc chuyển tiếp của Leader tự duyệt); việc được giao chờ xác nhận thành số đỏ + dải liệt kê ngày (quy tắc 71). Đã sửa dữ liệu việc 195 (CarryOk).

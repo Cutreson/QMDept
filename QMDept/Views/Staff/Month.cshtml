@@ -32,6 +32,16 @@ else
     @Ui.Seg(new[] { (Ui.Here(req, ("as", Scope.Account.Role == Role.Staff ? "me" : "mine")), "Lịch của tôi", !Model.AllMode && !Scope.IsViewingOther, 0), (Ui.Here(req, ("as", "all")), Scope.IsManager ? "Lịch phòng" : "Lịch nhóm", Model.AllMode, 0) })
 }
 <partial name="_MonthBar" />
+@if (!Scope.IsViewingOther && !Model.AllMode && Scope.Account.Role != Role.Admin)
+{
+    @* Việc được giao đang chờ MÌNH xác nhận — liệt kê theo ngày để biết ở đâu (yêu cầu 2026-10-23) *@
+    var ackDays = D.Tasks.Where(t => t.EmployeeId == Scope.Account.Id && t.GivenById != null && t.AckAt == null && t.Date >= Scope.Today.AddDays(-7)).GroupBy(t => t.Date).OrderBy(g => g.Key).ToList();
+    if (ackDays.Count > 0)
+    {
+        <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-bottom:10px"><span class="ic">!</span><div><b>@ackDays.Sum(g => g.Count()) việc được giao đang chờ bạn xác nhận</b>
+            <div class="note">@foreach (var g in ackDays) { <a class="link" href="@DayHref(g.Key)">@Fmt.Dmy(g.Key) (@g.Count())</a><text> </text> }</div></div></div>
+    }
+}
 
 @if (Model.AllMode)
 {
