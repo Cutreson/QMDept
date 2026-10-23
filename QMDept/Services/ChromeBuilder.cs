@@ -6,7 +6,7 @@ namespace QMDept.Services;
 /// <summary>Định nghĩa một tab ở thanh dưới (TABS của artifact).</summary>
 public sealed record TabDef(string Id, string Label, string Icon, string Path, string Controller, string? Action);
 
-public sealed record TabLink(string Id, string Label, string Icon, string Href, bool Active, int Badge);
+public sealed record TabLink(string Id, string Label, string Icon, string Href, bool Active, int Badge, int Wait = 0);
 
 /// <summary>Một lựa chọn trong combobox "Xem màn hình" (Group null = không thuộc nhóm).</summary>
 public sealed record ViewOption(string Value, string Label, bool Selected, string? Group);
@@ -139,7 +139,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 (t.Id == "overview" && (onOverviewMonth || onPlanMonth || onDept)) || (t.Id == "status" && onMgrOvertime) || (t.Id == "approvals" && otApprove) || (t.Id == "status" ? scope.OwnCalendar && string.Equals(controller, "Staff", StringComparison.OrdinalIgnoreCase) && (string.Equals(action, "Morning", StringComparison.OrdinalIgnoreCase) || string.Equals(action, "Evening", StringComparison.OrdinalIgnoreCase)) : (!away || acc.Role == Role.Staff)) && ((string.Equals(t.Controller, controller, StringComparison.OrdinalIgnoreCase) && (t.Action is null || string.Equals(t.Action, action, StringComparison.OrdinalIgnoreCase)))
                     // TP / Quản trị: trang tạo + sửa dự án (/Planning/Projects) thuộc tab "Dự án"
                     || (tabRole == Role.Manager && t.Id == "projects" && string.Equals(controller, "Planning", StringComparison.OrdinalIgnoreCase) && string.Equals(action, "Projects", StringComparison.OrdinalIgnoreCase))),
-                Badge(t.Id))).ToList()
+                Badge(t.Id), Wait(t.Id))).ToList()
             : [];
 
         // Combobox "Xem màn hình": chỉ cấp dưới theo nhóm vai trò. "Màn hình của tôi" (HomeHref) và lịch cả nhóm (TeamHref) là hai nút riêng cạnh combobox.
@@ -196,6 +196,32 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             Unread = unread, SupportPending = supportPending, Reminders = reminders,
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
+
+        // Số hạng mục MÌNH đã đề xuất / gửi mà chưa được duyệt (mọi ngày đã nạp) — badge CAM trên các mục chính để tự theo dõi (yêu cầu 2026-10-23).
+        // Khác badge đỏ (việc người khác cần mình duyệt).
+        int Wait(string id)
+        {
+            var me = acc.Id;
+            int OwnPlans() => d.Plans.Count(p => p.EmployeeId == me && Dept.PlanSt(p) is PlanState.Pending or PlanState.PendingManager);
+            int OwnOt() => d.Ots.Count(x => x.PersonId == me && (x.Status == OtStatus.PendingManager || x.NeedsDecision));
+            int OwnLeave() => d.PendingLeaves.Count(x => x.PersonId == me);
+            if (acc.Role == Role.Staff)
+                return id switch
+                {
+                    "morning" => OwnPlans(),
+                    "evening" => d.Reports.Count(r => r.EmployeeId == me && Dept.EodSt(r) == EodState.Pending)
+                        + d.Tasks.Count(t => t.EmployeeId == me && t.Source == TaskSource.CarryOver && !t.CarryOk && t.FromDate != null),
+                    "month" => d.PendingProposals.Count(x => x.ProposerId == me) + OwnLeave(),
+                    "overtime" => OwnOt(),
+                    _ => 0,
+                };
+            return id switch
+            {
+                "status" => OwnPlans() + OwnOt(),
+                "overview" => acc.Role == Role.Leader ? OwnLeave() : 0,
+                _ => 0,
+            };
+        }
 
         int Badge(string id)
         {

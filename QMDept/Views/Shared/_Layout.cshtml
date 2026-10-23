@@ -122,7 +122,7 @@
     <nav class="tabbar" aria-label="Màn hình"><div class="shell">
         @foreach (var t in chrome!.Tabs)
         {
-            <a href="@t.Href" aria-current="@(t.Active ? "page" : null)">@Ui.Icon(t.Icon)<span class="tl">@t.Label</span>@if (t.Badge > 0) {<span class="badge">@t.Badge</span>}</a>
+            <a href="@t.Href" aria-current="@(t.Active ? "page" : null)">@Ui.Icon(t.Icon)<span class="tl">@t.Label</span>@if (t.Badge > 0 || t.Wait > 0) {<span class="bgs">@if (t.Badge > 0) {<span class="badge">@t.Badge</span>}@if (t.Wait > 0) {<span class="badge wait" title="@t.Wait mục bạn đã đề xuất đang chờ duyệt" aria-label="@t.Wait mục đang chờ duyệt">@t.Wait</span>}</span>}</a>
         }
     </div></nav>
 }
