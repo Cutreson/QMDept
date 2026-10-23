@@ -327,3 +327,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-23) Số đỏ 'bí ẩn' của Leader: do việc chuyển tiếp chờ duyệt không có số ở mục con Báo cáo → đã thêm vào Báo cáo (n).
 - (2026-10-23) Sửa số đỏ mồ côi (việc chuyển tiếp của Leader tự duyệt); việc được giao chờ xác nhận thành số đỏ + dải liệt kê ngày (quy tắc 71). Đã sửa dữ liệu việc 195 (CarryOk).
 - (2026-10-23) Số mục con thành chấm đỏ (Ui.LabelWithCount); trang Báo cáo hiện việc chuyển tiếp chờ duyệt không có thẻ báo cáo (quy tắc 72).
+- (2026-10-23) Báo cáo cuối ngày: việc chưa xong bắt buộc lý do + chuyển sang sau ngày gửi, kiểm lại lúc gửi (quy tắc 73). Đã test NV 13 trên DB thật + dọn dữ liệu thử.

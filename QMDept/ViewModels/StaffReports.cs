@@ -226,11 +226,15 @@ public static class StaffReports
     public static IHtmlContent DecisionCk(Decision? dec) => new HtmlString(
         $"<span class=\"ck {(dec == Decision.Ok ? "on" : dec == Decision.No ? "bad" : "")}\">{(dec == Decision.Ok ? "✓" : "")}</span>");
 
-    /// <summary>nextWDs(t.date, 14) (+ ngày chuyển hiện tại nếu không nằm trong danh sách).</summary>
+    /// <summary>
+    /// Ngày được chọn để chuyển việc chưa xong sang: 14 ngày kế tiếp SAU ngày báo cáo (ngày của việc) VÀ sau ngày gửi báo cáo (hôm nay) — báo cáo bù cho ngày đã qua
+    /// thì không được chuyển về quá khứ (yêu cầu 2026-10-23). Ngày chuyển hiện tại của việc chỉ được giữ nếu vẫn thỏa điều kiện đó.
+    /// </summary>
     public static List<DateOnly> NextDateOptions(DateOnly taskDate, DateOnly? cur)
     {
-        var nds = Fmt.NextDays(taskDate, 14).ToList();
-        if (cur is DateOnly c && !nds.Contains(c)) nds.Insert(0, c);
+        var from = taskDate > VnTime.Today ? taskDate : VnTime.Today;
+        var nds = Fmt.NextDays(from, 14).ToList();
+        if (cur is DateOnly c && c > from && !nds.Contains(c)) nds.Insert(0, c);
         return nds;
     }
 

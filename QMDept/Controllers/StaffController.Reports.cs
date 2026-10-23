@@ -363,6 +363,15 @@ public partial class StaffController
         if (missTeam > 0) throw new BizException($"Còn {missTeam} việc của dự án bạn phụ trách chưa báo hoàn thành hay kế hoạch tiếp theo");
         var missSup = await Db.WorkTasks.CountAsync(t => t.Date == Date && t.EmployeeId == me && t.Selected && !t.Supported && supportPj.Contains(t.ProjectId));
         if (missSup > 0) throw new BizException($"Còn {missSup} việc hỗ trợ chưa tích “Đã hỗ trợ”");
+        // Việc chưa hoàn thành (của mình, không phải việc hỗ trợ; và việc của dự án mình phụ trách): BẮT BUỘC có lý do + chuyển sang ngày SAU ngày gửi báo cáo — chặn cả dữ liệu cũ thiếu / sai (yêu cầu 2026-10-23).
+        var floor = Date > VnTime.Today ? Date : VnTime.Today;
+        var openTasks = await Db.WorkTasks.AsNoTracking().Where(t => t.Date == Date && t.Selected && t.Status != TaskState.Done && t.CarriedToId != null
+            && ((t.EmployeeId == me && !supportPj.Contains(t.ProjectId)) || (t.EmployeeId != me && ledPj.Contains(t.ProjectId)))).ToListAsync();
+        foreach (var t in openTasks)
+        {
+            if (string.IsNullOrWhiteSpace(t.Note)) throw new BizException($"Việc “{t.Title}” chưa hoàn thành: nhập lý do (bấm Cập nhật)");
+            if (t.CarryDate is not DateOnly cd || cd <= floor) throw new BizException($"Việc “{t.Title}” chưa hoàn thành: chọn kế hoạch chuyển sang ngày sau {Fmt.Dmy(floor)} (bấm Cập nhật)");
+        }
         var note = StaffReports.Clip(input.Note, 2000);
         var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me);
         if (r is null)
