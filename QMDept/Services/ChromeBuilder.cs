@@ -40,10 +40,14 @@ public sealed class ChromeModel
     public string TeamLabel { get; init; } = "Lịch nhóm";
     /// <summary>Đang ở màn hình của chính mình (nút "Màn hình của tôi" sáng).</summary>
     public bool MineActive { get; init; }
+    /// <summary>Số thông báo chưa xem trong hộp thông báo (chuông) — yêu cầu 2026-10-23.</summary>
+    public int Unread { get; init; }
+    /// <summary>Nhắc nhở báo cáo đầu ngày (từ 07:00) / cuối ngày (từ 17:00) khi chưa báo cáo — dải cam đầu trang (yêu cầu 2026-10-23).</summary>
+    public List<(string Text, string Href)> Reminders { get; init; } = [];
 }
 
 /// <summary>Dựng phần khung (thanh trên + combobox xem màn hình + thanh tab + badge) cho _Layout (renderChrome của artifact).</summary>
-public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor http, DataCache cache)
+public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor http, DataCache cache, Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext> dbf)
 {
     public static readonly Dictionary<Role, TabDef[]> TabDefs = new()
     {
@@ -148,6 +152,22 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             vInfo = string.Join(" · ", parts);
         }
 
+        // Nhắc nhở báo cáo (yêu cầu 2026-10-23): từ 07:00 chưa báo cáo đầu ngày / từ 17:00 chưa báo cáo cuối ngày — mọi nhân sự trong phòng, trừ Chủ nhật và ngày nghỉ cả ngày.
+        var reminders = new List<(string, string)>();
+        var nowHm = VnTime.NowHm; var tday = scope.Today;
+        if (!scope.IsViewingOther && acc.Role != Role.Admin && tday.DayOfWeek != DayOfWeek.Sunday && d.OnLeave(tday, acc.Id) is null)
+        {
+            var own = acc.Role == Role.Staff ? "me" : "mine";
+            var plan0 = d.PlanOf(tday, acc.Id);
+            if (plan0 is null && string.CompareOrdinal(nowHm, "07:00") >= 0)
+                reminders.Add(("Chưa báo cáo đầu ngày — hãy báo cáo trạng thái làm việc hôm nay", "/Staff/Morning?as=" + own));
+            else if (plan0 is not null && !LeaveRules.IsLeave(plan0.Status) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
+                reminders.Add(("Chưa báo cáo cuối ngày — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
+        }
+        int unread = 0;
+        try { await using var idb = await dbf.CreateDbContextAsync(); unread = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.InboxItems.Where(x => x.PersonId == acc.Id && x.ReadAt == null)); }
+        catch { /* chuông chỉ là phụ — không làm hỏng trang */ }
+
         return _cache = new ChromeModel
         {
             Account = acc,
@@ -165,6 +185,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
+            Unread = unread, Reminders = reminders,
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 

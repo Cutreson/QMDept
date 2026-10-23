@@ -1,0 +1,23 @@
+@model List<InboxItem>
+@{
+    ViewData["Title"] = "Thông báo";
+    var unread = (HashSet<int>)ViewBag.Unread;
+}
+@Ui.Head(0, "Thông báo")
+@if (Model.Count == 0)
+{
+    <div class="empty">Chưa có thông báo nào.</div>
+}
+else
+{
+    <section class="card">
+        @foreach (var x in Model)
+        {
+            <a class="inbox-item@(unread.Contains(x.Id) ? " unread" : "")@(x.Bad ? " bad" : "")" href="@x.Url">
+                <div class="t">@x.Title</div>
+                @if (!string.IsNullOrEmpty(x.Body)) { <div class="s">@x.Body</div> }
+                <div class="s mono">@VnTime.Hm(x.CreatedAt) · @Fmt.Dmy(VnTime.DateOf(x.CreatedAt))</div>
+            </a>
+        }
+    </section>
+}

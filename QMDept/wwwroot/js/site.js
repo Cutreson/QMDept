@@ -157,7 +157,7 @@
   window.qmShowNotif = n => { showNotif(n); if (document.hidden) osNotif(n); };
   if (document.body.dataset.notify === '1' && window.signalR) {
     const conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notify').withAutomaticReconnect([0, 2000, 5000, 10000, 30000]).build();
-    conn.on('notify', n => window.qmShowNotif(n));
+    conn.on('notify', n => { window.qmShowNotif(n); const bn = document.querySelector('.bell .bn'); if (bn) { bn.textContent = String((parseInt(bn.textContent, 10) || 0) + 1); bn.hidden = false; } });
     const start = () => conn.start().catch(() => setTimeout(start, 15000));
     conn.onclose(() => setTimeout(start, 15000));
     start();

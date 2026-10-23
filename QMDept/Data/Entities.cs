@@ -435,3 +435,20 @@ public class AppSetting
     [System.ComponentModel.DataAnnotations.Key, MaxLength(60)] public string Key { get; set; } = "";
     [MaxLength(200)] public string Value { get; set; } = "";
 }
+
+/// <summary>
+/// Hộp thông báo của từng tài khoản (yêu cầu 2026-10-23): mọi thông báo đẩy đều được LƯU lại để người offline / mở điện thoại sau vẫn thấy
+/// (chuông trên thanh trên + trang /Inbox). Bad = thông báo xấu (bị từ chối / yêu cầu bổ sung…) hiện màu đỏ.
+/// </summary>
+public class InboxItem
+{
+    public int Id { get; set; }
+    public int PersonId { get; set; }
+    [MaxLength(40)] public string Type { get; set; } = "";
+    [MaxLength(300)] public string Title { get; set; } = "";
+    [MaxLength(1000)] public string? Body { get; set; }
+    [MaxLength(300)] public string Url { get; set; } = "/";
+    public bool Bad { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ReadAt { get; set; }
+}

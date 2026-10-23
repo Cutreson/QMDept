@@ -63,6 +63,7 @@
             {
                 <div class="acc"><b>@chrome.Account.Name @Ui.LevelPill(chrome.Account, false)</b><small><span class="mono">@chrome.Account.Code</span> · @chrome.AccountTeam</small></div>
                 @Ui.Av(chrome.Account.Name, chrome.Account.Role == Role.Manager)
+                <a class="btn btn-sm bell" href="/Inbox?as=me" title="Thông báo" aria-label="Thông báo">🔔<span class="bn" @(chrome.Unread > 0 ? null : "hidden")>@chrome.Unread</span></a>
                 <a class="btn btn-sm" href="/Settings?as=me" title="Cài đặt thông báo" aria-label="Cài đặt">⚙</a>
                 <form method="post" action="/Account/Logout" class="inline" asp-antiforgery="true"><button class="btn btn-sm" title="Đăng xuất">Thoát</button></form>
             }
@@ -105,6 +106,13 @@
             <b>Đang xem màn hình của @chrome.ViewingName — chỉ xem</b>
             <div class="note">@chrome.ViewingInfo · <a class="link" href="@chrome.HomeHref">Về màn hình của tôi ›</a></div>
         </div></div>
+    }
+    @if (chrome is not null && chrome.ViewingName is null)
+    {
+        foreach (var (rtext, rhref) in chrome.Reminders)
+        {
+            <div class="notice remind" style="--nbg:var(--warn-soft);--nfg:var(--warn);margin-top:12px"><span class="ic">!</span><div><b>@rtext</b> <a class="link" href="@rhref">Báo cáo ngay ›</a></div></div>
+        }
     }
     @RenderBody()
 </main>

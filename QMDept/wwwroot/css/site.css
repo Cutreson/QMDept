@@ -513,3 +513,12 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .trow-act{grid-template-columns:22px 1fr auto 142px 82px}
 .trow-act .act{display:flex;justify-content:flex-end;gap:12px}
 @media (max-width:640px){.trow-act{grid-template-columns:22px 1fr auto}.trow-act .act{grid-column:2/-1;justify-content:flex-start}}
+/* Chuông thông báo + dải nhắc báo cáo (yêu cầu 2026-10-23) */
+.bell{position:relative}
+.bell .bn{position:absolute;top:-6px;right:-6px;background:var(--bad);color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;padding:0 4px;display:grid;place-items:center}
+.inbox-item{display:block;padding:10px 12px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}
+.inbox-item:first-child{border-top:0}
+.inbox-item.unread{background:var(--brand-soft)}
+.inbox-item.bad .t{color:var(--bad)}
+.inbox-item .t{font-weight:600;font-size:13.5px}
+.inbox-item .s{font-size:12px;color:var(--muted)}

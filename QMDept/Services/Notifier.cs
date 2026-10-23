@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using QMDept.Data;
 
 namespace QMDept.Services;
@@ -71,7 +72,7 @@ public static class NotifyCatalog
 /// làm hỏng thao tác chính. Bỏ qua người tự thao tác và người đã tắt loại thông báo đó (NotifySetting).
 /// Controller gọi qua thuộc tính <c>Notify</c> của AppController, SAU khi SaveChanges thành công.
 /// </summary>
-public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCache cache, ILogger<Notifier> log)
+public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCache cache, IDbContextFactory<AppDbContext> dbf, ILogger<Notifier> log)
 {
     string Actor => scope.Resolved ? scope.ActorName : "Hệ thống";
     static string Q(string path, DateOnly d) => $"{path}{(path.Contains('?') ? "&" : "?")}d={Fmt.Key(d)}&as=me";
@@ -87,6 +88,15 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
             var snap = await cache.GetBaseAsync();
             var targets = ids.Where(i => !snap.Notify.TryGetValue(i, out var s) || s.Allows(type)).ToHashSet();
             if (targets.Count == 0) return;
+            // Lưu vào hộp thông báo (chuông + /Inbox): người đang offline / mở điện thoại sau vẫn thấy — yêu cầu 2026-10-23
+            var low = (title + " " + body).ToLowerInvariant();
+            var bad = low.Contains("từ chối") || low.Contains("bổ sung") || low.Contains("hoàn tác");
+            string Cut(string? s, int n) => s is null ? "" : s.Length <= n ? s : s[..n];
+            await using (var idb = await dbf.CreateDbContextAsync())
+            {
+                idb.InboxItems.AddRange(targets.Select(pid => new InboxItem { PersonId = pid, Type = type.ToString(), Title = Cut(title, 300), Body = body is null ? null : Cut(body, 1000), Url = Cut(url, 300), Bad = bad, CreatedAt = VnTime.UtcNow }));
+                await idb.SaveChangesAsync();
+            }
             // Chỉ gửi tới kết nối của phiên còn hợp lệ (stamp khớp, tài khoản chưa xóa); kết nối cũ thì ngắt.
             var conns = new List<string>();
             foreach (var (cid, c) in NotifyHub.Open)

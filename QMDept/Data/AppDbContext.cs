@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MealOrder> MealOrders => Set<MealOrder>();
     public DbSet<NotifySetting> NotifySettings => Set<NotifySetting>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<InboxItem> InboxItems => Set<InboxItem>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder b)
     {
@@ -180,6 +181,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         m.Entity<AppSetting>(e => { e.ToTable("app_settings"); e.HasKey(x => x.Key); });
+        m.Entity<InboxItem>(e => { e.ToTable("inbox_items"); e.HasKey(x => x.Id); e.HasIndex(x => new { x.PersonId, x.ReadAt }); });
 
         m.Entity<MealOrder>(e =>
         {

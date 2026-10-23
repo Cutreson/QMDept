@@ -320,3 +320,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-22) Leader có Báo cáo cuối ngày kiểu người hỗ trợ, tự xác nhận khi gửi (quy tắc 63); bỏ nút Hoàn thành / Chưa hoàn thành ở lịch (thay quy tắc 61); công tác dài ngày tô vàng chữ (quy tắc 62).
 - (2026-10-23) Sửa trang trắng / Decide.txt trên điện thoại: lưu khóa mã hóa ra file + toast khi antiforgery hết hạn (quy tắc 64). Chưa xác nhận được nguyên nhân thật trên web thật.
 - (2026-10-23) Khôi phục POST /Manager/Decide (bị xóa nhầm ở f747e1a) — nguyên nhân thật của Decide.txt / trang trắng; đã test duyệt / từ chối trên DB thật và trả dữ liệu về cũ.
+- (2026-10-23) Hộp thông báo lưu lại + chuông + /Inbox (quy tắc 65), nhắc nhở báo cáo 07:00 / 17:00 màu cam (quy tắc 66). Đã test trên DB thật, dữ liệu thử trả về cũ.
