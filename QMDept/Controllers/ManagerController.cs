@@ -137,6 +137,39 @@ public class ManagerController : AppController
         Toast(approve ? "Đã duyệt xin nghỉ — đã ghi vào lịch" : "Đã từ chối xin nghỉ");
     });
 
+
+    /// <summary>
+    /// POST /Manager/Decide — tpDecide: TP duyệt / từ chối kế hoạch cần hỗ trợ nhân sự nhóm khác / phòng ban khác.
+    /// Chỉ khi Leader đã duyệt và TP chưa quyết định (Chờ TP duyệt). Từ chối bắt buộc lý do.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Decide(int id, string? v, string? note)
+    {
+        var ok = v == "ok";
+        return await Do(async () =>
+        {
+            RequireManager();
+            if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
+            var p = await Db.DayPlans.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy kế hoạch");
+            if (!Dept.NeedsManager(p)) throw new BizException("Kế hoạch này không cần Trưởng phòng duyệt");
+            if (Dept.PlanSt(p) != PlanState.PendingManager)
+                throw new BizException(p.LeaderDecision is null ? "Đang chờ Leader duyệt trước." : "Kế hoạch không còn ở trạng thái chờ TP duyệt");
+            note = ok ? null : note?.Trim(); // artifact: chỉ nút Từ chối mở askText → chỉ khi từ chối mới ghi tpNote (ManagerNote)
+            if (!ok && string.IsNullOrEmpty(note)) throw new BizException("Nhập lý do");
+            if (note is { Length: > 2000 }) throw new BizException("Lý do tối đa 2000 ký tự");
+
+            p.ManagerDecision = ok ? Decision.Ok : Decision.No;
+            p.ManagerBy = Scope.ActorName;
+            p.ManagerAt = VnTime.UtcNow;
+            if (!ok) p.ManagerNote = note;
+            await Db.SaveChangesAsync();
+            await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, ok ? "Trưởng phòng đã duyệt hỗ trợ nhân sự" : "Trưởng phòng từ chối", note, alsoLeader: true);
+        }, ok ? "Đã duyệt" : "Đã từ chối");
+    }
+
+    /// <summary>GET /Manager/Projects?pj=&amp;tab=overview|plan|people — tpProjects: chip mọi dự án + projectDetail(pid, 'tp').</summary>
+    [HttpGet]
+
     /// <summary>POST /Manager/UndoLeaderPlan — hoàn tác quyết định kế hoạch của Leader.</summary>
     [HttpPost]
     public async Task<IActionResult> UndoLeaderPlan(int id) => await Do(async () =>
