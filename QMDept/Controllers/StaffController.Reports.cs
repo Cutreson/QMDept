@@ -99,6 +99,7 @@ public partial class StaffController
             // artifact .set() thay cả bản ghi → mọi quyết định duyệt / góp ý cũ bị xóa
             plan.LeaderDecision = null; plan.LeaderBy = null; plan.LeaderAt = null; plan.LeaderNote = null;
             plan.ManagerDecision = null; plan.ManagerBy = null; plan.ManagerAt = null; plan.ManagerNote = null;
+            if (plan.Id != 0) Db.SupportRequests.RemoveRange(await Db.SupportRequests.Where(x => x.PlanId == plan.Id).ToListAsync());   // gửi lại kế hoạch → yêu cầu hỗ trợ nhóm khác làm lại từ đầu
             // TP / Quản trị không có người duyệt: trạng thái làm việc của chính mình tự được duyệt (vẫn sửa và gửi lại được) — yêu cầu 2026-10-21.
             if (SelfApproves(me)) { plan.LeaderDecision = Decision.Ok; plan.LeaderBy = me.Name; plan.LeaderAt = VnTime.UtcNow; }
             // taskIds = picks

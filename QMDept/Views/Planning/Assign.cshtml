@@ -28,7 +28,7 @@
             @Ui.Select("projectId", Ui.PjOptions(pjs), pj0?.ToString(), id: "asgP")
             @Ui.ProjectLeadHint(D, pjs, "asgP", pj0)</div></div>
     <label class="f" for="asgT">Nội dung công việc phát sinh</label><input class="in" id="asgT" name="title" maxlength="300">
-    <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "12:00", end: true, id: "asgE")</div></div>
+    <div class="pick2 eq"><div><label class="f" for="asgS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "asgS")</div><div><label class="f" for="asgE">Kết thúc</label>@Ui.TimeSelect("end", "17:00", end: true, id: "asgE")</div></div>
     <button class="btn btn-primary btn-block" style="margin-top:12px">Giao việc</button>
     
 </form>

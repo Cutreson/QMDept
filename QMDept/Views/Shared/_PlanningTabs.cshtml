@@ -10,6 +10,7 @@
     bool InTeam(int emp) => lid is int l ? D.P(emp) is { Role: Role.Staff } pe && pe.LeaderId == l : D.IsTeamStaff(emp);
     var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId));
     var leaveCount = lid is int ll ? D.LeavesFor(ll).Count : 0;
+    var supportCount = (await Context.RequestServices.GetRequiredService<QMDept.Services.ChromeBuilder>().BuildAsync())?.SupportPending ?? 0;
     var propCount = lid is int pl ? D.ProposalsFor(pl).Count : Scope.MeId is int pm ? D.ProposalsFor(pm).Count : 0;
     var tabs = new (string Key, string Path, string Label)[]
     {
@@ -17,6 +18,7 @@
         // Gộp "Kế hoạch" + "Đề xuất lịch" + duyệt đăng ký làm thêm thành "Kế hoạch đề xuất" (yêu cầu 2026-10-19).
         ("proposals", "/Planning/Proposals", "Kế hoạch đề xuất" + (inbox > 0 ? $" ({inbox})" : "")),
         ("leave", "/Planning/Leave", "Xin nghỉ" + (leaveCount > 0 ? $" ({leaveCount})" : "")),
+        ("support", "/Planning/Support", "Hỗ trợ nhân sự" + (supportCount > 0 ? $" ({supportCount})" : "")),
         ("reports", "/Planning/Reports", "Báo cáo" + (reportCount > 0 ? $" ({reportCount})" : "")),
         ("projects", "/Planning/Projects", "Dự án & đầu mục"),
         ("leads", "/Planning/ProjectLeads", "Leader dự án"),
@@ -24,4 +26,4 @@
     };
 }
 @Ui.Head(2, "Kế hoạch & phê duyệt")
-@Ui.Subtabs(tabs.Where(t => t.Key != "leave" || Scope.Account.Role == Role.Leader).Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))
+@Ui.Subtabs(tabs.Where(t => (t.Key != "leave" && t.Key != "support") || Scope.Account.Role == Role.Leader).Select(t => (Ui.To(req, t.Path), t.Label, t.Key == Model)))

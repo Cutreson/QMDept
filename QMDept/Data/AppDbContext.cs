@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NotifySetting> NotifySettings => Set<NotifySetting>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<InboxItem> InboxItems => Set<InboxItem>();
+    public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder b)
     {
@@ -182,6 +183,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         m.Entity<AppSetting>(e => { e.ToTable("app_settings"); e.HasKey(x => x.Key); });
         m.Entity<InboxItem>(e => { e.ToTable("inbox_items"); e.HasKey(x => x.Id); e.HasIndex(x => new { x.PersonId, x.ReadAt }); });
+        m.Entity<SupportRequest>(e => { e.ToTable("support_requests"); e.HasKey(x => x.Id); e.HasIndex(x => new { x.GroupLeaderId, x.Confirmed }); e.HasIndex(x => x.PlanId); e.Ignore(x => x.StaffList); });
 
         m.Entity<MealOrder>(e =>
         {

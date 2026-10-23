@@ -71,6 +71,17 @@
             <div class="cmt" style="margin-top:10px"><b>Ghi chú / yêu cầu hỗ trợ:</b> @plan.Note</div>
         }
         @Html.Raw(Blocks.SupCmt(plan, string.IsNullOrEmpty(plan.Note) ? "margin-top:10px" : ""))
+        @{
+            // Yêu cầu hỗ trợ từ nhóm khác (sau khi Leader trực tiếp duyệt): Leader nhóm được xin xác nhận + chọn nhân viên — yêu cầu 2026-10-23
+            await using var sdb = await Context.RequestServices.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext>>().CreateDbContextAsync();
+            var supReqs = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(sdb.SupportRequests.Where(x => x.PlanId == plan.Id).OrderBy(x => x.Id));
+        }
+        @foreach (var sr in supReqs)
+        {
+            <div class="cmt" style="margin-top:8px"><b>Nhóm @D.PName(sr.GroupLeaderId) (@sr.Qty người):</b>
+                @if (sr.Confirmed) { <span class="pill p-ok">Đã xác nhận</span> <span>@string.Join(", ", sr.StaffList.Select(sid => D.PName(sid)))</span> }
+                else { <span class="pill p-warn">Chờ Leader nhóm xác nhận</span> }</div>
+        }
     </section>
     <section class="card sec">
         <h2>Trạng thái &amp; báo cơm</h2>
@@ -184,7 +195,7 @@
                 </optgroup>
                 @if (supGroups.Count > 0)
                 {
-                    <optgroup label="Nhóm khác (xin theo số lượng, cần thêm TP duyệt)">
+                    <optgroup label="Nhóm khác (xin theo số lượng — Leader nhóm đó xác nhận và chọn người)">
                         @foreach (var g in supGroups)
                         {
                             <option value="qg:@g.Id">Nhóm @g.Name</option>

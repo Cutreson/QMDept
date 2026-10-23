@@ -42,6 +42,8 @@ public sealed class ChromeModel
     public bool MineActive { get; init; }
     /// <summary>Số thông báo chưa xem trong hộp thông báo (chuông) — yêu cầu 2026-10-23.</summary>
     public int Unread { get; init; }
+    /// <summary>Leader: số yêu cầu hỗ trợ từ nhóm khác đang chờ xác nhận (mọi ngày).</summary>
+    public int SupportPending { get; init; }
     /// <summary>Nhắc nhở báo cáo đầu ngày (từ 07:00) / cuối ngày (từ 17:00) khi chưa báo cáo — dải cam đầu trang (yêu cầu 2026-10-23).</summary>
     public List<(string Text, string Href)> Reminders { get; init; } = [];
 }
@@ -108,6 +110,15 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             return q.Count == 0 ? path : path + (path.Contains('?') ? "&" : "?") + string.Join("&", q);
         }
 
+        int unread = 0, supportPending = 0;
+        try
+        {
+            await using var idb = await dbf.CreateDbContextAsync();
+            unread = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.InboxItems.Where(x => x.PersonId == acc.Id && x.ReadAt == null));
+            if (acc.Role == Role.Leader)   // yêu cầu hỗ trợ từ nhóm khác chờ Leader nhóm này xác nhận (mọi ngày)
+                supportPending = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.SupportRequests.Where(x => x.GroupLeaderId == acc.Id && !x.Confirmed));
+        }
+        catch { /* chuông / số đỏ phụ — không làm hỏng trang */ }
         // Thanh tab: giao diện của người đang xem; ở lịch cả nhóm (AllStaff) → tab của chính tài khoản (kèm as=me để thoát).
         var controller = ctx.GetRouteValue("controller")?.ToString();
         var action = ctx.GetRouteValue("action")?.ToString();
@@ -164,9 +175,6 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             else if (plan0 is not null && !LeaveRules.IsLeave(plan0.Status) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
                 reminders.Add(("Chưa báo cáo cuối ngày — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
         }
-        int unread = 0;
-        try { await using var idb = await dbf.CreateDbContextAsync(); unread = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.InboxItems.Where(x => x.PersonId == acc.Id && x.ReadAt == null)); }
-        catch { /* chuông chỉ là phụ — không làm hỏng trang */ }
 
         return _cache = new ChromeModel
         {
@@ -185,13 +193,13 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, Reminders = reminders,
+            Unread = unread, SupportPending = supportPending, Reminders = reminders,
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
         int Badge(string id)
         {
-            if (acc.Role == Role.Leader && id == "planning") return d.LeaderPendingAll(acc.Id) + d.OtPendingAll(Role.Leader, acc.Id).Count(x => x.NeedsDecision) + d.ProposalsFor(acc.Id).Count + d.LeavesFor(acc.Id).Count;
+            if (acc.Role == Role.Leader && id == "planning") return d.LeaderPendingAll(acc.Id) + d.OtPendingAll(Role.Leader, acc.Id).Count(x => x.NeedsDecision) + d.ProposalsFor(acc.Id).Count + d.LeavesFor(acc.Id).Count + supportPending;
             if (acc.Role is Role.Manager or Role.Admin && id == "approvals")
                 return d.Plans.Count(p => d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
                     + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);

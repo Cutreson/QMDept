@@ -28,6 +28,28 @@ public partial class PlanningController
         return View(PlanningReportsVm.Build(D, Date));
     }
 
+    /// <summary>
+    /// Leader trực tiếp đã DUYỆT kế hoạch có xin người hỗ trợ từ nhóm khác (SupportPick.Qg: id Leader nhóm → số lượng) → mỗi nhóm một yêu cầu cho Leader nhóm đó
+    /// xác nhận + chọn nhân viên (yêu cầu 2026-10-23). Không qua Trưởng phòng.
+    /// </summary>
+    async Task CreateSupportRequestsAsync(DayPlan p)
+    {
+        var pick = StaffSupportPick.Parse(p.SupportPick);
+        if (pick is null || pick.Qg.Count == 0) return;
+        Db.SupportRequests.RemoveRange(await Db.SupportRequests.Where(x => x.PlanId == p.Id).ToListAsync());
+        var made = new List<(int Leader, int Qty)>();
+        foreach (var (k, q) in pick.Qg)
+        {
+            if (!int.TryParse(k, out var gl) || q <= 0) continue;
+            if (!await Db.People.AnyAsync(x => x.Id == gl && x.Role == Role.Leader && !x.IsDeleted)) continue;
+            Db.SupportRequests.Add(new SupportRequest { PlanId = p.Id, Date = p.Date, RequesterId = p.EmployeeId, GroupLeaderId = gl, Qty = q, Reason = pick.Reason, CreatedAt = VnTime.UtcNow });
+            made.Add((gl, q));
+        }
+        if (made.Count == 0) return;
+        await Db.SaveChangesAsync();
+        foreach (var (gl, q) in made) await Notify.SupportRequestedAsync(gl, p.EmployeeId, p.Date, q);
+    }
+
     // ======================= Kế hoạch đầu ngày (ldDecide / ldUndo / ldNote) =======================
 
     /// <summary>ldDecide: v=ok duyệt; v=no từ chối (bắt buộc lý do / hướng dẫn sửa).</summary>
@@ -48,6 +70,7 @@ public partial class PlanningController
         await Db.SaveChangesAsync();
         await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, dec == Decision.Ok ? "Leader đã duyệt" : "Leader từ chối", p.LeaderNote);
         if (dec == Decision.Ok && Dept.NeedsManager(p)) await Notify.SupportNeedsManagerAsync(p.EmployeeId, p.Date);
+        if (dec == Decision.Ok) await CreateSupportRequestsAsync(p);
         Toast(dec == Decision.Ok ? "Đã duyệt kế hoạch" : "Đã từ chối kế hoạch");
     });
 
@@ -61,6 +84,7 @@ public partial class PlanningController
         if (p.ManagerDecision is not null) throw new BizException("Trưởng phòng đã quyết định, không hoàn tác được");
         if (p.LeaderDecision is null) return;
         p.LeaderDecision = null;
+        Db.SupportRequests.RemoveRange(await Db.SupportRequests.Where(x => x.PlanId == p.Id).ToListAsync());   // hoàn tác duyệt → các yêu cầu hỗ trợ nhóm khác bị hủy
         p.LeaderAt = null;
         await Db.SaveChangesAsync();
         await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, "Leader hoàn tác quyết định, chờ duyệt lại");

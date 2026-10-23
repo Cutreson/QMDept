@@ -6,7 +6,7 @@
     await D.EnsureAsync(Scope.Today.AddDays(-30), Scope.Today.AddDays(30));
     // Chỉ hiện ở các trang DUYỆT riêng (yêu cầu 2026-10-22): không hiện trên lịch hay trang khác
     var ctl = Context.GetRouteValue("controller")?.ToString() ?? ""; var act = Context.GetRouteValue("action")?.ToString() ?? "";
-    var onApprove = (ctl == "Planning" && act is "Proposals" or "Leave" or "Reports") || (ctl == "Manager" && act == "Approvals") || (ctl == "Overtime" && Context.Request.Query["tab"] == "approve");
+    var onApprove = (ctl == "Planning" && act is "Proposals" or "Leave" or "Reports" or "Support") || (ctl == "Manager" && act == "Approvals") || (ctl == "Overtime" && Context.Request.Query["tab"] == "approve");
     var pend = onApprove ? D.PendingDays(Scope.Account.Role, Scope.Account.Id).Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList() : [];
 }
 <div class="daybar">

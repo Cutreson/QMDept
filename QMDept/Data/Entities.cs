@@ -452,3 +452,26 @@ public class InboxItem
     public DateTime CreatedAt { get; set; }
     public DateTime? ReadAt { get; set; }
 }
+
+/// <summary>
+/// Yêu cầu hỗ trợ nhân sự từ NHÓM KHÁC trong phòng (yêu cầu 2026-10-23): Leader dự án đề xuất (báo cáo đầu ngày, mục "Nhóm khác") → Leader trực tiếp duyệt kế hoạch
+/// → mỗi nhóm được xin có một yêu cầu: Leader nhóm đó XÁC NHẬN và chọn nhân viên sẽ hỗ trợ (StaffIds) → báo lại người đề xuất + nhân viên được chọn. Không qua Trưởng phòng.
+/// </summary>
+public class SupportRequest
+{
+    public int Id { get; set; }
+    public int PlanId { get; set; }
+    public DateOnly Date { get; set; }
+    public int RequesterId { get; set; }
+    public int GroupLeaderId { get; set; }
+    public int Qty { get; set; }
+    [MaxLength(1500)] public string? Reason { get; set; }
+    public bool Confirmed { get; set; }
+    /// <summary>Id nhân viên được chọn hỗ trợ, phân cách dấu phẩy.</summary>
+    [MaxLength(200)] public string StaffIds { get; set; } = "";
+    [MaxLength(100)] public string? ConfirmedBy { get; set; }
+    public DateTime? ConfirmedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public List<int> StaffList => StaffIds.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+}

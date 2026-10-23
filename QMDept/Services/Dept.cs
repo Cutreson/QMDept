@@ -274,7 +274,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
 
     public static SupportScope SupScope(DayPlan? p) => p?.SupportScope ?? SupportScope.None;
     /// <summary>needTp(p): cần nhân sự nhóm khác / phòng ban khác → thêm bước TP duyệt.</summary>
-    public static bool NeedsManager(DayPlan? p) => SupScope(p) is SupportScope.OtherTeam or SupportScope.OtherDept;
+    public static bool NeedsManager(DayPlan? p) => SupScope(p) is SupportScope.OtherDept;   // nhóm khác trong phòng KHÔNG qua TP (Leader nhóm đó xác nhận — SupportRequest, yêu cầu 2026-10-23)
     /// <summary>planSt(p)</summary>
     public static PlanState PlanSt(DayPlan? p)
     {
