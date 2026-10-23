@@ -44,6 +44,10 @@ public sealed class ChromeModel
     public int Unread { get; init; }
     /// <summary>Leader: số yêu cầu hỗ trợ từ nhóm khác đang chờ xác nhận (mọi ngày).</summary>
     public int SupportPending { get; init; }
+    /// <summary>Việc mình phải làm mà chưa làm: báo cáo đầu ngày / cuối ngày / kết quả làm thêm (badge đỏ mục chính + mục con "Trạng thái làm việc").</summary>
+    public int TodoMorning { get; init; }
+    public int TodoEvening { get; init; }
+    public int TodoOt { get; init; }
     /// <summary>Nhắc nhở báo cáo đầu ngày (từ 07:00) / cuối ngày (từ 17:00) khi chưa báo cáo — dải cam đầu trang (yêu cầu 2026-10-23).</summary>
     public List<(string Text, string Href)> Reminders { get; init; } = [];
 }
@@ -193,9 +197,50 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, SupportPending = supportPending, Reminders = reminders,
+            Unread = unread, SupportPending = supportPending, Reminders = reminders, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(),
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
+
+        // ---- Việc MÌNH phải làm mà chưa làm (badge ĐỎ trên mục chính + mục con — yêu cầu 2026-10-23) ----
+        // Báo cáo đầu ngày: hôm nay (từ 07:00) chưa gửi, hoặc kế hoạch hôm nay trở đi bị từ chối cần sửa gửi lại.
+        int TodoMorning()
+        {
+            if (scope.IsViewingOther || acc.Role == Role.Admin) return 0;
+            var tday = scope.Today; var n = 0;
+            if (tday.DayOfWeek != DayOfWeek.Sunday && d.OnLeave(tday, acc.Id) is null && d.PlanOf(tday, acc.Id) is null && string.CompareOrdinal(VnTime.NowHm, "07:00") >= 0) n++;
+            n += d.Plans.Count(p => p.EmployeeId == acc.Id && p.Date >= tday && Dept.PlanSt(p) == PlanState.Rejected);
+            return n;
+        }
+        // Báo cáo cuối ngày (nhân viên + Leader): mỗi việc phải xử lý như kiểm tra khi gửi — việc hỗ trợ chưa tích "Đã hỗ trợ", việc của mình / của dự án mình phụ trách chưa xong chưa có kế hoạch tiếp;
+        // báo cáo chưa gửi (≥ 1) hoặc bị yêu cầu bổ sung. Ngày hôm nay chỉ tính từ 17:00; 7 ngày gần nhất.
+        int TodoEvening()
+        {
+            if (scope.IsViewingOther || acc.Role is not (Role.Staff or Role.Leader)) return 0;
+            var tday = scope.Today; var n = 0;
+            for (var day = tday.AddDays(-7); day <= tday; day = day.AddDays(1))
+            {
+                if (day == tday && string.CompareOrdinal(VnTime.NowHm, "17:00") < 0) continue;
+                var plan = d.PlanOf(day, acc.Id);
+                if (plan is null || LeaveRules.IsLeave(plan.Status)) continue;
+                var rep = d.ReportOf(day, acc.Id);
+                var es = Dept.EodSt(rep);
+                if (rep is not null && es != EodState.Rejected) continue;
+                var own = d.Chosen(day, acc.Id); var team = d.TeamTasksOf(acc.Id, day);
+                if (own.Count == 0 && team.Count == 0) continue;
+                var miss = own.Count(t => d.IsSupportTask(t) ? !t.Supported : t.Status != TaskState.Done && t.CarriedToId is null)
+                    + team.Count(t => t.Status != TaskState.Done && t.CarriedToId is null);
+                n += Math.Max(miss, 1);
+            }
+            return n;
+        }
+        // Làm thêm đã được duyệt, đã tới giờ làm nhưng chưa cập nhật kết quả (hoặc kết quả bị từ chối cần làm lại).
+        int TodoOt()
+        {
+            if (scope.IsViewingOther) return 0;
+            var tday = scope.Today; var hm = VnTime.NowHm;
+            return d.Ots.Count(x => x.PersonId == acc.Id && x.Status == OtStatus.Approved && x.Completion is OtCompletion.None or OtCompletion.Rejected
+                && (x.Date < tday || (x.Date == tday && string.CompareOrdinal(hm, x.End) >= 0)));
+        }
 
         // Số hạng mục MÌNH đã đề xuất / gửi mà chưa được duyệt (mọi ngày đã nạp) — badge CAM trên các mục chính để tự theo dõi (yêu cầu 2026-10-23).
         // Khác badge đỏ (việc người khác cần mình duyệt).
@@ -209,7 +254,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 return id switch
                 {
                     "morning" => OwnPlans(),
-                    "evening" => d.Reports.Count(r => r.EmployeeId == me && Dept.EodSt(r) == EodState.Pending)
+                    "evening" => d.Reports.Count(r => r.EmployeeId == me && Dept.EodSt(r) == EodState.Pending) + d.Extras.Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending)
                         + d.Tasks.Count(t => t.EmployeeId == me && t.Source == TaskSource.CarryOver && !t.CarryOk && t.FromDate != null),
                     "month" => d.PendingProposals.Count(x => x.ProposerId == me) + OwnLeave(),
                     "overtime" => OwnOt(),
@@ -229,9 +274,10 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (acc.Role is Role.Manager or Role.Admin && id == "approvals")
                 return d.Plans.Count(p => d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
                     + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);
-            if (id == "overtime") return acc.Role is Role.Manager or Role.Admin ? d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision) : 0;   // Leader duyệt làm thêm ở Kế hoạch đề xuất
-            if (acc.Role == Role.Staff && id == "evening" && acc.Id is int me)
-                return d.Extras.Count(x => x.EmployeeId == me && x.Status == ExtraStatus.Pending);
+            if (id == "overtime" && acc.Role is Role.Manager or Role.Admin) return d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);   // Leader duyệt làm thêm ở Kế hoạch đề xuất
+            // Việc mình phải làm mà chưa làm (yêu cầu 2026-10-23)
+            if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); }
+            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "status") return TodoMorning() + TodoEvening() + TodoOt();
             return 0;
         }
     }

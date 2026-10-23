@@ -1,13 +1,16 @@
 @model string
-@* TP / Quản trị / Leader: tab "Trạng thái làm việc" gồm phần của chính mình — Trạng thái làm việc | ĐK làm thêm tại CTy (TP: yêu cầu 2026-10-21; Leader: gộp từ tab ĐK làm thêm riêng cùng ngày).
-   TP: phần phê duyệt làm thêm nằm ở tab Phê duyệt (_MgrApprovalTabs). Model = mục đang mở: status | ot. (Leader không còn mục Tổng hợp suất ăn — yêu cầu 2026-10-21; Leader phụ trách nhân sự xem ở Tổng quan → Nhân sự phòng → Làm thêm tại công ty.) *@
+@* TP / Quản trị / Leader: tab "Trạng thái làm việc" gồm phần của chính mình — Trạng thái làm việc | (Leader: Báo cáo cuối ngày) | ĐK làm thêm tại CTy (TP: yêu cầu 2026-10-21; Leader: gộp từ tab ĐK làm thêm riêng cùng ngày).
+   TP: phần phê duyệt làm thêm nằm ở tab Phê duyệt (_MgrApprovalTabs). Model = mục đang mở: status | evening | ot. (Leader không còn mục Tổng hợp suất ăn — yêu cầu 2026-10-21; Leader phụ trách nhân sự xem ở Tổng quan → Nhân sự phòng → Làm thêm tại công ty.)
+   Số đỏ = việc mình phải làm mà chưa làm (ChromeModel.TodoMorning / TodoEvening / TodoOt — yêu cầu 2026-10-23). *@
 @{
     var req = Context.Request;
+    var chrome = await Context.RequestServices.GetRequiredService<QMDept.Services.ChromeBuilder>().BuildAsync();
+    string Lbl(string s, int n) => n > 0 ? $"{s} ({n})" : s;
     var items = new List<(string Href, string Label, bool Active)>
     {
-        (Ui.To(req, "/Staff/Morning", ("as", "mine"), ("edit", null)), "Trạng thái làm việc", Model == "status"),
-        (Ui.To(req, "/Overtime", ("tab", "mine"), ("edit", null), ("as", null)), "ĐK làm thêm tại CTy", Model == "ot"),
+        (Ui.To(req, "/Staff/Morning", ("as", "mine"), ("edit", null)), Lbl("Trạng thái làm việc", chrome?.TodoMorning ?? 0), Model == "status"),
+        (Ui.To(req, "/Overtime", ("tab", "mine"), ("edit", null), ("as", null)), Lbl("ĐK làm thêm tại CTy", chrome?.TodoOt ?? 0), Model == "ot"),
     };
 }
-@if (Scope.Account.Role == Role.Leader) { items.Insert(1, (Ui.To(req, "/Staff/Evening", ("as", "mine"), ("edit", null)), "Báo cáo cuối ngày", Model == "evening")); }
+@if (Scope.Account.Role == Role.Leader) { items.Insert(1, (Ui.To(req, "/Staff/Evening", ("as", "mine"), ("edit", null)), Lbl("Báo cáo cuối ngày", chrome?.TodoEvening ?? 0), Model == "evening")); }
 @Ui.Subtabs(items)
