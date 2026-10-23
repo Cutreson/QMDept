@@ -8,7 +8,8 @@
     var lid = Scope.Account.Role == Role.Leader ? Scope.Account.Id : (int?)null;
     var inbox = lid is int li ? D.LeaderInbox(d, li) : 0;
     bool InTeam(int emp) => lid is int l ? D.P(emp) is { Role: Role.Staff } pe && pe.LeaderId == l : D.IsTeamStaff(emp);
-    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId));
+    // Báo cáo = báo cáo chờ duyệt + việc chuyển tiếp chờ duyệt của ngày đang chọn (trước đây thiếu việc chuyển tiếp → số đỏ tab chính không giải thích được — yêu cầu 2026-10-23)
+    var reportCount = D.Reports.Count(r => r.Date == d && Dept.EodSt(r) == EodState.Pending && InTeam(r.EmployeeId)) + D.CarriesFrom(d).Count(t => !t.CarryOk && InTeam(t.EmployeeId));
     var leaveCount = lid is int ll ? D.LeavesFor(ll).Count : 0;
     var supportCount = (await Context.RequestServices.GetRequiredService<QMDept.Services.ChromeBuilder>().BuildAsync())?.SupportPending ?? 0;
     var propCount = lid is int pl ? D.ProposalsFor(pl).Count : Scope.MeId is int pm ? D.ProposalsFor(pm).Count : 0;
