@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -76,7 +77,17 @@ builder.Services.AddScoped<WorkflowService>();
 builder.Services.AddScoped<Notifier>();
 builder.Services.AddSignalR();
 
-builder.Services.AddControllersWithViews(o => o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+builder.Services.AddControllersWithViews(o => { o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()); o.Filters.Add(new AntiforgeryFailureFilter()); });
+
+// Khóa mã hóa (cookie đăng nhập, mã chống giả mạo) lưu ra file để không đổi khi máy chủ khởi động lại / publish — trước đây trang mở sẵn trên điện thoại gửi form bị lỗi.
+try
+{
+    var keyDir = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys"));
+    keyDir.Create();
+    File.WriteAllText(Path.Combine(keyDir.FullName, ".write-test"), "ok");
+    builder.Services.AddDataProtection().SetApplicationName("QMDept").PersistKeysToFileSystem(keyDir);
+}
+catch (Exception ex) { Console.WriteLine("Không lưu được khóa mã hóa ra file: " + ex.Message); }
 
 var app = builder.Build();
 

@@ -370,3 +370,4 @@ appsettings.Local.json
 tools/.web-lock
 tools/.web.log
 tools/.web-watch.log
+**/App_Data/keys/

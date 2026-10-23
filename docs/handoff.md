@@ -318,3 +318,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-22) Sửa / Xóa thành cột cuối riêng của dòng việc.
 - (2026-10-22) Bỏ chấm đỏ / khối chờ duyệt khỏi lịch; chip ngày chờ xử lý chỉ ở các trang duyệt.
 - (2026-10-22) Leader có Báo cáo cuối ngày kiểu người hỗ trợ, tự xác nhận khi gửi (quy tắc 63); bỏ nút Hoàn thành / Chưa hoàn thành ở lịch (thay quy tắc 61); công tác dài ngày tô vàng chữ (quy tắc 62).
+- (2026-10-23) Sửa trang trắng / Decide.txt trên điện thoại: lưu khóa mã hóa ra file + toast khi antiforgery hết hạn (quy tắc 64). Chưa xác nhận được nguyên nhân thật trên web thật.
