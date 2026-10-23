@@ -90,7 +90,7 @@ td.n,th.n{text-align:center;font-family:var(--mono);font-variant-numeric:tabular
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:10px;padding:3px;margin:0 0 12px}
 .seg button{border:0;background:none;border-radius:8px;padding:7px 4px;font-weight:600;color:var(--muted);font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
-.seg .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;margin-left:4px;padding:0 4px}
+.seg .cnt,.subtabs .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;margin-left:4px;padding:0 4px}
 .btn{border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:8px 13px;font-weight:600}
 .btn-primary{background:var(--accent,var(--brand));border-color:var(--accent,var(--brand));color:#fff}
 .btn-ok{background:var(--ok);border-color:var(--ok);color:#fff}

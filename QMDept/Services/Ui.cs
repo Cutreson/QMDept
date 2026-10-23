@@ -72,14 +72,27 @@ public static class Ui
     }
 
     /// <summary>tabs(): thanh tab con dạng gạch chân. Mỗi phần tử: (href, nhãn, đang chọn).</summary>
+    /// <summary>
+    /// Nhãn mục con có đuôi " (n)": n &gt; 0 thành chấm ĐỎ (trừ mục "Đã …" — danh sách đã xong, không phải việc phải làm), n = 0 giữ chữ thường (yêu cầu 2026-10-23).
+    /// </summary>
+    static string LabelWithCount(string label)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(label, @"^(.*?)\s*\((\d+)\)$");
+        if (!m.Success) return E(label);
+        var n = int.Parse(m.Groups[2].Value);
+        var text = m.Groups[1].Value;
+        if (n == 0 || text.StartsWith("Đã ", StringComparison.Ordinal)) return E(label);
+        return E(text) + $"<span class=\"cnt\">{n}</span>";
+    }
+
     public static IHtmlContent Subtabs(IEnumerable<(string Href, string Label, bool Active)> items) =>
         new HtmlString("<div class=\"subtabs\" role=\"tablist\">" + string.Concat(items.Select(i =>
-            $"<a role=\"tab\" href=\"{E(i.Href)}\" aria-selected=\"{(i.Active ? "true" : "false")}\">{E(i.Label)}</a>")) + "</div>");
+            $"<a role=\"tab\" href=\"{E(i.Href)}\" aria-selected=\"{(i.Active ? "true" : "false")}\">{LabelWithCount(i.Label)}</a>")) + "</div>");
 
     /// <summary>seg(): nút phân đoạn; Count &gt; 0 hiện chấm đỏ đếm.</summary>
     public static IHtmlContent Seg(IEnumerable<(string Href, string Label, bool Active, int Count)> items) =>
         new HtmlString("<div class=\"seg\">" + string.Concat(items.Select(i =>
-            $"<a href=\"{E(i.Href)}\" aria-pressed=\"{(i.Active ? "true" : "false")}\">{E(i.Label)}{(i.Count > 0 ? $"<span class=\"cnt\">{i.Count}</span>" : "")}</a>")) + "</div>");
+            $"<a href=\"{E(i.Href)}\" aria-pressed=\"{(i.Active ? "true" : "false")}\">{LabelWithCount(i.Label)}{(i.Count > 0 ? $"<span class=\"cnt\">{i.Count}</span>" : "")}</a>")) + "</div>");
 
     /// <summary>timeSel(id, val, end, blank): select giờ 00:00–24:00 bước 30 phút (end = bỏ 00:00, ngược lại bỏ 24:00).</summary>
     public static IHtmlContent TimeSelect(string name, string? value, bool end = false, string? blank = null, string? id = null, string? extraAttrs = null)

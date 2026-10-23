@@ -14,10 +14,12 @@
     var pendReports = Model.Reports.Where(x => x.LeaderDecision is null).ToList();
     var doneReports = Model.Reports.Where(x => x.LeaderDecision is not null).ToList();
     var shownReports = f == "pending" ? pendReports : doneReports;
+    var orphanCarries = f == "pending" ? Model.Carries.Where(n => !n.CarryOk && D.IsTeamStaff(n.EmployeeId) && !Model.Reports.Any(x => x.EmployeeId == n.EmployeeId)).ToList() : new List<WorkTask>();
+    var orphanAll = Model.Carries.Count(n => !n.CarryOk && D.IsTeamStaff(n.EmployeeId) && !Model.Reports.Any(x => x.EmployeeId == n.EmployeeId));
 }
 @Ui.Seg(new[]
 {
-    (Ui.Here(req, ("f", "pending")), $"Chờ duyệt ({pendReports.Count})", f == "pending", 0),
+    (Ui.Here(req, ("f", "pending")), $"Chờ duyệt ({pendReports.Count + orphanAll})", f == "pending", 0),
     (Ui.Here(req, ("f", "approved")), $"Đã duyệt ({doneReports.Count})", f == "approved", 0),
 })
 
@@ -27,8 +29,23 @@
     <p class="note">Chưa gửi báo cáo cuối ngày: @string.Join(", ", Model.NotSent.Select(p => p.Name))</p>
 }
 
+@* Việc chuyển tiếp chờ duyệt mà nhân viên CHƯA có thẻ báo cáo (vd. Leader dự án báo thay kết quả → tạo việc chuyển tiếp): trước đây không hiện ở đâu dù số đỏ vẫn đếm (yêu cầu 2026-10-23) *@
+@foreach (var n in orphanCarries)
+{
+    <section class="card apv">
+        <div class="hd">@Ui.Av(D.PName(n.EmployeeId))<b>@D.PName(n.EmployeeId) <span class="note">việc chuyển tiếp từ @Fmt.Dmy(n.FromDate ?? d)</span></b><span class="pill p-warn">Chờ duyệt</span></div>
+        <div class="nx-line row" style="margin:0;align-items:flex-start">
+            <div style="flex:1">@D.PjName(n.ProjectId) · Chuyển sang: <b>@Fmt.WDS[Fmt.Wday(n.Date)] @Fmt.Dm(n.Date)</b> <span class="mono">@n.Start–@n.End</span> · @n.Title</div>
+            @if (canWrite)
+            {
+                <form method="post" action="/Planning/ApproveCarry" class="inline" asp-antiforgery="true">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-ok">Duyệt</button></form>
+                @if (PlanningReportsVm.CanEditCarry(n)) { <button type="button" class="btn btn-sm" data-sheet="carrySheet@(n.Id)">Sửa</button> }
+            }
+        </div>
+    </section>
+}
 @* ---------- ldEodApprove(): báo cáo cuối ngày ---------- *@
-@if (shownReports.Count == 0)
+@if (shownReports.Count == 0 && orphanCarries.Count == 0)
 {
     <div class="empty">@(f == "pending" ? "Không còn báo cáo cuối ngày nào chờ duyệt." : "Chưa có báo cáo cuối ngày nào đã duyệt.")</div>
 }
