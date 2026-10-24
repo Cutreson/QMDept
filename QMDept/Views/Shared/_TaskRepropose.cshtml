@@ -1,0 +1,22 @@
+@model (int Id, string Title, DateOnly Date, string Start, string End)
+@* Sheet "Đề xuất lại" việc do người khác giao (yêu cầu 2026-10-24): người nhận thấy việc chồng chéo / chưa phù hợp → đề xuất lại nội dung / thời gian + lý do, gửi NGƯỜI GIAO duyệt; không xóa được.
+   Nút mở: data-sheet="rp{id}". Đặt NGOÀI mọi <form>. Server: StaffController.ProposeChange. *@
+@{
+    var m = Model;
+    var asq = Scope.Account.Role == Role.Staff ? "" : "&as=mine";
+}
+<template id="rp@(m.Id)">
+    <form method="post" action="/Staff/ProposeChange?id=@(m.Id)&d=@(Fmt.Key(m.Date))@asq">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(Context.Request)
+        <h3>Đề xuất lại công việc</h3>
+        <label class="f" for="rpT@(m.Id)" style="margin-top:0">Nội dung công việc</label>
+        <input class="in" id="rpT@(m.Id)" name="title" maxlength="300" value="@m.Title" required>
+        <div class="pick2 eq"><div><label class="f" for="rpS@(m.Id)">Bắt đầu</label>@Ui.TimeSelect("start", m.Start, id: "rpS" + m.Id)</div><div><label class="f" for="rpE@(m.Id)">Kết thúc</label>@Ui.TimeSelect("end", m.End, end: true, id: "rpE" + m.Id)</div></div>
+        <label class="f" for="rpD@(m.Id)">Ngày</label>
+        @Ui.DateInput("to", m.Date, "rpD" + m.Id)
+        <label class="f" for="rpR@(m.Id)">Lý do đề xuất lại</label>
+        <textarea class="in" id="rpR@(m.Id)" name="reason" maxlength="500" required></textarea>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Gửi người giao duyệt</button></div>
+    </form>
+</template>

@@ -58,8 +58,13 @@ public static class StaffCalendar
         return actor.Role == Role.Leader ? emp.Role == Role.Staff && emp.LeaderId == actor.Id : isManager && emp.Role == Role.Leader;
     }
 
-    /// <summary>Hiện nút Sửa / Xóa / Chuyển lịch cho việc này không (quyền + chưa khóa).</summary>
-    public static bool CanManage(ViewScope s, Dept d, WorkTask t) => s.CanLead && OwnsTask(s.Account, s.IsManager, s.IsViewingOther, d.P(t.EmployeeId), t) && !TaskLocked(d, t);
+    /// <summary>Hiện nút Sửa / Xóa / Chuyển lịch cho việc này không (quyền + chưa khóa). Việc do NGƯỜI KHÁC giao thì người nhận KHÔNG sửa / xóa được (chỉ "Đề xuất lại" để người giao duyệt) — yêu cầu 2026-10-24.</summary>
+    public static bool CanManage(ViewScope s, Dept d, WorkTask t) => s.CanLead && OwnsTask(s.Account, s.IsManager, s.IsViewingOther, d.P(t.EmployeeId), t) && !TaskLocked(d, t)
+        && !(t.NeedsGiverReview && t.EmployeeId == s.Account.Id);
+
+    /// <summary>Người nhận (chính mình) được đề xuất lại nội dung / thời gian việc do người khác giao: chưa có kết quả / báo cáo, chưa chuyển tiếp, chưa có đề xuất đang chờ, từ hôm nay trở đi.</summary>
+    public static bool CanRepropose(ViewScope s, Dept d, WorkTask t) => !s.IsViewingOther && t.EmployeeId == s.Account.Id && t.NeedsGiverReview && !t.RePending
+        && t.CarriedToId is null && t.Date >= s.Today && !TaskLocked(d, t);
 
     /// <summary>Việc đã có kết quả (Hoàn thành / Chậm) hoặc NV đã gửi báo cáo cuối ngày → khóa, không xóa / chuyển được.</summary>
     public static bool TaskLocked(Dept d, WorkTask t) => t.Status is TaskState.Done or TaskState.Late || d.ReportOf(t.Date, t.EmployeeId) is not null;
@@ -71,7 +76,7 @@ public static class StaffCalendar
     public static (string Bg, string Fg, string Label) DayCell(IReadOnlyCollection<WorkTask> t, DateOnly date, DateOnly today)
     {
         if (t.Count == 0) return ("var(--surface-2)", "var(--faint)", "0");
-        var done = t.Count(x => x.Status == TaskState.Done && x.CarriedToId is null);
+        var done = t.Count(x => x.IsDone && x.CarriedToId is null);
         var label = $"{done}/{t.Count}";
         if (done == t.Count) return ("var(--brand)", "#fff", label);
         if (date < today || t.Any(x => x.Status == TaskState.Late)) return ("var(--bad-soft)", "var(--bad)", label);
@@ -82,7 +87,9 @@ public static class StaffCalendar
     public static (string Text, string Css) TaskResult(WorkTask t, DateOnly today)
     {
         if (t.CarriedToId is not null) return (t.CarryDate is DateOnly cd ? "Chuyển sang " + Fmt.Dmy(cd) : "Đã chuyển tiếp", "p-warn");
+        if (t.Status == TaskState.Done && t.DonePending) return ("Chờ người giao duyệt", "p-warn");
         if (t.Status == TaskState.Done) return ("Hoàn thành", "p-blue");
+        if (t.DoneRejectNote is not null) return ("Người giao chưa duyệt", "p-bad");
         if (t.Status == TaskState.Late || t.Date < today) return ("Chưa hoàn thành", "p-bad");
         return t.Status == TaskState.InProgress ? ("Đang làm", "p-info") : ("Chưa làm", "p-idle");
     }

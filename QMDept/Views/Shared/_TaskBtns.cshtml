@@ -1,8 +1,15 @@
 @model WorkTask
-@* Nút Sửa / Xóa một công việc — nằm trong CỘT CUỐI của dòng việc (Blocks.TaskRow, tham số actions; yêu cầu 2026-10-22). Sheet + form xóa ở _TaskActions / _TaskEdit. *@
+@* Nút ở CỘT CUỐI của dòng việc (Blocks.TaskRow, tham số actions): Sửa / Xóa (người giao / quyền quản lý) hoặc "Đề xuất lại" (người nhận việc do người khác giao — không được xóa; yêu cầu 2026-10-24).
+   Sheet + form xóa ở _TaskActions / _TaskEdit / _TaskRepropose. *@
 @{
     var t = Model;
-    if (!StaffCalendar.CanManage(Scope, D, t)) { return; }
 }
-<button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
-<button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>
+@if (StaffCalendar.CanManage(Scope, D, t))
+{
+    <button type="button" class="link ro-ok" data-sheet="et@(t.Id)">Sửa</button>
+    <button type="submit" class="link ro-ok" form="dt@(t.Id)" style="color:var(--bad)">Xóa</button>
+}
+else if (StaffCalendar.CanRepropose(Scope, D, t))
+{
+    <button type="button" class="link ro-ok" data-sheet="rp@(t.Id)">Đề xuất lại</button>
+}

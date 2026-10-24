@@ -102,6 +102,8 @@ public partial class StaffController
         RequireLead();
         var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
         var emp = await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == t.EmployeeId);
+        if (t.NeedsGiverReview && t.EmployeeId == Scope.Account.Id)
+            throw new BizException($"Việc do {t.GivenBy} giao — không tự sửa / xóa được. Bấm “Đề xuất lại” để người giao duyệt");
         if (!StaffCalendar.OwnsTask(Scope.Account, Scope.IsManager, Scope.IsViewingOther, emp, t))
             throw new BizException(Scope.IsManager ? "Trưởng phòng chỉ xóa / chuyển lịch việc của mình và của Leader" : "Chỉ xóa / chuyển lịch việc của mình và của nhân viên trong nhóm");
         if (t.Status is TaskState.Done or TaskState.Late || await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == t.EmployeeId))
@@ -125,6 +127,116 @@ public partial class StaffController
         await Db.SaveChangesAsync();
         await Notify.TaskAckedAsync(giver, t.EmployeeId, t.Date, t.Title);
     }, "Đã xác nhận nhận việc");
+
+    /// <summary>
+    /// POST /Staff/ReviewDone — NGƯỜI GIAO duyệt kết quả việc đã giao (yêu cầu 2026-10-24): v=ok → tính là xong; v=no (bắt buộc lý do) → việc về "Đang làm", báo cáo cuối ngày của người nhận mở lại để cập nhật.
+    /// Chỉ người giao, chỉ việc người nhận đã báo hoàn thành và đã gửi báo cáo cuối ngày.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ReviewDone(int id, string? v, string? note) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther) throw new BizException("Chế độ xem: không duyệt thay người khác được");
+        if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc");
+        if (t.GivenById != Scope.Account.Id) throw new BizException("Chỉ người giao việc mới duyệt được kết quả công việc này");
+        if (!t.DonePending) throw new BizException("Việc này không còn chờ duyệt — tải lại trang");
+        var now = VnTime.UtcNow; var actor = Scope.ActorName;
+        if (v == "ok")
+        {
+            t.DonePending = false; t.DoneReviewBy = actor; t.DoneReviewAt = now; t.DoneRejectNote = null;
+            if (t.ItemDoneClaim && t.PlanItemId is int iid && await Db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid) is { } it && it.Status != TaskState.Done)
+            { it.Status = TaskState.Done; it.DoneDate = t.Date; it.DoneBy = await Db.People.Where(p => p.Id == t.EmployeeId).Select(p => p.Name).FirstOrDefaultAsync() ?? actor; }
+            t.ItemDoneClaim = false;
+            await Db.SaveChangesAsync();
+            await Notify.TaskDoneDecidedAsync(t.EmployeeId, t.Date, t.Title, true);
+            Toast("Đã duyệt — công việc được tính là hoàn thành");
+        }
+        else
+        {
+            var why = StaffReports.Clip(note, 500) ?? throw new BizException("Nhập lý do chưa duyệt");
+            t.Status = TaskState.InProgress; t.DonePending = false; t.ItemDoneClaim = false;
+            t.DoneReviewBy = actor; t.DoneReviewAt = now; t.DoneRejectNote = why;
+            // mở lại báo cáo cuối ngày của người nhận để cập nhật lại kết quả
+            var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == t.Date && x.EmployeeId == t.EmployeeId);
+            if (r is not null && r.LeaderDecision != Decision.No)
+            {
+                r.LeaderDecision = Decision.No; r.LeaderBy = actor; r.LeaderAt = now;
+                r.LeaderNote = $"{actor} chưa duyệt kết quả việc “{t.Title}”: {why}";
+            }
+            await Db.SaveChangesAsync();
+            await Notify.TaskDoneDecidedAsync(t.EmployeeId, t.Date, t.Title, false, why);
+            Toast("Đã gửi yêu cầu cập nhật lại cho người nhận việc");
+        }
+    });
+
+    /// <summary>
+    /// POST /Staff/ProposeChange — NGƯỜI NHẬN việc do người khác giao đề xuất lại nội dung / thời gian (chồng chéo, chưa phù hợp) → chờ NGƯỜI GIAO duyệt; không được xóa (yêu cầu 2026-10-24).
+    /// Việc giữ nguyên cho tới khi người giao đồng ý. Bắt buộc lý do; thời gian mới không được trùng việc khác của người nhận.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ProposeChange(int id, string? title, string? to, string? start, string? end, string? reason) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther) throw new BizException("Chế độ xem: không đề xuất thay người khác được");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
+        if (t.EmployeeId != Scope.Account.Id || !t.NeedsGiverReview) throw new BizException("Chỉ người được giao mới đề xuất lại được việc do người khác giao");
+        if (t.RePending) throw new BizException($"Đã đề xuất, đang chờ {t.GivenBy} duyệt");
+        if (t.Status is TaskState.Done or TaskState.Late || t.CarriedToId is not null || await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == t.EmployeeId))
+            throw new BizException("Việc đã có kết quả / báo cáo cuối ngày, không đề xuất lại được");
+        var why = StaffReports.Clip(reason, 500) ?? throw new BizException("Nhập lý do đề xuất lại");
+        var nTitle = StaffReports.Clip(title, 300) ?? t.Title;
+        var nDate = string.IsNullOrWhiteSpace(to) ? t.Date : Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày đúng dạng dd/MM/yyyy");
+        var nS = string.IsNullOrEmpty(start) ? t.Start : start; var nE = string.IsNullOrEmpty(end) ? t.End : end;
+        if (!Fmt.IsHhmm(nS) || !Fmt.IsHhmm(nE) || nE.Le(nS)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+        if (nDate < Scope.Today) throw new BizException("Chỉ đề xuất ngày từ hôm nay trở đi");
+        if (nDate == t.Date && nTitle == t.Title && nS == t.Start && nE == t.End) throw new BizException("Chưa thay đổi nội dung hay thời gian nào so với việc được giao");
+        await EnsureProposedSlotAsync(t, nDate, nTitle, nS, nE);
+        t.RePending = true; t.ReTitle = nTitle; t.ReDate = nDate; t.ReStart = nS; t.ReEnd = nE; t.ReReason = why; t.ReAt = VnTime.UtcNow; t.ReRejectNote = null; t.ReReviewBy = null;
+        await Db.SaveChangesAsync();
+        if (t.GivenById is int giver) await Notify.TaskChangeProposedAsync(giver, t.EmployeeId, t.Date, t.Title, why);
+        Toast($"Đã gửi đề xuất — chờ {t.GivenBy} duyệt");
+    });
+
+    /// <summary>Thời gian / ngày đề xuất: người nhận không nghỉ cả ngày và không trùng giờ việc khác.</summary>
+    async Task EnsureProposedSlotAsync(WorkTask t, DateOnly nDate, string nTitle, string nS, string nE)
+    {
+        if ((await Db.Leaves.AsNoTracking().Where(l => l.Date == nDate && l.EmployeeId == t.EmployeeId).ToListAsync()).Any(Dept.IsFullDayLeave))
+            throw new BizException($"Người nhận nghỉ cả ngày {Fmt.Dmy(nDate)} — chọn ngày khác");
+        await TaskLines.EnsureFreeAsync(Db, t.EmployeeId, null, nDate, [new TaskLines.Line(nTitle, nS, nE)], t.Id);
+    }
+
+    /// <summary>POST /Staff/DecideChange — NGƯỜI GIAO đồng ý (áp dụng nội dung / thời gian mới, người nhận coi như đã xác nhận) hoặc không đồng ý (bắt buộc lý do, việc giữ nguyên).</summary>
+    [HttpPost]
+    public async Task<IActionResult> DecideChange(int id, string? v, string? note) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther) throw new BizException("Chế độ xem: không duyệt thay người khác được");
+        if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc");
+        if (t.GivenById != Scope.Account.Id) throw new BizException("Chỉ người giao việc mới duyệt được đề xuất này");
+        if (!t.RePending) throw new BizException("Đề xuất này không còn chờ duyệt — tải lại trang");
+        var actor = Scope.ActorName; var oldDate = t.Date; var oldTitle = t.Title;
+        if (v == "ok")
+        {
+            var nDate = t.ReDate ?? t.Date; var nTitle = t.ReTitle ?? t.Title; var nS = t.ReStart ?? t.Start; var nE = t.ReEnd ?? t.End;
+            await EnsureProposedSlotAsync(t, nDate, nTitle, nS, nE);
+            await using var tx = await Db.Database.BeginTransactionAsync();
+            await Flow.EditTaskAsync(t, t.ProjectId, nTitle, nS, nE, actor, null);
+            if (nDate != t.Date) await Flow.MoveTaskAsync(t, nDate, t.EmployeeId, actor, Scope.Account.Id);
+            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = null; t.ReReviewBy = actor;
+            t.AckAt ??= VnTime.UtcNow;   // người nhận tự đề xuất bản này nên coi như đã xác nhận
+            await Db.SaveChangesAsync();
+            await tx.CommitAsync();
+            await Notify.TaskChangeDecidedAsync(t.EmployeeId, t.Date, oldTitle, true);
+            Toast("Đã đồng ý — công việc được cập nhật theo đề xuất");
+        }
+        else
+        {
+            var why = StaffReports.Clip(note, 500) ?? throw new BizException("Nhập lý do không đồng ý");
+            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = why; t.ReReviewBy = actor;
+            await Db.SaveChangesAsync();
+            await Notify.TaskChangeDecidedAsync(t.EmployeeId, oldDate, oldTitle, false, why);
+            Toast("Đã gửi lý do không đồng ý cho người nhận việc");
+        }
+    });
 
     /// <summary>
     /// POST /Staff/EditTask — Leader / TP sửa việc trong quyền của mình (lịch của tôi, lịch nhóm / phòng, trang Trạng thái làm việc):

@@ -302,13 +302,18 @@ public partial class StaffController
             }
 
             t.Start = tStart; t.End = tEnd;
+            // Việc được giao: "Hoàn thành" chỉ là báo cáo chờ NGƯỜI GIAO duyệt — duyệt xong mới tính là xong (yêu cầu 2026-10-24). Việc đã được duyệt thì giữ nguyên.
+            var wasApproved = t.Status == TaskState.Done && !t.DonePending && t.DoneReviewAt != null;
+            var claim = s == TaskState.Done && t.NeedsGiverReview && !wasApproved;
             t.Status = s;
             t.Note = note;
             t.UpdatedAt = VnTime.UtcNow;
+            if (claim) { t.DonePending = true; t.ItemDoneClaim = input.ItemDone; t.DoneRejectNote = null; t.DoneReviewAt = null; t.DoneReviewBy = null; }
+            else if (!(s == TaskState.Done && wasApproved)) { t.DonePending = false; t.ItemDoneClaim = false; t.DoneRejectNote = null; t.DoneReviewAt = null; t.DoneReviewBy = null; }
 
             if (t.PlanItemId is int iid && await Db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid) is { } it)
             {
-                if (s == TaskState.Done && input.ItemDone && it.Status != TaskState.Done)
+                if (s == TaskState.Done && input.ItemDone && !claim && it.Status != TaskState.Done)
                 {
                     it.Status = TaskState.Done; it.DoneDate = t.Date; it.DoneBy = me.Name;
                 }
@@ -404,5 +409,8 @@ public partial class StaffController
         if (Scope.Account.Role == Role.Leader) { r.LeaderDecision = Decision.Ok; r.LeaderBy = "Tự xác nhận"; r.LeaderAt = VnTime.UtcNow; }   // Leader tự xác nhận, không qua duyệt (yêu cầu 2026-10-22)
         await Db.SaveChangesAsync();
         if (Scope.Account.Role != Role.Leader) await Notify.ReportSubmittedAsync(me, Date);
+        // Việc được giao đã báo hoàn thành → báo người giao để duyệt (yêu cầu 2026-10-24)
+        var doneByGiver = await Db.WorkTasks.AsNoTracking().Where(x => x.Date == Date && x.EmployeeId == me && x.DonePending && x.GivenById != null).ToListAsync();
+        foreach (var g in doneByGiver.GroupBy(x => x.GivenById!.Value)) await Notify.TaskDoneReportedAsync(g.Key, me, Date, g.Select(x => x.Title));
     }, "Đã gửi báo cáo cuối ngày");
 }

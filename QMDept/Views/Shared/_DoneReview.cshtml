@@ -1,0 +1,17 @@
+@model WorkTask
+@* Nghiệm thu việc được giao (yêu cầu 2026-10-24): báo hoàn thành → chờ người giao duyệt → duyệt mới tính xong / chưa duyệt kèm lý do. *@
+@if (Model.NeedsGiverReview)
+{
+    if (Model.DonePending)
+    {
+        <div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:700">Đã báo hoàn thành — chờ @Model.GivenBy duyệt mới tính là xong</div>
+    }
+    else if (Model.Status == TaskState.Done && Model.DoneReviewAt is DateTime rv)
+    {
+        <div class="note" style="margin:0 0 6px;color:var(--ok);font-weight:700">✓ @Model.DoneReviewBy đã duyệt hoàn thành lúc @VnTime.Hm(rv) @Fmt.Dmy(VnTime.DateOf(rv))</div>
+    }
+    else if (Model.DoneRejectNote is not null)
+    {
+        <div class="note" style="margin:0 0 6px;color:var(--bad);font-weight:700">@Model.DoneReviewBy chưa duyệt: @Model.DoneRejectNote — hãy cập nhật lại kết quả</div>
+    }
+}

@@ -128,6 +128,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                         @Ui.Pill(st)
                     }</div>
                 <div class="tm">@t.Start – @t.End</div>
+                <partial name="_DoneReview" model="t" />
                 @if (D.PJ(t.ProjectId) is not { IsCommon: true }) { <div class="note" style="margin:0 0 6px">@(sup ? "Bạn hỗ trợ" : "Leader dự án"): <b>@(lead is null ? "chưa chọn Leader dự án" : lead.Id == me.Id ? "Bạn" : lead.Name)</b></div> }
                 @if (n is not null)
                 {
@@ -185,6 +186,7 @@ else if (plan is not null)
             <li id="t@(t.Id)"><span class="dot" style="--nc:@Labels.Color(st)">@(st == TaskState.Done ? "✓" : "")</span><div class="card task">
                 <div class="h"><div><div class="t">@t.Title</div><div class="src">@D.PName(t.EmployeeId) · @D.PjName(t.ProjectId)</div></div>@Ui.Pill(st)</div>
                 <div class="tm">@t.Start – @t.End · <span class="@(t.Supported ? "" : "muted")">@(t.Supported ? "Đã tích hỗ trợ" : "Chưa tích hỗ trợ")</span></div>
+                <partial name="_DoneReview" model="t" />
                 @if (n is not null)
                 {
                     <div class="nx-line">Kế hoạch tiếp: <b>@Fmt.Short(n.Date)</b> <span class="mono">@(n.Start)–@(n.End)</span> · @n.Title</div>

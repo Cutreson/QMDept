@@ -56,6 +56,10 @@ public sealed class ChromeModel
     public List<(string Text, string Href)> Reminders { get; init; } = [];
     /// <summary>Việc được giao đang chờ MÌNH xác nhận (7 ngày gần nhất trở đi) — hiện thành khung đỏ ở đầu MỌI trang để biết việc ở đâu và xác nhận ngay (yêu cầu 2026-10-24).</summary>
     public List<AckItem> AckTasks { get; init; } = [];
+    /// <summary>Việc MÌNH đã giao mà người nhận đã báo hoàn thành + gửi báo cáo cuối ngày — chờ mình duyệt mới tính là xong; hiện ở đầu mọi trang (yêu cầu 2026-10-24).</summary>
+    public List<DoneReviewItem> DoneReviews { get; init; } = [];
+    /// <summary>Đề xuất lại nội dung / thời gian của việc MÌNH giao — chờ mình duyệt (yêu cầu 2026-10-24).</summary>
+    public List<ChangeReviewItem> ChangeReviews { get; init; } = [];
 }
 
 /// <summary>Dựng phần khung (thanh trên + combobox xem màn hình + thanh tab + badge) cho _Layout (renderChrome của artifact).</summary>
@@ -141,6 +145,17 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         // TP / Quản trị: tab "Trạng thái làm việc" gồm cả Đăng ký làm thêm (/Overtime) — sáng ở cả hai trang (yêu cầu 2026-10-21)
         var onOvertime = tabRole is Role.Manager or Role.Leader && !away && string.Equals(controller, "Overtime", StringComparison.OrdinalIgnoreCase);   // ĐK làm thêm của TP / Leader thuộc tab Trạng thái làm việc (yêu cầu 2026-10-21)
         var otApprove = onOvertime && tabRole == Role.Manager && ctx.Request.Query["tab"].ToString() is "approve" or "summary";   // duyệt làm thêm của Leader + tổng hợp suất ăn thuộc tab Phê duyệt
+        // Việc mình giao mà người nhận đã báo hoàn thành (+ đã gửi báo cáo cuối ngày): chờ mình duyệt mới tính là xong (yêu cầu 2026-10-24).
+        var doneReviews = scope.IsViewingOther || acc.Role == Role.Staff ? new List<DoneReviewItem>() : d.Tasks
+            .Where(t => t.GivenById == acc.Id && t.DonePending && d.ReportOf(t.Date, t.EmployeeId) is not null)
+            .OrderBy(t => t.Date).ThenBy(t => t.Start)
+            .Select(t => new DoneReviewItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId), d.PName(t.EmployeeId), t.Note, t.Priority)).ToList();
+        var changeReviews = scope.IsViewingOther || acc.Role == Role.Staff ? new List<ChangeReviewItem>() : d.Tasks
+            .Where(t => t.GivenById == acc.Id && t.RePending)
+            .OrderBy(t => t.Date).ThenBy(t => t.Start)
+            .Select(t => new ChangeReviewItem(t.Id, d.PName(t.EmployeeId), d.PjName(t.ProjectId), t.Date, t.Title, t.Start, t.End,
+                t.ReDate ?? t.Date, t.ReTitle ?? t.Title, t.ReStart ?? t.Start, t.ReEnd ?? t.End, t.ReReason ?? "", t.Priority)).ToList();
+
         var onMgrOvertime = onOvertime && !otApprove;   // ĐK làm thêm của chính TP thuộc tab Trạng thái làm việc
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
         if (scope.IsAdmin && !scope.IsViewingOther) defs = defs.Concat(TabDefs[Role.Admin]);
@@ -237,7 +252,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, SupportPending = supportPending, Reminders = reminders, AckTasks = ackItems, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
+            Unread = unread, SupportPending = supportPending, Reminders = reminders, AckTasks = ackItems, DoneReviews = doneReviews, ChangeReviews = changeReviews, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
@@ -327,7 +342,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             // Việc mình phải làm mà chưa làm (yêu cầu 2026-10-23)
             if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); if (id == "month") return TodoAck(); }
             if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "status") return TodoMorning() + TodoEvening() + TodoOt();
-            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "overview") return TodoAck();
+            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "overview") return TodoAck() + doneReviews.Count + changeReviews.Count;
             return 0;
         }
     }
@@ -335,3 +350,10 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
 
 /// <summary>Một việc được giao đang chờ người nhận xác nhận (cho khung đỏ đầu trang).</summary>
 public sealed record AckItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string GivenBy, TaskPriority Priority, string Href);
+
+/// <summary>Một việc đã giao đang chờ người giao duyệt kết quả (cho khung đầu trang).</summary>
+public sealed record DoneReviewItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string Employee, string? Note, TaskPriority Priority);
+
+/// <summary>Một đề xuất lại (nội dung / thời gian) của người nhận việc đang chờ người giao duyệt.</summary>
+public sealed record ChangeReviewItem(int Id, string Employee, string Project, DateOnly Date, string Title, string Start, string End,
+    DateOnly NewDate, string NewTitle, string NewStart, string NewEnd, string Reason, TaskPriority Priority);

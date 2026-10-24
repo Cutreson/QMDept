@@ -218,6 +218,10 @@ public enum NotifyType
     SupportRequested,    // kế hoạch xin người hỗ trợ từ nhóm khác đã được duyệt → Leader nhóm được xin (xác nhận + chọn nhân viên)
     SupportConfirmed,    // Leader nhóm được xin đã xác nhận + chọn nhân viên → người đề xuất, Leader của họ, nhân viên được chọn
     SupportDeclined,     // Leader nhóm được xin KHÔNG đáp ứng được → người đề xuất + Leader trực tiếp của họ
+    TaskDoneReported,    // người nhận việc đã gửi báo cáo hoàn thành việc được giao → người giao (duyệt mới tính xong)
+    TaskDoneDecided,     // người giao duyệt / chưa duyệt kết quả việc được giao → người nhận
+    TaskChangeProposed,  // người nhận việc đề xuất lại nội dung / thời gian → người giao duyệt
+    TaskChangeDecided,   // người giao đồng ý / không đồng ý đề xuất lại → người nhận
 }
 
 /// <summary>

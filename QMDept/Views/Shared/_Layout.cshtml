@@ -114,6 +114,63 @@
         {
             <div class="notice remind" style="--nbg:var(--warn-soft);--nfg:var(--warn);margin-top:12px"><span class="ic">!</span><div><b>@rtext</b> <a class="link" href="@rhref">Xử lý ngay ›</a></div></div>
         }
+        @* Việc MÌNH đã giao mà người nhận báo hoàn thành + gửi báo cáo: duyệt mới tính là xong (yêu cầu 2026-10-24) *@
+        @if (chrome.DoneReviews.Count > 0)
+        {
+            <div class="notice ackbox" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:12px"><span class="ic">!</span><div>
+                <b>@chrome.DoneReviews.Count việc bạn giao đã báo hoàn thành — chờ bạn duyệt mới tính là xong</b>
+                @foreach (var r in chrome.DoneReviews.Take(5))
+                {
+                    <div class="ack-row">
+                        <div class="ack-main"><div class="ack-t">@r.Title@Html.Raw(Blocks.PriorityTag(r.Priority))</div>
+                            <div class="note">@r.Employee · @r.Project · @Fmt.Dmy(r.Date) @r.Start–@r.End</div>
+                            @if (!string.IsNullOrWhiteSpace(r.Note)) { <div class="note">Kết quả: @r.Note</div> }</div>
+                        <div class="ack-act">
+                            <form method="post" action="/Staff/ReviewDone?as=mine" asp-antiforgery="true" data-prompt="Chưa duyệt kết quả công việc" data-prompt-label="Lý do" data-prompt-required data-prompt-name="note">
+                                @Ui.ReturnField(Context.Request)
+                                <input type="hidden" name="id" value="@r.Id"><input type="hidden" name="v" value="no">
+                                <button type="submit" class="btn btn-sm">Chưa đạt</button>
+                            </form>
+                            <form method="post" action="/Staff/ReviewDone?as=mine" asp-antiforgery="true">
+                                @Ui.ReturnField(Context.Request)
+                                <input type="hidden" name="id" value="@r.Id"><input type="hidden" name="v" value="ok">
+                                <button type="submit" class="btn btn-sm btn-primary">Duyệt hoàn thành</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (chrome.DoneReviews.Count > 5) { <div class="note" style="margin-top:6px">… và @(chrome.DoneReviews.Count - 5) việc khác — duyệt các việc trên để xem tiếp</div> }
+            </div></div>
+        }
+        @* Đề xuất lại nội dung / thời gian của việc MÌNH giao — người nhận đề xuất, mình duyệt lại (yêu cầu 2026-10-24) *@
+        @if (chrome.ChangeReviews.Count > 0)
+        {
+            <div class="notice ackbox" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:12px"><span class="ic">!</span><div>
+                <b>@chrome.ChangeReviews.Count việc bạn giao được người nhận đề xuất lại — chờ bạn duyệt</b>
+                @foreach (var c in chrome.ChangeReviews.Take(5))
+                {
+                    <div class="ack-row">
+                        <div class="ack-main"><div class="ack-t">@c.Employee · @c.Title@Html.Raw(Blocks.PriorityTag(c.Priority))</div>
+                            <div class="note">Đang giao: @c.Project · @Fmt.Dmy(c.Date) @c.Start–@c.End</div>
+                            <div class="note"><b>Đề xuất: @(c.NewTitle == c.Title ? "" : c.NewTitle + " · ")@Fmt.Dmy(c.NewDate) @c.NewStart–@c.NewEnd</b></div>
+                            <div class="note">Lý do: @c.Reason</div></div>
+                        <div class="ack-act">
+                            <form method="post" action="/Staff/DecideChange?as=mine" asp-antiforgery="true" data-prompt="Không đồng ý đề xuất lại" data-prompt-label="Lý do" data-prompt-required data-prompt-name="note">
+                                @Ui.ReturnField(Context.Request)
+                                <input type="hidden" name="id" value="@c.Id"><input type="hidden" name="v" value="no">
+                                <button type="submit" class="btn btn-sm">Không đồng ý</button>
+                            </form>
+                            <form method="post" action="/Staff/DecideChange?as=mine" asp-antiforgery="true">
+                                @Ui.ReturnField(Context.Request)
+                                <input type="hidden" name="id" value="@c.Id"><input type="hidden" name="v" value="ok">
+                                <button type="submit" class="btn btn-sm btn-primary">Đồng ý</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (chrome.ChangeReviews.Count > 5) { <div class="note" style="margin-top:6px">… và @(chrome.ChangeReviews.Count - 5) đề xuất khác — xử lý các việc trên để xem tiếp</div> }
+            </div></div>
+        }
         @* Việc được giao đang chờ MÌNH xác nhận: liệt kê từng việc + nút Xác nhận ngay + liên kết tới ngày trong lịch (yêu cầu 2026-10-24) *@
         @if (chrome.AckTasks.Count > 0)
         {
@@ -126,7 +183,8 @@
                             <div class="note">@a.Project · @Fmt.Dmy(a.Date) @a.Start–@a.End · Giao bởi @a.GivenBy</div></div>
                         <div class="ack-act">
                             <a class="btn btn-sm" href="@a.Href">Xem trong lịch</a>
-                            <form method="post" action="/Staff/AckTask?id=@a.Id" asp-antiforgery="true">
+                            <button type="button" class="btn btn-sm" data-sheet="rp@(a.Id)">Đề xuất lại</button>
+                            <form method="post" action="/Staff/AckTask?id=@a.Id@(chrome.Account.Role == Role.Staff ? "" : "&as=mine")" asp-antiforgery="true">
                                 @Ui.ReturnField(Context.Request)
                                 <button type="submit" class="btn btn-sm btn-primary">Xác nhận đã nhận việc</button>
                             </form>
@@ -135,6 +193,7 @@
                 }
                 @if (chrome.AckTasks.Count > 5) { <div class="note" style="margin-top:6px">… và @(chrome.AckTasks.Count - 5) việc khác — <a class="link" href="@chrome.AckTasks[0].Href">xem trong lịch ›</a></div> }
             </div></div>
+            foreach (var a in chrome.AckTasks.Take(5)) { <partial name="_TaskRepropose" model="(a.Id, a.Title, a.Date, a.Start, a.End)" /> }
         }
     }
     @RenderBody()

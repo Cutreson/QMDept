@@ -40,7 +40,7 @@ public static class Blocks
     public static IHtmlContent TaskRow(this Dept d, WorkTask t, bool showEmployee = false, string? tail = null, bool leadOnly = false, string? actions = null)
     {
         var st = t.Status;
-        var ck = st == TaskState.Done ? "on" : st == TaskState.InProgress ? "half" : st == TaskState.Late ? "bad" : "";
+        var ck = st == TaskState.Done && t.DonePending ? "half" : st == TaskState.Done ? "on" : st == TaskState.InProgress ? "half" : st == TaskState.Late ? "bad" : "";
         var src = Src(t.Source);
         var lead = d.ProjectLead(t.ProjectId);
         // leadOnly (lịch nhóm của Leader): nhiều người cùng một việc → chỉ dòng của người được chọn làm Leader dự án mới hiện
@@ -64,6 +64,16 @@ public static class Blocks
         var ackLine = t.GivenById is null ? ""
             : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Hm(ak)} {Fmt.Dm(VnTime.DateOf(ak))}</b></div>"
             : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
+        // Đề xuất lại nội dung / thời gian của người nhận (yêu cầu 2026-10-24)
+        if (t.RePending)
+            ackLine += $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã đề xuất lại: {E(t.ReTitle)} · {(t.ReDate is DateOnly rd && rd != t.Date ? Fmt.Dmy(rd) + " " : "")}{E(t.ReStart)}–{E(t.ReEnd)} — chờ {E(t.GivenBy)} duyệt</b></div>";
+        else if (t.ReRejectNote is not null)
+            ackLine += $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.ReReviewBy)} không đồng ý đề xuất lại: {E(t.ReRejectNote)}</b></div>";
+        // Nghiệm thu việc được giao: báo hoàn thành → chờ người giao duyệt → duyệt mới tính xong (yêu cầu 2026-10-24)
+        if (t.NeedsGiverReview)
+            ackLine += t.DonePending ? $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã báo hoàn thành — chờ {E(t.GivenBy)} duyệt mới tính là xong</b></div>"
+                : t.Status == TaskState.Done && t.DoneReviewAt is DateTime rv ? $"<div class=\"s\"><b style=\"color:var(--ok)\">✓ {E(t.DoneReviewBy)} đã duyệt hoàn thành {VnTime.Hm(rv)} {Fmt.Dm(VnTime.DateOf(rv))}</b></div>"
+                : t.DoneRejectNote is not null ? $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.DoneReviewBy)} chưa duyệt: {E(t.DoneRejectNote)} — cập nhật lại kết quả</b></div>" : "";
         return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}{PriorityTag(t.Priority)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")}</div>{leadLine}{ackLine}{noteLine}</div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span>{(stNote.Length > 0 ? $"<span class=\"st-note{(t.CarriedToId is null ? " bad" : "")}\">{E(stNote)}</span>" : "")}</span>{(actions is null ? "" : $"<span class=\"act\">{actions}</span>")}</div>");
@@ -249,7 +259,7 @@ public static class Blocks
         {
             var ts = days.SelectMany(day => d.Chosen(day, p.Id)).ToList();
             var r = days.Count(day => d.ReportOf(day, p.Id) is not null);
-            sb.Append($"<tr><td>{E(p.Name)}</td><td class=\"n\">{ts.Count}</td><td class=\"n\">{ts.Count(t => t.Status == TaskState.Done)}</td><td class=\"n\">{r}</td></tr>");
+            sb.Append($"<tr><td>{E(p.Name)}</td><td class=\"n\">{ts.Count}</td><td class=\"n\">{ts.Count(t => t.IsDone)}</td><td class=\"n\">{r}</td></tr>");
         }
         sb.Append("</tbody></table></div><p class=\"note\">Chỉ tính các việc nhân viên đã chọn làm trong ngày.</p></section>");
         return H(sb.ToString());

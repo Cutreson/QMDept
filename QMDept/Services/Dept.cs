@@ -253,7 +253,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public static Counts Count(IEnumerable<WorkTask> list)
     {
         int a = 0, b = 0, c = 0, d = 0;
-        foreach (var t in list) switch (t.Status) { case TaskState.Done: a++; break; case TaskState.InProgress: b++; break; case TaskState.Late: c++; break; default: d++; break; }
+        foreach (var t in list) switch (t.Status == TaskState.Done && t.DonePending ? TaskState.InProgress : t.Status) { case TaskState.Done: a++; break; case TaskState.InProgress: b++; break; case TaskState.Late: c++; break; default: d++; break; }
         return new(a, b, c, d);
     }
     public static Counts CountItems(IEnumerable<PlanItem> list) => Count(list.Select(i => new WorkTask { Status = i.Status }));

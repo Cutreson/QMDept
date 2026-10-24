@@ -59,6 +59,10 @@ public static class NotifyCatalog
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
         new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff, Role.Leader]),
         new(NotifyType.TaskAcked, "Xác nhận nhận việc", "Người bạn giao việc đã xác nhận nhận việc và bắt đầu triển khai", [Role.Leader, Role.Manager]),
+        new(NotifyType.TaskDoneReported, "Việc giao đã báo hoàn thành", "Người nhận việc bạn giao đã gửi báo cáo hoàn thành — bạn duyệt thì mới tính là xong", [Role.Leader, Role.Manager]),
+        new(NotifyType.TaskDoneDecided, "Kết quả duyệt việc được giao", "Người giao duyệt / chưa duyệt kết quả công việc bạn đã báo hoàn thành", [Role.Staff, Role.Leader]),
+        new(NotifyType.TaskChangeProposed, "Đề xuất lại việc đã giao", "Người nhận việc bạn giao đề xuất lại nội dung / thời gian — bạn duyệt lại", [Role.Leader, Role.Manager]),
+        new(NotifyType.TaskChangeDecided, "Kết quả đề xuất lại việc", "Người giao đồng ý / không đồng ý đề xuất lại nội dung, thời gian việc của bạn", [Role.Staff, Role.Leader]),
         new(NotifyType.SupportRequested, "Yêu cầu hỗ trợ từ nhóm khác", "Nhóm khác xin nhân sự hỗ trợ — bạn xác nhận và chọn nhân viên", [Role.Leader]),
         new(NotifyType.SupportConfirmed, "Xác nhận nhân sự hỗ trợ", "Leader nhóm được xin đã xác nhận và chọn nhân viên hỗ trợ (người đề xuất, Leader của họ, nhân viên được chọn)", [Role.Staff, Role.Leader]),
         new(NotifyType.SupportDeclined, "Từ chối hỗ trợ nhân sự", "Leader nhóm được xin không đáp ứng được yêu cầu hỗ trợ nhân sự của bạn (hoặc của nhân viên nhóm bạn)", [Role.Staff, Role.Leader]),
@@ -190,6 +194,33 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync(leaders.Cast<int?>(), NotifyType.TaskAssigned, $"{tag}{what} ngày {Fmt.Dm(d)}", body, $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
     }
 
+
+    /// <summary>Người nhận gửi báo cáo cuối ngày có việc được giao đã báo hoàn thành → người giao (duyệt mới tính xong). Yêu cầu 2026-10-24.</summary>
+    public async Task TaskDoneReportedAsync(int giver, int emp, DateOnly d, IEnumerable<string> titles)
+    {
+        var tt = titles.ToList();
+        await SendAsync([giver], NotifyType.TaskDoneReported, $"{await Name(emp)} báo hoàn thành {tt.Count} việc bạn giao ngày {Fmt.Dmy(d)} — chờ bạn duyệt", string.Join("; ", tt), $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
+    }
+
+    /// <summary>Người giao duyệt / chưa duyệt kết quả việc được giao → người nhận.</summary>
+    public async Task TaskDoneDecidedAsync(int emp, DateOnly d, string title, bool ok, string? note = null)
+    {
+        var p = (await People()).Find(x => x.Id == emp);
+        var url = p is { Role: Role.Staff } ? Q("/Staff/Evening", d) : $"/Staff/Evening?as=mine&d={Fmt.Key(d)}";
+        await SendAsync([emp], NotifyType.TaskDoneDecided, $"Việc ngày {Fmt.Dmy(d)}: {(ok ? "đã được duyệt hoàn thành" : "người giao chưa duyệt — yêu cầu bổ sung")}", ok ? title : $"{title} — {note}", url);
+    }
+
+    /// <summary>Người nhận đề xuất lại nội dung / thời gian việc được giao → người giao duyệt (yêu cầu 2026-10-24).</summary>
+    public async Task TaskChangeProposedAsync(int giver, int emp, DateOnly d, string title, string reason) =>
+        await SendAsync([giver], NotifyType.TaskChangeProposed, $"{await Name(emp)} đề xuất lại việc ngày {Fmt.Dmy(d)} — chờ bạn duyệt", $"{title} — lý do: {reason}", $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
+
+    /// <summary>Người giao đồng ý / không đồng ý đề xuất lại → người nhận.</summary>
+    public async Task TaskChangeDecidedAsync(int emp, DateOnly d, string title, bool ok, string? note = null)
+    {
+        var p = (await People()).Find(x => x.Id == emp);
+        var url = p is { Role: Role.Staff } ? Q("/Staff/Month", d) : $"/Staff/Month?as=mine&d={Fmt.Key(d)}";
+        await SendAsync([emp], NotifyType.TaskChangeDecided, $"Việc ngày {Fmt.Dmy(d)}: {(ok ? "người giao đồng ý đề xuất lại" : "người giao không đồng ý đề xuất — yêu cầu bổ sung")}", ok ? title : $"{title} — {note}", url);
+    }
     /// <summary>Người được giao việc xác nhận đã nhận → người giao (yêu cầu 2026-10-21).</summary>
     public async Task TaskAckedAsync(int giver, int emp, DateOnly d, string title) =>
         await SendAsync([giver], NotifyType.TaskAcked, $"{await Name(emp)} đã xác nhận nhận việc ngày {Fmt.Dm(d)}", title,

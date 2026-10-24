@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QMDept.Data;
 
@@ -129,6 +130,26 @@ public class WorkTask
     public int? GivenById { get; set; }                              // id người giao (cấp quản lý giao / chuyển việc cho người khác) — null = tự thêm
     public TaskPriority Priority { get; set; } = TaskPriority.Normal;   // mức độ ưu tiên (cấp quản lý đặt khi giao / sửa việc)
     public DateTime? AckAt { get; set; }                             // người nhận đã xác nhận đã nhận việc (null = chờ xác nhận)
+    // Nghiệm thu việc được giao (yêu cầu 2026-10-24): người nhận báo "Hoàn thành" → chờ NGƯỜI GIAO duyệt (DonePending) → duyệt mới tính là xong
+    public bool DonePending { get; set; }                            // Status = Done nhưng người giao chưa duyệt → chưa tính là xong
+    public bool ItemDoneClaim { get; set; }                          // lúc báo cáo đã tích "hoàn thành đầu mục" — áp dụng khi người giao duyệt
+    [MaxLength(100)] public string? DoneReviewBy { get; set; }       // người giao đã duyệt / không duyệt
+    public DateTime? DoneReviewAt { get; set; }                      // giờ duyệt (Status = Done) hoặc giờ không duyệt
+    [MaxLength(500)] public string? DoneRejectNote { get; set; }     // lý do người giao chưa duyệt (hiện cho người nhận tới khi báo lại)
+    // Đề xuất lại (yêu cầu 2026-10-24): người nhận thấy việc được giao chồng chéo / chưa phù hợp → đề xuất lại nội dung / thời gian gửi NGƯỜI GIAO duyệt (không được xóa)
+    public bool RePending { get; set; }                              // đang chờ người giao duyệt đề xuất
+    [MaxLength(300)] public string? ReTitle { get; set; }
+    public DateOnly? ReDate { get; set; }
+    [MaxLength(5)] public string? ReStart { get; set; }
+    [MaxLength(5)] public string? ReEnd { get; set; }
+    [MaxLength(500)] public string? ReReason { get; set; }           // lý do người nhận đề xuất lại
+    public DateTime? ReAt { get; set; }
+    [MaxLength(500)] public string? ReRejectNote { get; set; }       // lý do người giao không đồng ý (hiện cho người nhận)
+    [MaxLength(100)] public string? ReReviewBy { get; set; }
+    /// <summary>Việc được giao: người nhận có phải gửi kết quả cho NGƯỜI GIAO duyệt mới tính là xong không (giao cho người khác, không tự giao).</summary>
+    [NotMapped] public bool NeedsGiverReview => GivenById is int g && g != EmployeeId;
+    /// <summary>Đã tính là xong: Hoàn thành VÀ (không cần người giao duyệt, hoặc người giao đã duyệt).</summary>
+    [NotMapped] public bool IsDone => Status == TaskState.Done && !DonePending;
     public int? ExtraId { get; set; }                                // phát sinh đã tạo ra việc này (source = Extra)
 
     public DateTime CreatedAt { get; set; }

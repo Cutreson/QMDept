@@ -1192,6 +1192,56 @@ b.HasIndex("OwnerLeaderId");
                     b.Property<DateTime?>("FromDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("ReAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("ReDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ReEnd")
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<bool>("RePending")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("ReReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("ReRejectNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("ReReviewBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ReStart")
+                        .HasMaxLength(5)
+                        .HasColumnType("varchar(5)");
+
+                    b.Property<string>("ReTitle")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<bool>("DonePending")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("DoneRejectNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime?>("DoneReviewAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DoneReviewBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool>("ItemDoneClaim")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<DateTime?>("AckAt")
                         .HasColumnType("datetime(6)");
 

@@ -56,10 +56,10 @@
         {
             foreach (var t in sel)
             {
-                var act = !lead ? null : StaffCalendar.CanManage(Scope, D, t) ? await Html.PartialStr("_TaskBtns", t) : "";
+                var act = (lead && StaffCalendar.CanManage(Scope, D, t)) || StaffCalendar.CanRepropose(Scope, D, t) ? await Html.PartialStr("_TaskBtns", t) : (lead ? "" : null);
                 @D.TaskRow(t, actions: act)
                 <partial name="_TaskAck" model="t" />
-                @if (lead) { <partial name="_TaskActions" model="t" /> }
+                <partial name="_TaskActions" model="t" />
             }
         }
         else
