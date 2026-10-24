@@ -161,6 +161,21 @@ public partial class StaffController
         var sent = await Db.DayPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == Scope.Me!.Id);
         if (!SelfApproves(Scope.Me)) StaffReports.RequireEditable(sent);
         await StaffReports.RequireActiveProjectAsync(Db, input.ProjectId);
+        if (Request.Form["ltitle"].Count > 0)
+        {
+            // nhiều công việc cùng dự án trong một bảng, không trùng giờ nhau / việc đã có (yêu cầu 2026-10-24)
+            var ul = TaskLines.Validate(TaskLines.Read(Request.Form));
+            var meU = Scope.Me!;
+            await TaskLines.EnsureFreeAsync(Db, meU.Id, meU.Name, Date, ul);
+            foreach (var l in ul)
+                Db.WorkTasks.Add(new WorkTask
+                {
+                    Date = Date, EmployeeId = meU.Id, ProjectId = input.ProjectId, Title = l.Title, Start = l.Start, End = l.End,
+                    Status = TaskState.NotStarted, Source = TaskSource.Unplanned, Selected = sent is null, CreatedAt = VnTime.UtcNow,
+                });
+            await Db.SaveChangesAsync();
+            return;
+        }
         var (title, item) = await input.ResolveAsync(Db);
         StaffReports.Clip(title, 300);
         Db.WorkTasks.Add(new WorkTask

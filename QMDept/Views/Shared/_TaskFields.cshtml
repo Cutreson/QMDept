@@ -23,6 +23,13 @@ else
     @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pid?.ToString(), id: px + "P", extraAttrs: "required")
     @Ui.ProjectLeadHint(D, D.AllPj(), px + "P", pid)
 }
+@if (!Model.ShowItem && Model.Dates is null)
+{
+    @* Thêm việc ngoài kế hoạch: nhiều công việc cùng dự án trong một bảng (yêu cầu 2026-10-24) *@
+    <partial name="_TaskLines" model="@(("Nội dung công việc", Model.Start, Model.End))" />
+}
+else
+{
 <label class="f" for="@(px)T">Nội dung công việc</label>
 <input class="in" id="@(px)T" name="title">
 <div class="grid2">
@@ -34,3 +41,4 @@ else
     <div class="row"><div style="flex:1"><label class="f" for="@(px)S">Bắt đầu</label>@Ui.TimeSelect("start", Model.Start, id: px + "S")</div>
         <div style="flex:1"><label class="f" for="@(px)E">Kết thúc</label>@Ui.TimeSelect("end", Model.End, end: true, id: px + "E")</div></div>
 </div>
+}

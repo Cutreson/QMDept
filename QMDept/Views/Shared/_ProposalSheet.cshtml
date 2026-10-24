@@ -32,12 +32,7 @@
         @Ui.Select("projectId", Ui.PjOptions(Model.Projects), pid?.ToString(),
             id: id + "P")
         @Ui.ProjectLeadHint(D, Model.Projects, id + "P", pid)
-        <label class="f" for="@(id)T">Nội dung công việc</label>
-        <input class="in" id="@(id)T" name="title" maxlength="300">
-        <div class="pick2 eq">
-            <div><label class="f" for="@(id)S">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: id + "S")</div>
-            <div><label class="f" for="@(id)E">Kết thúc</label>@Ui.TimeSelect("end", "17:00", end: true, id: id + "E")</div>
-        </div>
+        <partial name="_TaskLines" model='("Nội dung công việc", "08:00", "17:00")' />
         <div id="@(id)W">
             <label class="row" style="margin-top:12px;font-size:13.5px"><input type="checkbox" name="self" value="1" checked> <b>Tôi thực hiện</b></label>
             <label class="f" for="@(id)Pick">Người hỗ trợ</label>

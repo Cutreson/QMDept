@@ -55,8 +55,14 @@ public partial class StaffController
             if (Scope.IsManager && Request.Form["emp"].Any(s => int.TryParse(s, out var i) && Scope.TeamPeople.Any(p => p.Id == i && p.Role == Role.Staff)))
                 throw new BizException("Trưởng phòng chỉ giao việc cho Leader — Leader giao tiếp cho nhân viên, không giao vượt cấp");
             var people = StaffCalendar.ReadPeople(Request.Form, pool);
-            var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName, TaskSource.Assigned, Scope.Account.Id, StaffReports.ParseEnum<TaskPriority>(priority) ?? TaskPriority.Normal);
-            Toast($"Đã giao việc cho {n} người ngày {Fmt.Dm(Date)}");
+            var lines = TaskLines.Validate(TaskLines.Read(Request.Form, title, start, end));
+            foreach (var pid in people) await TaskLines.EnsureFreeAsync(Db, pid, null, Date, lines);   // không trùng giờ việc đã có của từng người được giao
+            var pri = StaffReports.ParseEnum<TaskPriority>(priority) ?? TaskPriority.Normal;
+            await using var tx = await Db.Database.BeginTransactionAsync();
+            foreach (var l in lines) await Flow.AssignTaskAsync(Date, projectId, itemId, l.Title, l.Start, l.End, people, Scope.ActorName, TaskSource.Assigned, Scope.Account.Id, pri, silent: true);
+            await tx.CommitAsync();
+            await Notify.TaskAssignedAsync(people, Date, string.Join("; ", lines.Select(l => l.Title)), priority: pri);
+            Toast($"Đã giao {lines.Count} việc cho {people.Count} người ngày {Fmt.Dm(Date)}");
         });
     }
 
@@ -75,9 +81,17 @@ public partial class StaffController
         var isLeave = Request.Form["kind"] == "leave";
         if (isLeave && me.Role != Role.Leader) throw new BizException("Chỉ Leader xin nghỉ ở đây");
         (LeaveRules.Leave Lv, string Why)? lv = isLeave ? await ReadLeaveFormAsync() : null;
-        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && !string.IsNullOrWhiteSpace(title));
-        if (isLeave && withWork) EnsureOutsideLeave(lv!.Value.Lv, start, end);
-        if (withWork) await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", [me.Id], Scope.ActorName, TaskSource.Planned);
+        var rawLines = TaskLines.Read(Request.Form, title, start, end);
+        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && rawLines.Count > 0);
+        if (isLeave && withWork) foreach (var l in rawLines) EnsureOutsideLeave(lv!.Value.Lv, l.Start, l.End);
+        if (withWork)
+        {
+            var lines = TaskLines.Validate(rawLines);
+            await TaskLines.EnsureFreeAsync(Db, me.Id, me.Name, Date, lines);   // không trùng giờ việc đã có (yêu cầu 2026-10-24)
+            await using var tx = await Db.Database.BeginTransactionAsync();
+            foreach (var l in lines) await Flow.AssignTaskAsync(Date, projectId, itemId, l.Title, l.Start, l.End, [me.Id], Scope.ActorName, TaskSource.Planned, silent: true);
+            await tx.CommitAsync();
+        }
         if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
         Toast(!isLeave ? "Đã thêm công việc vào kế hoạch cá nhân" : withWork ? "Đã thêm công việc và gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt" : "Đã gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt");
     });
@@ -137,6 +151,9 @@ public partial class StaffController
             if ((await Db.Leaves.AsNoTracking().Where(l => l.Date == day && l.EmployeeId == target).ToListAsync()).Any(Dept.IsFullDayLeave))
                 throw new BizException($"{tp.Name} nghỉ cả ngày {Fmt.Dmy(day)} — chọn ngày hoặc người khác");
         }
+        // không trùng giờ việc khác của người thực hiện trong ngày (yêu cầu 2026-10-24)
+        if (Fmt.IsHhmm(start) && Fmt.IsHhmm(end) && !end!.Le(start!))
+            await TaskLines.EnsureFreeAsync(Db, target, null, day, [new TaskLines.Line((title ?? t.Title).Trim(), start!, end!)], t.Id);
         await using var tx = await Db.Database.BeginTransactionAsync();
         await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName, StaffReports.ParseEnum<TaskPriority>(priority));
         if (moved) await Flow.MoveTaskAsync(t, day, target, Scope.ActorName, Scope.Account.Id);
@@ -240,9 +257,10 @@ public partial class StaffController
         // Ô "Loại đề xuất" = Xin nghỉ: nghỉ nửa ngày / vài giờ + có nội dung công việc → đề xuất thêm công việc ngoài khung nghỉ (Leader nhóm duyệt cả hai).
         var isLeave = Request.Form["kind"] == "leave";
         (LeaveRules.Leave Lv, string Why)? lv = isLeave ? await ReadLeaveFormAsync() : null;
-        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && !string.IsNullOrWhiteSpace(title));
+        var rawLines = TaskLines.Read(Request.Form, title, start, end);
+        var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && rawLines.Count > 0);
         if (isLeave && !withWork) { await SaveLeaveRequestAsync(lv!.Value.Lv, lv.Value.Why); Toast("Đã gửi đề xuất xin nghỉ, chờ Leader duyệt"); return; }
-        if (isLeave) EnsureOutsideLeave(lv!.Value.Lv, start, end);
+        if (isLeave) foreach (var rl in rawLines) EnsureOutsideLeave(lv!.Value.Lv, rl.Start, rl.End);
         var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
         // Xin người hỗ trợ theo số lượng: từng phòng ban (qd_<chỉ số>) và từng nhóm khác (qg_<Id Leader>) — không chỉ định người ngoài nhóm.
         var quotas = new List<(string Name, int Qty)>();
@@ -251,7 +269,13 @@ public partial class StaffController
         foreach (var l in await Db.People.AsNoTracking().Where(p => p.Role == Role.Leader && !p.IsDeleted).ToListAsync())
             if (int.TryParse(Request.Form["qg_" + l.Id], out var qg) && qg > 0) quotas.Add(("Nhóm " + l.Name, qg));
         var includeSelf = Request.Form["self"].Count > 0;   // ô tích "Tôi thực hiện"
-        await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, title, start ?? "", end ?? "", people, quotas, Request.Form["supportReason"].ToString(), includeSelf);
+        var plines = TaskLines.Validate(rawLines);
+        // không trùng giờ việc đã có của người đề xuất (nếu tự làm) và của người hỗ trợ được chỉ định (yêu cầu 2026-10-24)
+        if (includeSelf) await TaskLines.EnsureFreeAsync(Db, Scope.Account.Id, Scope.Account.Name, Date, plines);
+        foreach (var pid in people.Distinct()) await TaskLines.EnsureFreeAsync(Db, pid, null, Date, plines);
+        await using var ptx = await Db.Database.BeginTransactionAsync();
+        foreach (var pl in plines) await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, pl.Title, pl.Start, pl.End, people, quotas, Request.Form["supportReason"].ToString(), includeSelf);
+        await ptx.CommitAsync();
         if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
         Toast(isLeave ? "Đã gửi đề xuất xin nghỉ và công việc — chờ Leader duyệt" : "Đã gửi đề xuất — chờ Leader duyệt");
     });

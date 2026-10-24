@@ -87,7 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Nếu NV đã gửi kế hoạch ngày đó → việc được chọn sẵn và thêm vào kế hoạch. Cập nhật vai trò trong dự án.
     /// </summary>
     public async Task<int> AssignTaskAsync(DateOnly date, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned, int? actorId = null, TaskPriority priority = TaskPriority.Normal)
+        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned, int? actorId = null, TaskPriority priority = TaskPriority.Normal, bool silent = false)
     {
         if (people.Count == 0) throw new BizException("Tích chọn ít nhất 1 người tham gia");
         var item = itemId is int iid ? await db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
@@ -116,7 +116,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             await db.SaveChangesAsync();
         }
         if (tx is not null) await tx.CommitAsync();
-        await notify.TaskAssignedAsync(people, date, t0, priority: priority);
+        if (!silent) await notify.TaskAssignedAsync(people, date, t0, priority: priority);
         return people.Count;
     }
 

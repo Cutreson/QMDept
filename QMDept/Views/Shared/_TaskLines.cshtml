@@ -1,0 +1,14 @@
+@model (string Label, string Start, string End)
+@* Nhập nhiều công việc của cùng một dự án (yêu cầu 2026-10-24): mỗi dòng = nội dung + giờ bắt đầu + giờ kết thúc (ở CUỐI dòng) + ✕; "＋ Thêm công việc" thêm dòng.
+   Field lặp: ltitle / lstart / lend (ViewModels/TaskLines). Chống trùng giờ ở trình duyệt (site.js: data-tl) và ở máy chủ. *@
+<div class="tlines" data-tl>
+    <label class="f">@Model.Label</label>
+    <div class="tl-row">
+        <input class="in tl-t" name="ltitle" maxlength="300" aria-label="Nội dung công việc">
+        @Ui.TimeSelect("lstart", Model.Start, id: "", extraAttrs: "aria-label=\"Bắt đầu\"")
+        @Ui.TimeSelect("lend", Model.End, end: true, id: "", extraAttrs: "aria-label=\"Kết thúc\"")
+        <button type="button" class="tl-del" data-tl-del aria-label="Xóa dòng">✕</button>
+    </div>
+    <div class="tl-warn" hidden></div>
+    <button type="button" class="link tl-add" data-tl-add>＋ Thêm công việc</button>
+</div>

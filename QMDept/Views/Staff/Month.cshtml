@@ -99,8 +99,7 @@ else
                 <label class="f" for="calP" style="margin-top:0">Dự án</label>
                 @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), pj0?.ToString(), id: "calP", extraAttrs: "data-lead-for=\"calAssignForm\"")
                 @Ui.ProjectLeadHint(D, D.AllPj(), "calP", pj0)
-                <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
-                <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "17:00", end: true, id: "calE")</div></div>
+                <partial name="_TaskLines" model='("Nội dung công việc", "08:00", "17:00")' />
                 <label class="f" for="calPri">Mức độ ưu tiên</label>
                 <select class="in" name="priority" id="calPri"><option value="Normal">Bình thường</option><option value="High">Ưu tiên</option><option value="Urgent">Khẩn cấp</option></select>
                 <label class="f">Người tham gia</label>
@@ -181,8 +180,7 @@ else
                     <label class="f" for="ownP" style="margin-top:0">Dự án</label>
                     @Ui.Select("projectId", Ui.PjOptions(D.AllPj()), StaffCalendar.DefaultProject(D, sel)?.ToString(), id: "ownP")
                     @Ui.ProjectLeadHint(D, D.AllPj(), "ownP", StaffCalendar.DefaultProject(D, sel))
-                    <label class="f" for="ownT">Nội dung công việc</label><input class="in" id="ownT" name="title" maxlength="300">
-                    <div class="pick2 eq"><div><label class="f" for="ownS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "ownS")</div><div><label class="f" for="ownE">Kết thúc</label>@Ui.TimeSelect("end", "17:00", end: true, id: "ownE")</div></div>
+                    <partial name="_TaskLines" model='("Nội dung công việc", "08:00", "17:00")' />
                     </div>
                     <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button>
                         <button class="btn btn-primary" data-lbl-leave="Gửi đề xuất">Lưu vào kế hoạch</button></div>

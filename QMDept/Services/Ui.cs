@@ -97,7 +97,7 @@ public static class Ui
     /// <summary>timeSel(id, val, end, blank): select giờ 00:00–24:00 bước 30 phút (end = bỏ 00:00, ngược lại bỏ 24:00).</summary>
     public static IHtmlContent TimeSelect(string name, string? value, bool end = false, string? blank = null, string? id = null, string? extraAttrs = null)
     {
-        var sb = new StringBuilder($"<select class=\"in mono\" name=\"{E(name)}\" id=\"{E(id ?? name)}\"{(extraAttrs is null ? "" : " " + extraAttrs)}>");
+        var sb = new StringBuilder($"<select class=\"in mono\" name=\"{E(name)}\"{(id == "" ? "" : $" id=\"{E(id ?? name)}\"")}{(extraAttrs is null ? "" : " " + extraAttrs)}>");
         if (blank is not null) sb.Append($"<option value=\"\">{E(blank)}</option>");
         foreach (var x in end ? Fmt.EndTimes : Fmt.StartTimes)
             sb.Append($"<option value=\"{x}\"{(x == value ? " selected" : "")}>{x}</option>");

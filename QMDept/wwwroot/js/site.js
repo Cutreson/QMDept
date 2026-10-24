@@ -510,3 +510,53 @@
     else done(fallback(text));
   });
 })();
+
+// ---------- nhập nhiều công việc trong một bảng + chống trùng giờ (yêu cầu 2026-10-24) ----------
+(function () {
+  const min = hhmm => { const [h, m] = (hhmm || '0:0').split(':'); return (+h) * 60 + (+m); };
+  const rowsOf = box => Array.from(box.querySelectorAll('.tl-row'));
+  const val = (r, n) => (r.querySelector('[name=' + n + ']') || {}).value || '';
+  // trả về thông báo lỗi trùng giờ giữa các dòng (và đánh dấu đỏ), '' nếu ổn
+  function check(box) {
+    const rs = rowsOf(box); rs.forEach(r => r.classList.remove('bad'));
+    const used = rs.map((r, i) => ({ r, i, t: val(r, 'ltitle').trim(), a: min(val(r, 'lstart')), b: min(val(r, 'lend')) })).filter(x => x.t);
+    let msg = '';
+    used.forEach(x => { if (x.b <= x.a) { x.r.classList.add('bad'); msg = msg || `Công việc ${x.i + 1}: giờ kết thúc phải sau giờ bắt đầu`; } });
+    for (let i = 0; i < used.length; i++) for (let j = i + 1; j < used.length; j++) {
+      const p = used[i], q = used[j];
+      if (p.a < q.b && q.a < p.b) { p.r.classList.add('bad'); q.r.classList.add('bad'); msg = msg || `Trùng khung giờ: công việc ${p.i + 1} (${val(p.r, 'lstart')}–${val(p.r, 'lend')}) và công việc ${q.i + 1} (${val(q.r, 'lstart')}–${val(q.r, 'lend')}) — chỉnh lại giờ`; }
+    }
+    const w = box.querySelector('.tl-warn'); if (w) { w.textContent = msg; w.hidden = !msg; }
+    return msg;
+  }
+  const setSel = (sel, v) => { if (Array.from(sel.options).some(o => o.value === v)) sel.value = v; };
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  document.addEventListener('click', e => {
+    const add = e.target.closest('[data-tl-add]'), del = e.target.closest('[data-tl-del]');
+    if (!add && !del) return;
+    const box = e.target.closest('[data-tl]'); if (!box) return;
+    e.preventDefault();
+    if (add) {
+      const rs = rowsOf(box), last = rs[rs.length - 1], row = last.cloneNode(true);
+      row.classList.remove('bad'); row.querySelector('[name=ltitle]').value = '';
+      // dòng mới bắt đầu ngay sau giờ kết thúc của dòng trước (tối đa 1 giờ, không quá 24:00)
+      const s = Math.min(min(val(last, 'lend')), 23 * 60), en = Math.min(s + 60, 24 * 60);
+      setSel(row.querySelector('[name=lstart]'), hhmm(s)); setSel(row.querySelector('[name=lend]'), hhmm(en));
+      last.after(row); row.querySelector('[name=ltitle]').focus(); check(box);
+    } else {
+      const rs = rowsOf(box);
+      if (rs.length > 1) del.closest('.tl-row').remove(); else del.closest('.tl-row').querySelector('[name=ltitle]').value = '';
+      check(box);
+    }
+  });
+  document.addEventListener('change', e => { const box = e.target.closest && e.target.closest('[data-tl]'); if (box) check(box); });
+  document.addEventListener('input', e => { const box = e.target.closest && e.target.closest('[data-tl]'); if (box && e.target.name === 'ltitle') check(box); });
+  // chặn gửi khi còn trùng giờ (chạy trước các xử lý submit khác)
+  document.addEventListener('submit', e => {
+    const f = e.target; if (!(f instanceof HTMLFormElement)) return;
+    for (const box of f.querySelectorAll('[data-tl]')) {
+      const msg = check(box);
+      if (msg) { e.preventDefault(); e.stopImmediatePropagation(); window.qmToast && window.qmToast(msg, true); return; }
+    }
+  }, true);
+})();
