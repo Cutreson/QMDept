@@ -11,6 +11,7 @@
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = t => window.qmToast && window.qmToast(t);
+  const toastErr = t => window.qmToast && window.qmToast(t, true);   // lỗi / thiếu điều kiện: giữ tới khi bấm vào màn hình
   const num = n => String(Math.round(n * 100) / 100).replace('.', ',');
   const hmMin = s => +s.slice(0, 2) * 60 + +s.slice(3, 5);
   // workMin(a,b): phút làm việc trong [a,b], bỏ nghỉ trưa 12:00–13:00
@@ -202,7 +203,7 @@
       sf.addEventListener('submit', e => {
         e.preventDefault(); e.stopPropagation();
         const r = readLeave(leaveType, sf);
-        if (!r.v) { toast(r.err); return; }
+        if (!r.v) { toastErr(r.err); return; }
         done = true; window.qmCloseSheet();
         statusSel.value = status; prevStatus = status;
         const x = applyLeave(r.v); render();
@@ -241,7 +242,7 @@
     // submit planForm — cùng thứ tự kiểm tra và câu báo lỗi như artifact
     f.addEventListener('submit', e => {
       saveDraft();
-      const stop = (msg, sel) => { e.preventDefault(); e.stopPropagation(); toast(msg); const el = sel && $(sel, f); if (el) el.focus(); };
+      const stop = (msg, sel) => { e.preventDefault(); e.stopPropagation(); toastErr(msg); const el = sel && $(sel, f); if (el) el.focus(); };
       const status = dr.status, leave = isLeave(status) ? dr.leave : null;
       if (!status) return stop('Chọn trạng thái làm việc', '#pStatus');
       if (isLeave(status) && (!leave || leave.type !== LEAVE_TYPE[status])) { stop('Chọn thời gian nghỉ'); openLeave(status); return; }
@@ -278,7 +279,7 @@
   document.addEventListener('submit', e => {
     const f = e.target;
     if (!(f instanceof HTMLFormElement)) return;
-    const stop = msg => { e.preventDefault(); e.stopPropagation(); toast(msg); };
+    const stop = msg => { e.preventDefault(); e.stopPropagation(); toastErr(msg); };
     if (f.matches('form[data-upd]')) {
       const ws = $('#wS', f), we = $('#wE', f);
       if (ws && we && we.value <= ws.value) return stop('Giờ kết thúc phải sau giờ bắt đầu');

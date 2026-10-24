@@ -32,13 +32,17 @@
 
   // ---------- toast ----------
   const toastEl = $('#toast');
-  function toast(t) {
+  function toast(t, sticky) {
     if (!toastEl || !t) return;
-    toastEl.textContent = t; toastEl.hidden = false;
-    clearTimeout(toast.t); toast.t = setTimeout(() => toastEl.hidden = true, 3200);
+    toastEl.textContent = t; toastEl.hidden = false; toastEl.classList.toggle('sticky', !!sticky);
+    clearTimeout(toast.t);
+    if (sticky) { // lỗi / thiếu điều kiện: giữ lại tới khi người dùng bấm vào màn hình
+      const off = () => { toastEl.hidden = true; toastEl.classList.remove('sticky'); document.removeEventListener('pointerdown', off, true); document.removeEventListener('keydown', off, true); };
+      setTimeout(() => { document.addEventListener('pointerdown', off, true); document.addEventListener('keydown', off, true); }, 400);
+    } else toast.t = setTimeout(() => toastEl.hidden = true, 3200);
   }
   window.qmToast = toast;
-  if (toastEl && toastEl.dataset.msg) toast(toastEl.dataset.msg);
+  if (toastEl && toastEl.dataset.msg) toast(toastEl.dataset.msg, toastEl.dataset.sticky === '1');
 
   // ---------- bảng trượt (sheet) ----------
   const dlg = $('#dlg');
@@ -109,7 +113,7 @@
       s.addEventListener('submit', ev => {
         ev.preventDefault();
         const v = $('#qmPrompt', s).value.trim();
-        if (req && !v) { toast('Nhập ' + (f.dataset.promptLabel || 'nội dung').toLowerCase()); return; }
+        if (req && !v) { toast('Nhập ' + (f.dataset.promptLabel || 'nội dung').toLowerCase(), true); return; }
         const name = f.dataset.promptName || 'text';
         let h = f.querySelector(`input[type=hidden][name="${name}"]`);
         if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = name; f.appendChild(h); }

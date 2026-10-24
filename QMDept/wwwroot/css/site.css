@@ -530,3 +530,4 @@ body.has-side .tabbar .bgs{position:static;margin-left:auto;left:auto;top:auto;g
 body.has-side .tabbar .bgs .badge{min-width:20px;height:20px;font-size:11px;margin:0}
 .trow-st .st .st-note{display:block;font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.25}
 .trow-st .st .st-note.bad{color:var(--bad);font-weight:600}
+.toast.sticky{background:var(--bad);color:#fff;max-width:min(560px,92vw);white-space:normal;text-align:center;line-height:1.45;box-shadow:0 8px 28px rgba(0,0,0,.28)}

@@ -117,7 +117,7 @@ public partial class StaffController
         }
         catch (BizException ex)
         {
-            Toast(ex.Message);
+            ToastErr(ex.Message);
             if (Scope.IsSelf && !Scope.IsReadOnly && StaffReports.WriteDraft(input, Date) is { } draft) TempData[StaffReports.DraftKey] = draft;
             return Back();
         }

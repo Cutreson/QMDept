@@ -3,6 +3,7 @@
 @{
     var chrome = await CB.BuildAsync();
     var toast = TempData["toast"] as string;
+    var toastSticky = TempData["toastSticky"] as string;
     var hasSide = chrome is not null && chrome.Tabs.Count > 0;
     // Màn hình máy tính (≥1024px): các trang dạng "bảng điều khiển / danh sách thẻ" xếp thẻ thành 2 cột (xem site.css: main.grid-page).
     var page = $"{Context.GetRouteValue("controller")}/{Context.GetRouteValue("action")}";
@@ -126,7 +127,7 @@
         }
     </div></nav>
 }
-<div id="toast" class="toast" hidden role="status" data-msg="@toast"></div>
+<div id="toast" class="toast" hidden role="status" data-msg="@toast" data-sticky="@(toastSticky is null ? null : "1")"></div>
 <div id="notifs" class="notifs" aria-live="polite"></div>
 <div id="dlg" class="dlg" hidden></div>
 @if (chrome is not null)

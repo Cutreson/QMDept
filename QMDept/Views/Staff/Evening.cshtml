@@ -137,6 +137,18 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                 {
                     <div class="note" style="margin:-4px 0 8px">Chuyển tiếp lần @Math.Max(D.CarryTimes(t), 1) · từ @Fmt.Dm(fd)</div>
                 }
+                <div class="detail" id="det@(t.Id)" style="margin:6px 0 8px">
+                    <div><span class="muted">Dự án:</span> @D.PjName(t.ProjectId)</div>
+                    @if (t.PlanItemId is int iid)
+                    {
+                        <div><span class="muted">Đầu mục:</span> @(D.Item(iid)?.Title ?? "")</div>
+                    }
+                    <div><span class="muted">@(st == TaskState.Done ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành"):</span> @(string.IsNullOrEmpty(t.Note) ? "—" : t.Note)</div>
+                    @if (t.UpdatedAt is DateTime ua)
+                    {
+                        <div class="note">Cập nhật lúc @VnTime.Hm(ua)</div>
+                    }
+                </div>
                 <div class="btn-row">@if (!ro && sup)
                     {
                         @* Người hỗ trợ: chỉ tích "Đã hỗ trợ" — Leader dự án báo cáo kết quả *@
@@ -151,20 +163,8 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                     }
                     else if (!ro)
                     {
-                        <button type="button" class="btn btn-primary btn-sm" data-sheet="upd@(t.Id)">Cập nhật</button>
-                    }<a class="btn btn-sm btn-ghost" href="@(StaffReports.ToggleOpen(req, Model.Open, t.Id))#t@(t.Id)" data-detail="det@(t.Id)" aria-expanded="@(open ? "true" : "false")">Chi tiết</a></div>
-                <div class="detail" id="det@(t.Id)" hidden="@(!open)">
-                    <div><span class="muted">Dự án:</span> @D.PjName(t.ProjectId)</div>
-                    @if (t.PlanItemId is int iid)
-                    {
-                        <div><span class="muted">Đầu mục:</span> @(D.Item(iid)?.Title ?? "")</div>
-                    }
-                    <div><span class="muted">@(st == TaskState.Done ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành"):</span> @(string.IsNullOrEmpty(t.Note) ? "—" : t.Note)</div>
-                    @if (t.UpdatedAt is DateTime ua)
-                    {
-                        <div class="note">Cập nhật lúc @VnTime.Hm(ua)</div>
-                    }
-                </div>
+                        <button type="button" class="btn btn-sm @(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "btn-ok" : "btn-primary")" data-sheet="upd@(t.Id)">@(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "✓ Đã cập nhật" : "Cập nhật")</button>
+                    }</div>
             </div></li>
         }
     </ul>
@@ -195,7 +195,7 @@ else if (plan is not null)
                 }
                 @if (!ro)
                 {
-                    <div class="btn-row"><button type="button" class="btn btn-primary btn-sm" data-sheet="upd@(t.Id)">Cập nhật</button></div>
+                    <div class="btn-row"><button type="button" class="btn btn-sm @(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "btn-ok" : "btn-primary")" data-sheet="upd@(t.Id)">@(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "✓ Đã cập nhật" : "Cập nhật")</button></div>
                 }
             </div></li>
         }

@@ -62,6 +62,6 @@
     const addBtn=f.querySelector('#otAddOther'); if (addBtn && f.querySelector('#otOT').value.trim()) addBtn.click();
     const picked=f.querySelectorAll('input[name=task]:checked').length, others=f.querySelectorAll('#otOthers .pick-chip').length;
     const msg = r.err ? r.err : (!picked && !others) ? 'Tích việc chưa xong cần làm tiếp hoặc thêm công việc khác' : '';
-    if(msg){ e.preventDefault(); e.stopPropagation(); if(window.qmToast) window.qmToast(msg); }
+    if(msg){ e.preventDefault(); e.stopPropagation(); if(window.qmToast) window.qmToast(msg, true); }
   });
 })();

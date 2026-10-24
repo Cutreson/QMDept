@@ -79,13 +79,13 @@ public abstract class AppController : Controller
                  && ctx.RouteData.Values["action"] is string a && (a.Equals("AssignTask", StringComparison.OrdinalIgnoreCase)
                      || a.Equals("DeleteTask", StringComparison.OrdinalIgnoreCase) || a.Equals("EditTask", StringComparison.OrdinalIgnoreCase))))
         {
-            Toast("Lịch chỉ xem — mở màn hình của bạn để thao tác");
+            ToastErr("Lịch chỉ xem — mở màn hình của bạn để thao tác");
             ctx.Result = Redirect(BackUrl());
             return;
         }
         if (HttpMethods.IsPost(Request.Method) && Scope.IsViewingOther)
         {
-            Toast($"Đang xem màn hình của {Scope.Me?.Name}: chỉ xem, không thao tác được");
+            ToastErr($"Đang xem màn hình của {Scope.Me?.Name}: chỉ xem, không thao tác được");
             ctx.Result = Redirect(BackUrl());
             return;
         }
@@ -95,13 +95,16 @@ public abstract class AppController : Controller
         if (HttpMethods.IsPost(Request.Method) && done.Exception is DbUpdateException && !done.ExceptionHandled)
         {
             done.ExceptionHandled = true;
-            Toast("Dữ liệu vừa được cập nhật ở nơi khác — vui lòng xem lại và thử lại");
+            ToastErr("Dữ liệu vừa được cập nhật ở nơi khác — vui lòng xem lại và thử lại");
             done.Result = Redirect(BackUrl());
         }
     }
 
     /// <summary>Hiện thông báo ngắn (toast) ở trang kế tiếp.</summary>
     protected void Toast(string msg) => TempData["toast"] = msg;
+
+    /// <summary>Thông báo LỖI / thiếu điều kiện: hiện lâu, chỉ mất khi người dùng bấm vào màn hình (yêu cầu 2026-10-24).</summary>
+    protected void ToastErr(string msg) { TempData["toast"] = msg; TempData["toastSticky"] = "1"; }
 
     /// <summary>URL quay lại sau POST: field "returnUrl" của form → Referer → fallback.</summary>
     protected string BackUrl(string? fallback = null)
@@ -128,7 +131,7 @@ public abstract class AppController : Controller
         }
         catch (BizException ex)
         {
-            Toast(ex.Message);
+            ToastErr(ex.Message);
         }
         return Redirect(redirect is not null && Url.IsLocalUrl(redirect) ? redirect : BackUrl());
     }
