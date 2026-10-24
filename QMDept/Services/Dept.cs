@@ -159,8 +159,8 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         return $"{t} dự án · {a} đang triển khai · {d} đã hoàn thành";
     }
     /// <summary>Dự án người đang đăng nhập được thấy: Leader chỉ thấy dự án TP đã giao cho nhóm mình phụ trách (yêu cầu 2026-10-20); TP / Quản trị / NV thấy như cũ.</summary>
-    IEnumerable<Project> VisiblePj() => scope.Resolved && scope.Account is { Role: Role.Leader } a ? Projects.Where(p => p.OwnerLeaderId == a.Id) : Projects;
-    public List<Project> ActivePj() { GuardBase(); return VisiblePj().Where(p => !p.Closed).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
+    IEnumerable<Project> VisiblePj() => scope.Resolved && scope.Account is { Role: Role.Leader } a ? Projects.Where(p => p.OwnerLeaderId == a.Id || p.IsCommon) : Projects;   // "Công việc chung" mọi người đều thấy
+    public List<Project> ActivePj() { GuardBase(); return VisiblePj().Where(p => !p.Closed && !p.IsCommon).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<Project> AllPj() { GuardBase(); return VisiblePj().OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<PlanItem> ItemsOf(int pid) { GuardBase(); return Items.Where(i => i.ProjectId == pid).OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).ToList(); }
     /// <summary>tile(pid): màu ô dự án.</summary>

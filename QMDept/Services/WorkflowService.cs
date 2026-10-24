@@ -141,7 +141,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (!Fmt.IsHhmm(start) || !Fmt.IsHhmm(end) || end.Le(start)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
 
         // NV chỉ xem / đề xuất công việc của dự án mình được giao làm Leader dự án (yêu cầu 2026-10-16) — cả việc của chính mình lẫn xin hỗ trợ.
-        if (!await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))
+        if (!pj.IsCommon && !await db.Assignments.AnyAsync(a => a.ProjectId == projectId && a.EmployeeId == proposerId && a.Role == ProjectRole.Lead))   /* "Công việc chung" ai cũng đề xuất được */
             throw new BizException("Chỉ đề xuất được công việc của dự án bạn được giao làm Leader dự án");
         var ids = people.Distinct().ToList();
         // Người đề xuất (Leader dự án) mặc định cùng thực hiện; bỏ tích thì chỉ những người được chỉ định trong nhóm làm.

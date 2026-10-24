@@ -37,7 +37,7 @@ public static class Blocks
         var lead = d.ProjectLead(t.ProjectId);
         // leadOnly (lịch nhóm của Leader): nhiều người cùng một việc → chỉ dòng của người được chọn làm Leader dự án mới hiện
         // "Leader dự án"; người hỗ trợ không hiện.
-        var leadLine = leadOnly && (lead is null || lead.Id != t.EmployeeId) ? ""
+        var leadLine = d.PJ(t.ProjectId) is { IsCommon: true } ? "" : leadOnly && (lead is null || lead.Id != t.EmployeeId) ? ""
             : lead is null ? "<div class=\"s\">Leader dự án: chưa chọn</div>" : $"<div class=\"s\">Leader dự án: <b>{E(lead.Name)}</b></div>";
         // Trạng thái RIÊNG từng việc ở cuối dòng + lý do chưa xong (yêu cầu 2026-10-22)
         var res = QMDept.ViewModels.StaffCalendar.TaskResult(t, d.Scope.Today);

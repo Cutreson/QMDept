@@ -352,7 +352,7 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader dự án";
         // Chỉ Leader chọn Leader dự án (TP / Quản trị chỉ chọn Leader phụ trách dự án). Leader thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách.
-        var projects = D.AllPj().Where(p => p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId).ToList();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
+        var projects = D.AllPj().Where(p => !p.IsCommon && (p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId)).ToList();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
         // Chia 2 mục: đã có Leader dự án (f=has) / chưa chọn Leader dự án (f=none); mặc định mục đầu có dự án (đã có → chưa chọn).
         var has = projects.Where(p => D.ProjectLead(p.Id) is not null).ToList();
         var none = projects.Where(p => D.ProjectLead(p.Id) is null).ToList();
@@ -481,7 +481,7 @@ public partial class PlanningController
         if (!Scope.IsManager) return Redirect("/");
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader phụ trách dự án";
-        var all = D.AllPj();   // gồm cả dự án đã bàn giao (yêu cầu 2026-10-21: dự án đã hoàn thành cũng phải có Leader phụ trách)
+        var all = D.AllPj().Where(p => !p.IsCommon).ToList();   // gồm cả dự án đã bàn giao (yêu cầu 2026-10-21: dự án đã hoàn thành cũng phải có Leader phụ trách)
         var has = all.Where(p => p.OwnerLeaderId is not null).ToList();
         var none = all.Where(p => p.OwnerLeaderId is null).ToList();
         // 2 mục: Đã có Leader / Chưa có Leader (thay "Tất cả"); mặc định mục đầu tiên có dự án
@@ -489,7 +489,7 @@ public partial class PlanningController
         return View(new PlanningOwnersVm
         {
             Projects = f == "has" ? has : none, Leaders = D.Leaders(), Filter = f,
-            Total = all.Count, Unassigned = none.Count, AllProjects = D.AllPj(),
+            Total = all.Count, Unassigned = none.Count, AllProjects = all,
             Stats = D.Leaders().Select(l => (l, has.Where(p => p.OwnerLeaderId == l.Id).ToList())).ToList(),
         });
     }

@@ -53,6 +53,10 @@ public class Project
     public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>"Công việc chung" (họp triển khai, họp quản lý, họp tổng thể công ty…): dự án đặc biệt MỌI nhân sự đều chọn được (kể cả Leader), không tính vào thống kê dự án, không cần Leader dự án / Leader phụ trách (yêu cầu 2026-10-24).</summary>
+    public const string CommonCategory = "Công việc chung";
+    public bool IsCommon => Category == CommonCategory;
+
     public ICollection<PlanItem> Items { get; set; } = new List<PlanItem>();
 }
 
