@@ -211,6 +211,25 @@ public class OvertimeController : AppController
         return x;
     }
 
+    /// <summary>
+    /// GET /Overtime/ExportMonth?om=yyyy-MM&amp;basis=reg|actual — xuất "Bảng đăng ký làm thêm giờ tháng" ra Excel đúng mẫu của phòng (yêu cầu 2026-10-24).
+    /// Chỉ Trưởng phòng / Quản trị và Leader phụ trách nhân sự (HrDuty). reg = đăng ký đã duyệt theo giờ đăng ký; actual = chỉ kết quả đã duyệt, theo giờ thực tế.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> ExportMonth(string? om, string? basis)
+    {
+        if (!(Scope.IsManager || Scope.Account is { Role: Role.Leader, HrDuty: true })) return Forbid();
+        var month = Fmt.ParseKey((om ?? "") + "-01") ?? Fmt.MonthStart(Scope.Today);
+        basis = basis == "actual" ? "actual" : "reg";
+        var dbf = HttpContext.RequestServices.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var cache = HttpContext.RequestServices.GetRequiredService<DataCache>();
+        var rows = await OtXlsx.LoadAsync(dbf, cache, month, basis);
+        var staff = (await cache.GetBaseAsync()).People.Where(p => !p.IsDeleted && p.Role is Role.Staff or Role.Leader).OrderBy(p => p.Code).Select(p => (p.Code ?? "", p.Name)).ToList();
+        var logoPath = Path.Combine(HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "img", "ot-logo.png");
+        var bytes = OtXlsx.Build(month, rows, staff, System.IO.File.Exists(logoPath) ? await System.IO.File.ReadAllBytesAsync(logoPath) : null);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Dang-ky-lam-them-Thang-{month:MM-yyyy}{(basis == "actual" ? "-ket-qua" : "")}.xlsx");
+    }
+
     /// <summary>otDecide: duyệt (v=ok) / từ chối (v=no, bắt buộc lý do). NV làm thêm sau 20:00: Leader duyệt → chờ Trưởng phòng duyệt → mới được duyệt.</summary>
     [HttpPost]
     public async Task<IActionResult> Decide(int id, string? v, string? reason)

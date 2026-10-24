@@ -7,7 +7,12 @@
     var no = 0;
 }
 <section class="card sec" style="grid-column:1/-1">
-    <h2>Tổng hợp làm thêm tháng @mv.Month.ToString("MM/yyyy")</h2>
+    <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Tổng hợp làm thêm tháng @mv.Month.ToString("MM/yyyy")</h2>
+        @if (Scope.IsManager || Scope.Account is { Role: Role.Leader, HrDuty: true })
+        {
+            <div class="row" style="gap:8px"><a class="btn btn-sm" href="/Overtime/ExportMonth?om=@Om(mv.Month)&basis=reg">⬇ Xuất Excel (theo đăng ký)</a><a class="btn btn-sm" href="/Overtime/ExportMonth?om=@Om(mv.Month)&basis=actual">⬇ Xuất Excel (theo kết quả đã duyệt)</a></div>
+        }
+    </div>
     <div class="daybar" style="margin-bottom:10px">
         <a class="icon-btn" href="@Ui.Here(req, ("om", Om(mv.Month.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
         <span class="date">Tháng @mv.Month.ToString("MM/yyyy")</span>
