@@ -11,7 +11,7 @@ namespace QMDept.Services;
 /// sheet "Bảng OT nhập liệu" (STT, ID, Họ và Tên, Ngày làm thêm, Thứ, Nội dung công việc, Từ – Đến, giờ theo hệ số 150% / 200% / 210% / 270%,
 /// Tổng giờ làm thêm, Ghi chú + phần ghi chú và chữ ký) và sheet "Danh sách CBCNV". Không gồm Trưởng phòng / Quản trị.
 /// Giờ: ngày thường = 150% đến 22:00, sau 22:00 = 210%; Chủ nhật / ngày nghỉ = 200% đến 22:00, sau 22:00 = 270%; trừ nghỉ trưa 12:00–13:00.
-/// Tự viết SpreadsheetML (không thêm thư viện).
+/// Dựng từ chính file mẫu Assets/ot-template.xlsx (= Tháng 9.1.xlsx): giữ nguyên font, cỡ chữ, khung, logo, ghi chú, chữ ký; chỉ thay tiêu đề tháng và các dòng dữ liệu (không thêm dòng tổng).
 /// </summary>
 public static class OtXlsx
 {
@@ -55,151 +55,114 @@ public static class OtXlsx
         return rows;
     }
 
-    static string E(string? s) => SecurityElement.Escape(s ?? "") ?? "";
-    static string Col(int i) => ((char)('A' + i)).ToString();
+
     static string Num(double d) => d.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+    static readonly System.Xml.Linq.XNamespace Ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+    const int FirstData = 5, TemplateLastData = 141, TemplateFooter = 142;
 
-    // Chỉ số kiểu (cellXfs) — xem Styles()
-    const int sTitle = 1, sHead = 2, sHeadPct = 3, sCenter = 4, sLeft = 5, sDate = 6, sWrap = 7, sNum = 8, sBoldItal = 9, sItal = 10, sSign = 11, sTotL = 12, sTotN = 13;
-
-    static string Styles() => """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<numFmts count="1"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/></numFmts>
-<fonts count="6">
-<font><sz val="10"/><name val="Times New Roman"/><family val="1"/></font>
-<font><b/><sz val="12"/><name val="Times New Roman"/><family val="1"/></font>
-<font><b/><sz val="14"/><name val="Times New Roman"/><family val="1"/></font>
-<font><b/><i/><sz val="10"/><name val="Times New Roman"/><family val="1"/></font>
-<font><i/><sz val="10"/><name val="Times New Roman"/><family val="1"/></font>
-<font><b/><sz val="10"/><name val="Times New Roman"/><family val="1"/></font>
-</fonts>
-<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
-<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
-<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="14">
-<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="9" fontId="1" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
-<xf numFmtId="2" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left"/></xf>
-<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left"/></xf>
-<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" wrapText="1"/></xf>
-<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
-<xf numFmtId="2" fontId="5" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-</cellXfs>
-<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
-</styleSheet>
-""";
-
-    sealed class Sheet
+    /// <summary>Xuất file từ mẫu: dòng 5.. là dữ liệu (dòng trống của mẫu vẫn ẩn như file gốc), phần ghi chú / chữ ký dịch xuống nếu có quá 137 dòng.</summary>
+    public static byte[] BuildFromTemplate(string templatePath, DateOnly month, List<Row> rows)
     {
-        // hàng → (cột → ô): Excel bắt buộc ô trong hàng theo thứ tự cột tăng dần
-        readonly SortedDictionary<int, SortedDictionary<int, string>> _byRow = [];
-        public readonly List<string> Merges = [];
-        public void S(int row, int col, string text, int style) => Add(row, col, $"<c r=\"{Col(col)}{row}\" s=\"{style}\" t=\"inlineStr\"><is><t xml:space=\"preserve\">{E(text)}</t></is></c>");
-        public void N(int row, int col, double v, int style) => Add(row, col, $"<c r=\"{Col(col)}{row}\" s=\"{style}\"><v>{Num(v)}</v></c>");
-        public void Blank(int row, int col, int style) => Add(row, col, $"<c r=\"{Col(col)}{row}\" s=\"{style}\"/>");
-        void Add(int row, int col, string cell) { if (!_byRow.TryGetValue(row, out var d)) _byRow[row] = d = []; d[col] = cell; }
-        public string Rows(Dictionary<int, double>? heights = null)
-        {
-            var sb = new StringBuilder();
-            foreach (var (r, cells) in _byRow) sb.Append($"<row r=\"{r}\"{(heights != null && heights.TryGetValue(r, out var h) ? $" ht=\"{Num(h)}\" customHeight=\"1\"" : "")}>{string.Concat(cells.Values)}</row>");
-            return sb.ToString();
-        }
-    }
+        using var src = new MemoryStream(File.ReadAllBytes(templatePath));
+        using var inZip = new ZipArchive(src, ZipArchiveMode.Read);
+        var parts = new Dictionary<string, byte[]>();
+        foreach (var e in inZip.Entries) { using var s = e.Open(); using var m = new MemoryStream(); s.CopyTo(m); parts[e.FullName] = m.ToArray(); }
 
-    public static byte[] Build(DateOnly month, List<Row> rows, List<(string Code, string Name)> staff, byte[]? logo)
-    {
-        // ---- sheet 1: Bảng OT nhập liệu ----
-        var s1 = new Sheet(); var heights = new Dictionary<int, double> { [1] = 21, [2] = 21, [3] = 34.5, [4] = 34.5 };
-        s1.S(1, 2, $"BẢNG ĐĂNG KÝ LÀM THÊM GIỜ THÁNG {month.Month}/{month.Year}\nBộ phận: Quản lý chất lượng và bảo dưỡng", sTitle);
-        string[] heads = ["STT", "ID", "Họ và Tên", "Ngày làm thêm", "", "Nội dung công việc\n(Ghi rõ công việc của từng cá nhân)", "Thời gian làm thêm", "", "", "", "", "", "Tổng giờ làm thêm", "Ghi chú"];
-        for (var c = 0; c < heads.Length; c++) if (c is not (8 or 9 or 10 or 11)) s1.S(3, c, heads[c], sHead);
-        foreach (var (c, v) in new[] { (8, 1.5), (9, 2.0), (10, 2.1), (11, 2.7) }) { s1.N(3, c, v, sHeadPct); s1.Blank(4, c, sHead); }
-        foreach (var c in new[] { 0, 1, 2, 3, 4, 5, 12, 13 }) s1.Blank(4, c, sHead);
-        s1.S(4, 6, "Từ", sHead); s1.S(4, 7, "Đến", sHead);
-        s1.Merges.AddRange(["C1:N2", "A3:A4", "B3:B4", "C3:C4", "D3:E4", "F3:F4", "G3:H3", "I3:I4", "J3:J4", "K3:K4", "L3:L4", "M3:M4", "N3:N4"]);
-        string[] dow = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-        var r = 5; var i = 0;
-        foreach (var x in rows)
+        var doc = System.Xml.Linq.XDocument.Parse(Encoding.UTF8.GetString(parts["xl/worksheets/sheet1.xml"]));
+        var data = doc.Root!.Element(Ns + "sheetData")!;
+        var all = data.Elements(Ns + "row").ToDictionary(r => (int)r.Attribute("r")!);
+        var protoFilled = all[FirstData];                    // dòng dữ liệu mẫu (có chữ, cao 28,5)
+        var protoBlank = all[TemplateLastData];              // dòng trống (ẩn) của mẫu
+        var footer = all.Where(kv => kv.Key >= TemplateFooter).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+
+        var capacity = Math.Max(TemplateLastData - FirstData + 1, rows.Count);
+        var footerStart = FirstData + capacity; var delta = footerStart - TemplateFooter;
+        static string ColOf(string cell) => new string(cell.TakeWhile(char.IsLetter).ToArray());
+
+        System.Xml.Linq.XElement CloneRow(System.Xml.Linq.XElement proto, int row, bool filled)
         {
-            i++;
-            s1.N(r, 0, i, sCenter); s1.S(r, 1, x.Code, sLeft); s1.S(r, 2, x.Name, sLeft);
-            s1.N(r, 3, (x.Date.ToDateTime(TimeOnly.MinValue) - new DateTime(1899, 12, 30)).TotalDays, sDate);
-            s1.S(r, 4, dow[(int)x.Date.DayOfWeek], sCenter); s1.S(r, 5, x.Content, sWrap);
-            s1.N(r, 6, x.From, sNum); s1.N(r, 7, x.To, sNum);
-            if (x.H150 > 0) s1.N(r, 8, x.H150, sNum); else s1.Blank(r, 8, sNum);
-            if (x.H200 > 0) s1.N(r, 9, x.H200, sNum); else s1.Blank(r, 9, sNum);
-            if (x.H210 > 0) s1.N(r, 10, x.H210, sNum); else s1.Blank(r, 10, sNum);
-            if (x.H270 > 0) s1.N(r, 11, x.H270, sNum); else s1.Blank(r, 11, sNum);
-            s1.N(r, 12, x.Total, sNum); s1.S(r, 13, x.Note, sLeft);
-            heights[r] = Math.Max(28.5, 14.5 * Math.Ceiling(Math.Max(1, x.Content.Length) / 48.0));
-            r++;
-        }
-        // dòng tổng cộng
-        s1.S(r, 0, "", sTotL); s1.S(r, 1, "", sTotL); s1.S(r, 2, "Tổng cộng", sTotL); foreach (var c in new[] { 3, 4, 5, 6, 7 }) s1.Blank(r, c, sTotL);
-        s1.N(r, 8, rows.Sum(x => x.H150), sTotN); s1.N(r, 9, rows.Sum(x => x.H200), sTotN); s1.N(r, 10, rows.Sum(x => x.H210), sTotN); s1.N(r, 11, rows.Sum(x => x.H270), sTotN);
-        s1.N(r, 12, rows.Sum(x => x.Total), sTotN); s1.Blank(r, 13, sTotL);
-        r += 2;
-        s1.S(r, 0, "Ghi chú:", sBoldItal); s1.Merges.Add($"A{r}:N{r}"); r += 2;
-        s1.S(r, 0, "- Người kiểm tra: TP; Người duyệt: GĐ", sItal); r++;
-        s1.S(r, 0, "- Danh sách đăng ký làm thêm phải gửi cho GĐ ký duyệt trước 16h hàng ngày, nếu làm thêm ngày nghỉ thì gửi trước 16h ngày hôm trước.", sItal); r++;
-        s1.S(r, 0, "Người lập\n(Ký, ghi họ tên)", sSign); s1.Merges.Add($"A{r}:D{r}");
-        s1.S(r, 5, "Người kiểm tra\n(Ký, ghi họ tên)", sSign);
-        s1.S(r, 6, "Người duyệt\n(Ký, ghi họ tên)", sSign); s1.Merges.Add($"G{r}:N{r}");
-        heights[r] = 40;
-        var sheet1 = $"""
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
-<sheetViews><sheetView tabSelected="1" zoomScale="85" zoomScaleNormal="85" workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
-<sheetFormatPr defaultRowHeight="15"/>
-<cols><col min="1" max="1" width="7.3" customWidth="1"/><col min="2" max="2" width="9.6" customWidth="1"/><col min="3" max="3" width="22.7" customWidth="1"/><col min="4" max="4" width="19.7" customWidth="1"/><col min="5" max="5" width="7.3" customWidth="1"/><col min="6" max="6" width="46" customWidth="1"/><col min="7" max="12" width="9.2" customWidth="1"/><col min="13" max="13" width="10.3" customWidth="1"/><col min="14" max="14" width="20.7" customWidth="1"/></cols>
-<sheetData>{s1.Rows(heights)}</sheetData>
-<mergeCells count="{s1.Merges.Count}">{string.Concat(s1.Merges.Select(m => $"<mergeCell ref=\"{m}\"/>"))}</mergeCells>
-<pageMargins left="0.7087" right="0.7087" top="0.748" bottom="0.748" header="0.315" footer="0.315"/>
-<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
-{(logo is null ? "" : "<drawing r:id=\"rId1\"/>")}
-</worksheet>
-""";
-        // ---- sheet 2: Danh sách CBCNV ----
-        var s2 = new Sheet();
-        s2.S(3, 0, "STT", sHead); s2.S(3, 1, "ID", sHead); s2.S(3, 2, "Họ tên", sHead); s2.S(3, 3, "Tên công ty", sHead);
-        var k = 4; foreach (var (code, name) in staff) { s2.N(k, 0, k - 3, sCenter); s2.S(k, 1, code, sLeft); s2.S(k, 2, name, sLeft); s2.Blank(k, 3, sLeft); k++; }
-        var sheet2 = $"""
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>
-<cols><col min="1" max="1" width="7" customWidth="1"/><col min="2" max="2" width="10" customWidth="1"/><col min="3" max="3" width="28" customWidth="1"/><col min="4" max="4" width="24" customWidth="1"/></cols>
-<sheetData>{s2.Rows()}</sheetData></worksheet>
-""";
-        using var ms = new MemoryStream();
-        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
-        {
-            void Put(string name, string content) { var e = zip.CreateEntry(name); using var w = new StreamWriter(e.Open(), new UTF8Encoding(false)); w.Write(content); }
-            Put("[Content_Types].xml", $"""
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>{(logo is null ? "" : "<Override PartName=\"/xl/drawings/drawing1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.drawing+xml\"/>")}</Types>
-""");
-            Put("_rels/.rels", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>""");
-            Put("xl/workbook.xml", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Bảng OT nhập liệu" sheetId="1" r:id="rId1"/><sheet name="Danh sách CBCNV" sheetId="2" r:id="rId2"/></sheets></workbook>""");
-            Put("xl/_rels/workbook.xml.rels", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>""");
-            Put("xl/styles.xml", Styles());
-            Put("xl/worksheets/sheet1.xml", sheet1);
-            Put("xl/worksheets/sheet2.xml", sheet2);
-            if (logo is not null)
+            var r = new System.Xml.Linq.XElement(proto);
+            r.SetAttributeValue("r", row);
+            if (filled) r.Attribute("hidden")?.Remove();
+            foreach (var c in r.Elements(Ns + "c").ToList())
             {
-                Put("xl/worksheets/_rels/sheet1.xml.rels", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>""");
-                Put("xl/drawings/drawing1.xml", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>0</xdr:col><xdr:colOff>7620</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>53341</xdr:rowOff></xdr:from><xdr:to><xdr:col>2</xdr:col><xdr:colOff>1146</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>167640</xdr:rowOff></xdr:to><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Logo"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="7620" y="53341"/><a:ext cx="1144146" cy="380999"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>""");
-                Put("xl/drawings/_rels/drawing1.xml.rels", """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/></Relationships>""");
-                var le = zip.CreateEntry("xl/media/image1.png"); using var ls = le.Open(); ls.Write(logo);
+                var col = ColOf((string)c.Attribute("r")!);
+                if (col.Length > 1 || col[0] >= 'S') { c.Remove(); continue; }   // ô phụ S..X (định dạng ngày mẫu) bỏ
+                c.SetAttributeValue("r", col + row);
+                c.Elements().ToList().ForEach(x => x.Remove()); c.Attribute("t")?.Remove();   // bỏ công thức / giá trị mẫu, giữ kiểu (font, khung)
             }
+            return r;
         }
-        return ms.ToArray();
+        static System.Xml.Linq.XElement Cell(System.Xml.Linq.XElement row, string col) => row.Elements(Ns + "c").First(x => ColOf((string)x.Attribute("r")!) == col);
+        static void SetStr(System.Xml.Linq.XElement row, string col, string text)
+        {
+            var c = Cell(row, col);
+            c.SetAttributeValue("t", "inlineStr");
+            c.Add(new System.Xml.Linq.XElement(Ns + "is", new System.Xml.Linq.XElement(Ns + "t", new System.Xml.Linq.XAttribute(System.Xml.Linq.XNamespace.Xml + "space", "preserve"), text)));
+        }
+        static void SetNum(System.Xml.Linq.XElement row, string col, double v) => Cell(row, col).Add(new System.Xml.Linq.XElement(Ns + "v", Num(v)));
+
+        // dựng lại sheetData: dòng 1-4 giữ nguyên → dữ liệu → dòng trống ẩn → ghi chú / chữ ký
+        var built = all.Where(kv => kv.Key < FirstData).OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+        string[] dow = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        for (var i = 0; i < capacity; i++)
+        {
+            var rn = FirstData + i;
+            if (i < rows.Count)
+            {
+                var x = rows[i]; var r = CloneRow(protoFilled, rn, true);
+                SetNum(r, "A", i + 1); SetStr(r, "B", x.Code); SetStr(r, "C", x.Name);
+                SetNum(r, "D", (x.Date.ToDateTime(TimeOnly.MinValue) - new DateTime(1899, 12, 30)).TotalDays);
+                SetStr(r, "E", dow[(int)x.Date.DayOfWeek]); SetStr(r, "F", x.Content);
+                SetNum(r, "G", x.From); SetNum(r, "H", x.To);
+                if (x.H150 > 0) SetNum(r, "I", x.H150);
+                if (x.H200 > 0) SetNum(r, "J", x.H200);
+                if (x.H210 > 0) SetNum(r, "K", x.H210);
+                if (x.H270 > 0) SetNum(r, "L", x.H270);
+                SetNum(r, "M", x.Total);
+                if (!string.IsNullOrEmpty(x.Note)) SetStr(r, "N", x.Note);
+                var lines = Math.Max(1, (int)Math.Ceiling(Math.Max(1, x.Content.Length) / 52.0));
+                if (lines > 2) r.SetAttributeValue("ht", Num(Math.Min(120, 14.5 * lines)));
+                built.Add(r);
+            }
+            else built.Add(CloneRow(protoBlank, rn, false));
+        }
+        foreach (var fr in footer)
+        {
+            var nr = new System.Xml.Linq.XElement(fr); var rn = (int)fr.Attribute("r")! + delta;
+            nr.SetAttributeValue("r", rn);
+            foreach (var c in nr.Elements(Ns + "c")) c.SetAttributeValue("r", ColOf((string)c.Attribute("r")!) + rn);
+            built.Add(nr);
+        }
+        data.RemoveNodes(); foreach (var r in built) data.Add(r);
+
+        // tiêu đề: "THÁNG m/yyyy" (ô C1, chuỗi nhiều dòng)
+        var c1 = Cell(built.First(r => (int)r.Attribute("r")! == 1), "C1".TrimEnd('1'));
+        c1.SetAttributeValue("t", "inlineStr"); c1.RemoveNodes();
+        c1.Add(new System.Xml.Linq.XElement(Ns + "is", new System.Xml.Linq.XElement(Ns + "t", new System.Xml.Linq.XAttribute(System.Xml.Linq.XNamespace.Xml + "space", "preserve"),
+            $"BẢNG ĐĂNG KÝ LÀM THÊM GIỜ THÁNG {month.Month}/{month.Year}\nBộ phận: Quản lý chất lượng và bảo dưỡng")));
+
+        // merge / lọc / vùng in: dịch theo số dòng
+        foreach (var m in doc.Root!.Element(Ns + "mergeCells")!.Elements(Ns + "mergeCell"))
+        {
+            var rf = (string)m.Attribute("ref")!;
+            if (System.Text.RegularExpressions.Regex.IsMatch(rf, @"\d{3}"))
+                m.SetAttributeValue("ref", System.Text.RegularExpressions.Regex.Replace(rf, @"\d+", mm => (int.Parse(mm.Value) + delta).ToString()));
+        }
+        doc.Root.Element(Ns + "autoFilter")?.SetAttributeValue("ref", $"A4:X{TemplateFooter + delta}");
+        doc.Root.Element(Ns + "dimension")?.SetAttributeValue("ref", $"A1:X{196 + delta}");
+        parts["xl/worksheets/sheet1.xml"] = new UTF8Encoding(false).GetBytes(doc.Declaration + "\n" + doc.Root);
+
+        var wb = Encoding.UTF8.GetString(parts["xl/workbook.xml"]).Replace("$A$4:$X$142", $"$A$4:$X${TemplateFooter + delta}").Replace("$A$1:$N$156", $"$A$1:$N${156 + delta}");
+        parts["xl/workbook.xml"] = new UTF8Encoding(false).GetBytes(wb);
+        // chuỗi tính (calcChain) tham chiếu ô công thức đã bỏ → xóa để Excel tự dựng lại
+        parts.Remove("xl/calcChain.xml");
+        parts["xl/_rels/workbook.xml.rels"] = new UTF8Encoding(false).GetBytes(System.Text.RegularExpressions.Regex.Replace(Encoding.UTF8.GetString(parts["xl/_rels/workbook.xml.rels"]), "<Relationship [^>]*calcChain[^>]*/>", ""));
+        parts["[Content_Types].xml"] = new UTF8Encoding(false).GetBytes(System.Text.RegularExpressions.Regex.Replace(Encoding.UTF8.GetString(parts["[Content_Types].xml"]), "<Override [^>]*calcChain[^>]*/>", ""));
+
+        using var outMs = new MemoryStream();
+        using (var z = new ZipArchive(outMs, ZipArchiveMode.Create, true))
+            foreach (var (name, bytes) in parts) { var e = z.CreateEntry(name); using var w = e.Open(); w.Write(bytes); }
+        return outMs.ToArray();
     }
 }

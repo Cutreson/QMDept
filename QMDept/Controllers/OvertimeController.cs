@@ -224,9 +224,7 @@ public class OvertimeController : AppController
         var dbf = HttpContext.RequestServices.GetRequiredService<IDbContextFactory<AppDbContext>>();
         var cache = HttpContext.RequestServices.GetRequiredService<DataCache>();
         var rows = await OtXlsx.LoadAsync(dbf, cache, month, basis);
-        var staff = (await cache.GetBaseAsync()).People.Where(p => !p.IsDeleted && p.Role is Role.Staff or Role.Leader).OrderBy(p => p.Code).Select(p => (p.Code ?? "", p.Name)).ToList();
-        var logoPath = Path.Combine(HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "img", "ot-logo.png");
-        var bytes = OtXlsx.Build(month, rows, staff, System.IO.File.Exists(logoPath) ? await System.IO.File.ReadAllBytesAsync(logoPath) : null);
+        var bytes = OtXlsx.BuildFromTemplate(Path.Combine(AppContext.BaseDirectory, "Assets", "ot-template.xlsx"), month, rows);
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Dang-ky-lam-them-Thang-{month:MM-yyyy}{(basis == "actual" ? "-ket-qua" : "")}.xlsx");
     }
 

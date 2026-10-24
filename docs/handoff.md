@@ -338,3 +338,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Xuất Excel bảng đăng ký làm thêm tháng đúng mẫu Tháng 9.1.xlsx (quy tắc 81); đã mở thử bằng Excel (mở được, đúng cột / hệ số / logo).
 - (2026-10-24) Nút Đã cập nhật + bỏ Chi tiết ở Báo cáo cuối ngày; thông báo lỗi giữ tới khi bấm (quy tắc 82); đã test trên trình duyệt.
 - (2026-10-24) Bảng làm thêm tháng trên màn hình dựng lại đúng mẫu Excel, chỉ người có làm thêm (quy tắc 79 cập nhật).
+- (2026-10-24) Xuất Excel dựng từ file mẫu gốc (Assets/ot-template.xlsx): giống hệt font / cỡ chữ / khung, bỏ dòng tổng cộng; đã mở thử bằng Excel (quy tắc 81 cập nhật).

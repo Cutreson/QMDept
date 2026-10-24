@@ -14,4 +14,9 @@
     <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Mau Excel "Bang dang ky lam them gio" cua phong (xuat file giu nguyen font / co chu / khung - OtXlsx) -->
+    <None Include="Assets\ot-template.xlsx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
