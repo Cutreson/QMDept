@@ -333,3 +333,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Khung đỏ nội dung việc cần làm ở Báo cáo cuối ngày + ĐK làm thêm (quy tắc 76).
 - (2026-10-24) Mức độ ưu tiên khi giao việc: Bình thường / Ưu tiên / Khẩn cấp (quy tắc 77, migration TaskPriority). Đã test Leader giao + sửa, NV thấy nhãn + thông báo; dữ liệu thử đã xóa.
 - (2026-10-24) Số lần chuyển tiếp, ghi chú 'Chưa có kế hoạch chuyển', chuyển tiếp của Leader/TP luôn hiện (quy tắc 78); đã sửa dữ liệu CarryOk cho việc Leader.
+- (2026-10-24) Bảng tổng hợp làm thêm tháng toàn nhân sự trừ TP (quy tắc 79); đã test TP + Leader HR, NV không thấy.

@@ -1,0 +1,36 @@
+@* Bảng tổng hợp làm thêm tại công ty của TOÀN BỘ nhân sự trong THÁNG (trừ Trưởng phòng / Quản trị) — yêu cầu 2026-10-24. Tháng chọn bằng ?om=yyyy-MM (mặc định tháng của ngày đang chọn). *@
+@{
+    var req = Context.Request;
+    var m0 = Fmt.ParseKey(req.Query["om"].ToString() + "-01") ?? Fmt.MonthStart(Scope.Date);
+    var mv = await OtMonthVm.LoadAsync(Context.RequestServices.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext>>(), Context.RequestServices.GetRequiredService<QMDept.Services.DataCache>(), m0);
+    string Om(DateOnly x) => x.ToString("yyyy-MM");
+    var no = 0;
+}
+<section class="card sec" style="grid-column:1/-1">
+    <h2>Tổng hợp làm thêm tháng @mv.Month.ToString("MM/yyyy")</h2>
+    <div class="daybar" style="margin-bottom:10px">
+        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(mv.Month.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
+        <span class="date">Tháng @mv.Month.ToString("MM/yyyy")</span>
+        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(mv.Month.AddMonths(1))))" aria-label="Tháng sau">›</a>
+    </div>
+    <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Số ngày</th><th>Giờ đăng ký</th><th>Giờ được tính</th><th>Chờ duyệt đăng ký</th><th>Chờ duyệt kết quả</th></tr></thead>
+        <tbody>
+        @foreach (var r in mv.Rows)
+        {
+            no++;
+            <tr>
+                <td class="n">@no</td>
+                <td style="white-space:nowrap"><b>@r.P.Name</b> @Ui.LevelPill(r.P)</td>
+                <td>@r.Group</td>
+                <td class="mono">@(r.Days > 0 ? r.Days.ToString() : "—")</td>
+                <td class="mono">@(r.RegHours > 0 ? Fmt.Num(r.RegHours) : "—")</td>
+                <td class="mono"><b>@(r.CountedHours > 0 ? Fmt.Num(r.CountedHours) : "—")</b></td>
+                <td>@if (r.PendingReg > 0) { <span class="pill p-warn">@r.PendingReg · @Fmt.Num(r.PendingHours) giờ</span> } else { <span class="note">—</span> }</td>
+                <td>@if (r.PendingResult > 0) { <span class="pill p-warn">@r.PendingResult · @Fmt.Num(r.PendingResultHours) giờ</span> } else { <span class="note">—</span> }</td>
+            </tr>
+        }
+        <tr style="font-weight:700"><td></td><td colspan="2">Tổng cộng</td><td class="mono">@mv.Days</td><td class="mono">@Fmt.Num(mv.RegHours)</td><td class="mono">@Fmt.Num(mv.CountedHours)</td><td></td><td></td></tr>
+        </tbody></table></div>
+    <p class="note" style="margin-bottom:0">Giờ đăng ký = các đăng ký đã duyệt; giờ được tính = kết quả làm thêm đã được duyệt. Không gồm Trưởng phòng.</p>
+</section>

@@ -77,3 +77,7 @@
         </form>
     </section>
 }
+@if (Scope.Account.Role != Role.Staff)
+{
+    <partial name="~/Views/Overtime/_OtMonth.cshtml" />
+}
