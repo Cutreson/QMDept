@@ -340,3 +340,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Bảng làm thêm tháng trên màn hình dựng lại đúng mẫu Excel, chỉ người có làm thêm (quy tắc 79 cập nhật).
 - (2026-10-24) Xuất Excel dựng từ file mẫu gốc (Assets/ot-template.xlsx): giống hệt font / cỡ chữ / khung, bỏ dòng tổng cộng; đã mở thử bằng Excel (quy tắc 81 cập nhật).
 - (2026-10-24) Nhập nhiều công việc / dự án trong một bảng + chặn trùng giờ (quy tắc 83): Giao việc, Đề xuất, Kế hoạch cá nhân, Thêm việc ngoài kế hoạch, Sửa việc; đã test trên DB thật (client + server, 375px) và dọn dữ liệu thử. Chưa làm: đề xuất phát sinh cuối ngày (giữ một việc / lần).
+- (2026-10-24) Báo cáo cuối ngày: nhãn "✓ Đã cập nhật" tách khỏi nút "Sửa" (quy tắc 84); đã xem trên trình duyệt.

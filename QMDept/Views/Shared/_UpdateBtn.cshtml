@@ -1,0 +1,10 @@
+@model WorkTask
+@* Nút cập nhật báo cáo cuối ngày: chưa cập nhật = nút "Cập nhật"; đã cập nhật = nhãn "✓ Đã cập nhật" (không bấm được) + nút "Sửa" RIÊNG (yêu cầu 2026-10-24). *@
+@if (Model.Status != TaskState.NotStarted || Model.CarriedToId is not null)
+{
+    <div class="upd-row"><span class="upd-done">✓ Đã cập nhật</span><button type="button" class="btn btn-sm upd-edit" data-sheet="upd@(Model.Id)">Sửa</button></div>
+}
+else
+{
+    <button type="button" class="btn btn-sm btn-primary upd-new" data-sheet="upd@(Model.Id)">Cập nhật</button>
+}

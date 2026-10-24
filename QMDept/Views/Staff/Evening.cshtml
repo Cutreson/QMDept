@@ -163,7 +163,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                     }
                     else if (!ro)
                     {
-                        <button type="button" class="btn btn-sm @(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "btn-ok" : "btn-primary")" data-sheet="upd@(t.Id)">@(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "✓ Đã cập nhật" : "Cập nhật")</button>
+                        <partial name="_UpdateBtn" model="t" />
                     }</div>
             </div></li>
         }
@@ -195,7 +195,7 @@ else if (plan is not null)
                 }
                 @if (!ro)
                 {
-                    <div class="btn-row"><button type="button" class="btn btn-sm @(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "btn-ok" : "btn-primary")" data-sheet="upd@(t.Id)">@(t.Status != TaskState.NotStarted || t.CarriedToId is not null ? "✓ Đã cập nhật" : "Cập nhật")</button></div>
+                    <div class="btn-row"><partial name="_UpdateBtn" model="t" /></div>
                 }
             </div></li>
         }
