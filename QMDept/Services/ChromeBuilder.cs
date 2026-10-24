@@ -54,6 +54,8 @@ public sealed class ChromeModel
     public Dictionary<DateOnly, int> OtDays { get; init; } = [];
     /// <summary>Nhắc nhở báo cáo đầu ngày (từ 07:00) / cuối ngày (từ 17:00) khi chưa báo cáo — dải cam đầu trang (yêu cầu 2026-10-23).</summary>
     public List<(string Text, string Href)> Reminders { get; init; } = [];
+    /// <summary>Việc được giao đang chờ MÌNH xác nhận (7 ngày gần nhất trở đi) — hiện thành khung đỏ ở đầu MỌI trang để biết việc ở đâu và xác nhận ngay (yêu cầu 2026-10-24).</summary>
+    public List<AckItem> AckTasks { get; init; } = [];
 }
 
 /// <summary>Dựng phần khung (thanh trên + combobox xem màn hình + thanh tab + badge) cho _Layout (renderChrome của artifact).</summary>
@@ -211,6 +213,13 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             }
         }
 
+        // Việc được giao chờ mình xác nhận: liệt kê từng việc ở đầu mọi trang (không chỉ số đỏ) — yêu cầu 2026-10-24.
+        var ackItems = scope.IsViewingOther || acc.Role == Role.Admin ? new List<AckItem>() : d.Tasks
+            .Where(t => t.EmployeeId == acc.Id && t.GivenById != null && t.AckAt == null && t.Date >= scope.Today.AddDays(-7))
+            .OrderBy(t => t.Date).ThenBy(t => t.Start)
+            .Select(t => new AckItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId), t.GivenBy ?? d.PName(t.GivenById), t.Priority,
+                (acc.Role == Role.Staff ? "/Staff/Month?d=" : "/Staff/Month?as=mine&d=") + Fmt.Key(t.Date))).ToList();
+
         return _cache = new ChromeModel
         {
             Account = acc,
@@ -228,7 +237,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, SupportPending = supportPending, Reminders = reminders, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
+            Unread = unread, SupportPending = supportPending, Reminders = reminders, AckTasks = ackItems, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
@@ -323,3 +332,6 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         }
     }
 }
+
+/// <summary>Một việc được giao đang chờ người nhận xác nhận (cho khung đỏ đầu trang).</summary>
+public sealed record AckItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string GivenBy, TaskPriority Priority, string Href);

@@ -114,6 +114,28 @@
         {
             <div class="notice remind" style="--nbg:var(--warn-soft);--nfg:var(--warn);margin-top:12px"><span class="ic">!</span><div><b>@rtext</b> <a class="link" href="@rhref">Xử lý ngay ›</a></div></div>
         }
+        @* Việc được giao đang chờ MÌNH xác nhận: liệt kê từng việc + nút Xác nhận ngay + liên kết tới ngày trong lịch (yêu cầu 2026-10-24) *@
+        @if (chrome.AckTasks.Count > 0)
+        {
+            <div class="notice ackbox" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:12px"><span class="ic">!</span><div>
+                <b>Bạn được giao @chrome.AckTasks.Count việc — cần xác nhận đã nhận việc</b>
+                @foreach (var a in chrome.AckTasks.Take(5))
+                {
+                    <div class="ack-row">
+                        <div class="ack-main"><div class="ack-t">@a.Title@Html.Raw(Blocks.PriorityTag(a.Priority))</div>
+                            <div class="note">@a.Project · @Fmt.Dmy(a.Date) @a.Start–@a.End · Giao bởi @a.GivenBy</div></div>
+                        <div class="ack-act">
+                            <a class="btn btn-sm" href="@a.Href">Xem trong lịch</a>
+                            <form method="post" action="/Staff/AckTask?id=@a.Id" asp-antiforgery="true">
+                                @Ui.ReturnField(Context.Request)
+                                <button type="submit" class="btn btn-sm btn-primary">Xác nhận đã nhận việc</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                @if (chrome.AckTasks.Count > 5) { <div class="note" style="margin-top:6px">… và @(chrome.AckTasks.Count - 5) việc khác — <a class="link" href="@chrome.AckTasks[0].Href">xem trong lịch ›</a></div> }
+            </div></div>
+        }
     }
     @RenderBody()
 </main>
