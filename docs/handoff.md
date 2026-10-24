@@ -339,3 +339,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Nút Đã cập nhật + bỏ Chi tiết ở Báo cáo cuối ngày; thông báo lỗi giữ tới khi bấm (quy tắc 82); đã test trên trình duyệt.
 - (2026-10-24) Bảng làm thêm tháng trên màn hình dựng lại đúng mẫu Excel, chỉ người có làm thêm (quy tắc 79 cập nhật).
 - (2026-10-24) Xuất Excel dựng từ file mẫu gốc (Assets/ot-template.xlsx): giống hệt font / cỡ chữ / khung, bỏ dòng tổng cộng; đã mở thử bằng Excel (quy tắc 81 cập nhật).
+- (2026-10-24) Nhập nhiều công việc / dự án trong một bảng + chặn trùng giờ (quy tắc 83): Giao việc, Đề xuất, Kế hoạch cá nhân, Thêm việc ngoài kế hoạch, Sửa việc; đã test trên DB thật (client + server, 375px) và dọn dữ liệu thử. Chưa làm: đề xuất phát sinh cuối ngày (giữ một việc / lần).
