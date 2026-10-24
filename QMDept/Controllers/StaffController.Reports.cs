@@ -209,7 +209,7 @@ public partial class StaffController
         if (r is null || r.LeaderDecision == Decision.No) return;
         throw new BizException(r.LeaderDecision == Decision.Ok
             ? "Báo cáo đã được duyệt — không sửa được nữa"
-            : "Báo cáo đã gửi, đang chờ Leader duyệt — bấm “Rút lại để sửa” nếu cần chỉnh");
+            : $"Báo cáo đã gửi, đang chờ {await ApproverNameAsync(Scope.Me)} duyệt — bấm “Rút lại để sửa” nếu cần chỉnh");
     }
 
     /// <summary>POST /Staff/WithdrawReport — nhân viên rút lại báo cáo cuối ngày đang chờ duyệt để sửa (đã duyệt thì không rút được; Leader hoàn tác duyệt mới mở lại).</summary>

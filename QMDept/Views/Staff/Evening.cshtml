@@ -110,7 +110,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
         @foreach (var t in list)
         {
             var st = t.Status;
-            var src = Labels.Of(t.Source);
+            var src = Blocks.SrcOf(t);
             var open = Model.Open.Contains(t.Id);
             var n = st != TaskState.Done ? D.Task(t.CarriedToId) : null;
             var sup = D.IsSupportTask(t);
@@ -132,7 +132,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                 @if (D.PJ(t.ProjectId) is not { IsCommon: true }) { <div class="note" style="margin:0 0 6px">@(sup ? "Bạn hỗ trợ" : "Leader dự án"): <b>@(lead is null ? "chưa chọn Leader dự án" : lead.Id == me.Id ? "Bạn" : lead.Name)</b></div> }
                 @if (n is not null)
                 {
-                    <div class="nx-line">Kế hoạch tiếp: <b>@Fmt.Short(n.Date)</b> <span class="mono">@(n.Start)–@(n.End)</span> · @n.Title<div class="note">@(D.OkCal(n) ? "Leader đã duyệt, đã vào lịch" : "Đề xuất, chờ Leader duyệt")@(string.IsNullOrEmpty(n.EditedBy) ? "" : " · " + n.EditedBy + " đã chỉnh")</div></div>
+                    <div class="nx-line">Kế hoạch tiếp: <b>@Fmt.Short(n.Date)</b> <span class="mono">@(n.Start)–@(n.End)</span> · @n.Title<div class="note">@(D.OkCal(n) ? D.ApproverName(D.P(n.EmployeeId)) + " đã duyệt, đã vào lịch" : "Đề xuất, chờ " + D.ApproverName(D.P(n.EmployeeId)) + " duyệt")@(string.IsNullOrEmpty(n.EditedBy) ? "" : " · " + n.EditedBy + " đã chỉnh")</div></div>
                 }
                 @if (t.Source == TaskSource.CarryOver && t.FromDate is DateOnly fd)
                 {

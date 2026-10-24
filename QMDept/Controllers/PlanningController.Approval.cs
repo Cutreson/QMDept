@@ -68,7 +68,7 @@ public partial class PlanningController
         p.LeaderAt = VnTime.UtcNow;
         if (note is not null) p.LeaderNote = n;   // artifact: chỉ ghi leaderNote khi có hộp nhập (từ chối)
         await Db.SaveChangesAsync();
-        await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, dec == Decision.Ok ? "Leader đã duyệt" : "Leader từ chối", p.LeaderNote);
+        await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, dec == Decision.Ok ? $"{Scope.ActorName} đã duyệt" : $"{Scope.ActorName} từ chối", p.LeaderNote);
         if (dec == Decision.Ok && Dept.NeedsManager(p)) await Notify.SupportNeedsManagerAsync(p.EmployeeId, p.Date);
         if (dec == Decision.Ok) await CreateSupportRequestsAsync(p);
         Toast(dec == Decision.Ok ? "Đã duyệt kế hoạch" : "Đã từ chối kế hoạch");

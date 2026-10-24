@@ -81,7 +81,7 @@
             <div class="cmt" style="margin-top:8px"><b>Nhóm @D.PName(sr.GroupLeaderId) (@sr.Qty người):</b>
                 @if (sr.Declined) { <span class="pill p-bad">Không đáp ứng được</span> <span class="red">@sr.DeclineReason</span> }
                 else if (sr.Confirmed) { <span class="pill p-ok">Đã xác nhận</span> <span>@string.Join(", ", sr.StaffList.Select(sid => D.PName(sid)))</span> }
-                else { <span class="pill p-warn">Chờ Leader nhóm xác nhận</span> }</div>
+                else { <span class="pill p-warn">Chờ @D.PName(sr.GroupLeaderId) xác nhận</span> }</div>
         }
     </section>
     <section class="card sec">
@@ -149,7 +149,7 @@
         {
             foreach (var t in Model.List)
             {
-                var src = Labels.Of(t.Source);
+                var src = Blocks.SrcOf(t);
                 var hit = leaveNow is not null && LeaveRules.Overlaps(t, leaveNow.From, leaveNow.To);
                 <label class="trow"><input type="checkbox" name="picks" value="@t.Id" data-start="@t.Start" data-end="@t.End" data-place="@D.PJ(t.ProjectId)?.Location" data-customer="@D.PJ(t.ProjectId)?.Factory" checked="@Model.IsOn(t)" disabled="@ro"><div><div class="t">@t.Title@Html.Raw(Blocks.PriorityTag(t.Priority))</div><div class="s">@D.PjName(t.ProjectId)@(src.Length > 0 ? " · " + src : "")<span data-leave-hit hidden="@(!hit)"> · <span class="warn-t">Trùng giờ nghỉ</span></span></div></div><span class="tm">@t.Start – @t.End</span></label>
                 @if (lead && StaffCalendar.CanManage(Scope, D, t))

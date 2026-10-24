@@ -18,6 +18,8 @@ public static class Blocks
     static string E(string? s) => WebUtility.HtmlEncode(s ?? "");
     static HtmlString H(string s) => new(s);
     static string Src(TaskSource s) => Labels.Of(s);
+    /// <summary>Nhãn nguồn việc; việc được giao ghi rõ TÊN người giao thay cho chữ chung "Leader giao" (yêu cầu 2026-10-24). Trả chữ thường (người dùng tự escape khi chèn HTML).</summary>
+    public static string SrcOf(WorkTask t) => t.Source == TaskSource.Assigned && !string.IsNullOrWhiteSpace(t.GivenBy) ? t.GivenBy + " giao" : Labels.Of(t.Source);
 
     /// <summary>taskRow(t). showEmployee: thêm tên NV ở dòng phụ (dùng ở Theo dõi → theo dự án). tail: HTML thêm vào cột giờ (vd nút xóa).
     /// Luôn có dòng "Leader dự án: …" (yêu cầu 2026-10-14) — hiện ở lịch của NV, lịch nhóm của Leader, Theo dõi, Báo cáo.</summary>
@@ -41,7 +43,7 @@ public static class Blocks
     {
         var st = t.Status;
         var ck = st == TaskState.Done && t.DonePending ? "half" : st == TaskState.Done ? "on" : st == TaskState.InProgress ? "half" : st == TaskState.Late ? "bad" : "";
-        var src = Src(t.Source);
+        var src = E(SrcOf(t));
         var lead = d.ProjectLead(t.ProjectId);
         // leadOnly (lịch nhóm của Leader): nhiều người cùng một việc → chỉ dòng của người được chọn làm Leader dự án mới hiện
         // "Leader dự án"; người hỗ trợ không hiện.
@@ -56,7 +58,7 @@ public static class Blocks
         if (t.CarriedToId is not null)
         {
             var nx = d.Task(t.CarriedToId);
-            stNote = $"Chuyển tiếp lần {d.CarryTimes(t) + 1}" + (nx is { CarryOk: false } && !(d.P(nx.EmployeeId) is { Role: Role.Leader or Role.Manager or Role.Admin }) ? " · chờ Leader duyệt" : "");
+            stNote = $"Chuyển tiếp lần {d.CarryTimes(t) + 1}" + (nx is { CarryOk: false } && !(d.P(nx.EmployeeId) is { Role: Role.Leader or Role.Manager or Role.Admin }) ? $" · chờ {d.ApproverName(d.P(nx.EmployeeId))} duyệt" : "");
         }
         else if (t.Status != TaskState.Done && t.Date < d.Scope.Today) stNote = "Chưa có kế hoạch chuyển";
         var noteLine = t.Status != TaskState.Done && !string.IsNullOrWhiteSpace(t.Note) ? $"<div class=\"s\">Ghi chú: {E(t.Note)}</div>" : "";
@@ -142,7 +144,7 @@ public static class Blocks
         var sb = new StringBuilder("<div class=\"tbl-wrap\"><table><thead><tr><th class=\"n\">STT</th><th>Dự án</th><th>Công việc</th><th class=\"n\">Thời gian</th></tr></thead><tbody>");
         for (int k = 0; k < ts.Count; k++)
         {
-            var t = ts[k]; var src = Src(t.Source);
+            var t = ts[k]; var src = E(SrcOf(t));
             sb.Append($"<tr><td class=\"n\">{k + 1}</td><td>{E(d.PjName(t.ProjectId))}</td><td>{E(t.Title)}{(src.Length > 0 ? $" <span class=\"pill p-info\">{src}</span>" : "")}</td><td class=\"n\" style=\"white-space:nowrap\">{E(t.Start)}–{E(t.End)}</td></tr>");
         }
         return H(sb.Append("</tbody></table></div>").ToString());

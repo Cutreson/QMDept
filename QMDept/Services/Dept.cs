@@ -117,6 +117,17 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public IEnumerable<Person> Active => People.Where(p => !p.IsDeleted);
     public List<Person> AllStaff() { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Staff)); }
     public List<Person> Leaders() { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Leader)); }
+    /// <summary>Tên Trưởng phòng đang hoạt động (nhiều người thì cách nhau dấu phẩy) — ghi rõ người duyệt, không ghi chung "Trưởng phòng" (yêu cầu 2026-10-24).</summary>
+    public string ManagersText() { GuardBase(); return string.Join(", ", Active.Where(p => p.Role == Role.Manager).Select(p => p.Name)); }
+    /// <summary>Tên NGƯỜI DUYỆT cấp trực tiếp của <paramref name="p"/>: nhân viên → Leader nhóm; Leader / TP → Trưởng phòng. Dùng thay cho chữ chung "Leader" / "Trưởng phòng" trên giao diện.</summary>
+    public string ApproverName(Person? p)
+    {
+        GuardBase();
+        if (p is null) return "người duyệt";
+        if (p.Role == Role.Staff) return p.LeaderId is int l && P(l) is { } ld ? ld.Name : "Leader (chưa xếp nhóm)";
+        var m = ManagersText();
+        return m.Length > 0 ? m : "Trưởng phòng";
+    }
     /// <summary>team(lid): NV thuộc nhóm của Leader.</summary>
     public List<Person> Team(int leaderId) { GuardBase(); return Sorted(Active.Where(p => p.Role == Role.Staff && p.LeaderId == leaderId)); }
     /// <summary>staff(): ở giao diện Leader → nhóm của Leader đang xem; còn lại → toàn bộ NV.</summary>

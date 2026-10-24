@@ -240,7 +240,7 @@ public class OvertimeController : AppController
             var x = await LoadForDecisionAsync(id);
             var tpStep = Scope.Role == Role.Manager && x.Role == Role.Staff;   // bước Trưởng phòng của đăng ký NV sau 20:00
             if (x.Status != (tpStep ? OtStatus.PendingManager : OtStatus.Pending)) throw new BizException(tpStep && x.Status == OtStatus.Pending
-                ? "Leader chưa duyệt đăng ký này — Trưởng phòng duyệt sau khi Leader duyệt"
+                ? $"{await ApproverNameAsync(await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == x.PersonId))} chưa duyệt đăng ký này — Trưởng phòng duyệt sau khi Leader duyệt"
                 : "Đăng ký đã được quyết định — tải lại trang, dùng Hoàn tác nếu cần đổi");
             var now = VnTime.UtcNow;
             if (ok)
@@ -250,7 +250,7 @@ public class OvertimeController : AppController
                 {
                     // Leader duyệt đăng ký NV kết thúc sau 20:00 → chưa được duyệt hẳn, chờ Trưởng phòng
                     x.Status = OtStatus.PendingManager; x.LeaderBy = Scope.ActorName; x.LeaderAt = now; x.DecidedBy = null; x.DecidedAt = null;
-                    toast = "Đã duyệt — đăng ký làm thêm sau 20:00 chờ Trưởng phòng duyệt";
+                    toast = $"Đã duyệt — đăng ký làm thêm sau 20:00 chờ {await ManagersNameAsync()} duyệt";
                 }
                 else { x.Status = OtStatus.Approved; x.DecidedBy = Scope.ActorName; x.DecidedAt = now; }
             }
@@ -264,7 +264,7 @@ public class OvertimeController : AppController
             await Db.SaveChangesAsync();
             if (x.Status == OtStatus.PendingManager)
             {
-                await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, "đã được Leader duyệt, chờ Trưởng phòng duyệt (làm thêm sau 20:00)");
+                await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, $"đã được {Scope.ActorName} duyệt, chờ {await ManagersNameAsync()} duyệt (làm thêm sau 20:00)");
                 await Notify.OvertimeToManagerAsync(x.PersonId, x.Date, x.Start, x.End);
             }
             else await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, ok ? "đã được duyệt" : "bị từ chối", ok ? null : x.Reason);
@@ -300,7 +300,7 @@ public class OvertimeController : AppController
             }
             ResetCompletion(x);
             await Db.SaveChangesAsync();
-            await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, x.Status == OtStatus.PendingManager ? "được hoàn tác, chờ Trưởng phòng duyệt lại" : "được hoàn tác, chờ duyệt lại");
+            await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, x.Status == OtStatus.PendingManager ? $"được hoàn tác, chờ {await ManagersNameAsync()} duyệt lại" : "được hoàn tác, chờ duyệt lại");
         }, "Đã hoàn tác");
 
     // ======================= Kết quả làm thêm (yêu cầu 2026-10-19) =======================

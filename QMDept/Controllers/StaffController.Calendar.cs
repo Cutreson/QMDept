@@ -93,7 +93,8 @@ public partial class StaffController
             await tx.CommitAsync();
         }
         if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
-        Toast(!isLeave ? "Đã thêm công việc vào kế hoạch cá nhân" : withWork ? "Đã thêm công việc và gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt" : "Đã gửi đề xuất xin nghỉ, chờ Trưởng phòng duyệt");
+        var apn = isLeave ? await ApproverNameAsync(Scope.Account) : "";
+        Toast(!isLeave ? "Đã thêm công việc vào kế hoạch cá nhân" : withWork ? $"Đã thêm công việc và gửi đề xuất xin nghỉ, chờ {apn} duyệt" : $"Đã gửi đề xuất xin nghỉ, chờ {apn} duyệt");
     });
 
     /// <summary>Nạp việc để xóa / chuyển: kiểm quyền (StaffCalendar.OwnsTask), chưa có kết quả, NV chưa báo cáo cuối ngày.</summary>
@@ -371,7 +372,7 @@ public partial class StaffController
         (LeaveRules.Leave Lv, string Why)? lv = isLeave ? await ReadLeaveFormAsync() : null;
         var rawLines = TaskLines.Read(Request.Form, title, start, end);
         var withWork = !isLeave || (IsPartialLeave(lv!.Value.Lv) && rawLines.Count > 0);
-        if (isLeave && !withWork) { await SaveLeaveRequestAsync(lv!.Value.Lv, lv.Value.Why); Toast("Đã gửi đề xuất xin nghỉ, chờ Leader duyệt"); return; }
+        if (isLeave && !withWork) { await SaveLeaveRequestAsync(lv!.Value.Lv, lv.Value.Why); Toast($"Đã gửi đề xuất xin nghỉ, chờ {await ApproverNameAsync(Scope.Account)} duyệt"); return; }
         if (isLeave) foreach (var rl in rawLines) EnsureOutsideLeave(lv!.Value.Lv, rl.Start, rl.End);
         var people = Request.Form["emp"].Select(s => int.TryParse(s, out var i) ? i : 0).Where(i => i > 0).ToList();
         // Xin người hỗ trợ theo số lượng: từng phòng ban (qd_<chỉ số>) và từng nhóm khác (qg_<Id Leader>) — không chỉ định người ngoài nhóm.
@@ -389,7 +390,7 @@ public partial class StaffController
         foreach (var pl in plines) await Flow.ProposeAsync(Date, Scope.Account.Id, projectId, itemId, pl.Title, pl.Start, pl.End, people, quotas, Request.Form["supportReason"].ToString(), includeSelf);
         await ptx.CommitAsync();
         if (lv is { } lq) await SaveLeaveRequestAsync(lq.Lv, lq.Why);
-        Toast(isLeave ? "Đã gửi đề xuất xin nghỉ và công việc — chờ Leader duyệt" : "Đã gửi đề xuất — chờ Leader duyệt");
+        { var apn2 = await ApproverNameAsync(Scope.Account); Toast(isLeave ? $"Đã gửi đề xuất xin nghỉ và công việc — chờ {apn2} duyệt" : $"Đã gửi đề xuất — chờ {apn2} duyệt"); }
     });
 
     /// <summary>GET /Staff/Projects — nvProjects (?pt=active|done); có ?pj= → projectDetail(pj, 'nv') (?tab=overview|plan|people).</summary>

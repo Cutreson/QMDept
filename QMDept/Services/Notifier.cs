@@ -154,7 +154,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
 
     /// <summary>Kế hoạch cần TP duyệt hỗ trợ nhân sự → mọi TP.</summary>
     public async Task SupportNeedsManagerAsync(int emp, DateOnly d) =>
-        await SendAsync(await Managers(), NotifyType.SupportNeedsManager, $"{await Name(emp)} cần hỗ trợ nhân sự ngày {Fmt.Dm(d)}", "Leader đã duyệt, đang chờ Trưởng phòng duyệt.", Q("/Manager/Approvals", d));
+        await SendAsync(await Managers(), NotifyType.SupportNeedsManager, $"{await Name(emp)} cần hỗ trợ nhân sự ngày {Fmt.Dm(d)}", $"{(await LeaderOf(emp) is int ldr ? await Name(ldr) : "Leader")} đã duyệt, đang chờ Trưởng phòng duyệt.", Q("/Manager/Approvals", d));
 
     /// <summary>NV gửi báo cáo cuối ngày → Leader nhóm.</summary>
     public async Task ReportSubmittedAsync(int emp, DateOnly d)
@@ -306,7 +306,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
 
     /// <summary>Đăng ký làm thêm của NV kết thúc sau 20:00: Leader đã duyệt → mọi TP duyệt tiếp (yêu cầu 2026-10-21).</summary>
     public async Task OvertimeToManagerAsync(int person, DateOnly d, string start, string end) =>
-        await SendAsync(await Managers(), NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)} (sau 20:00)", $"{start}–{end} · Leader đã duyệt, chờ bạn duyệt.", Q("/Overtime?tab=approve", d));
+        await SendAsync(await Managers(), NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)} (sau 20:00)", $"{start}–{end} · {(await LeaderOf(person) is int ldr2 ? await Name(ldr2) : "Leader")} đã duyệt, chờ bạn duyệt.", Q("/Overtime?tab=approve", d));
 
     /// <summary>NV / Leader cập nhật kết quả làm thêm (giờ thực tế + công việc) → người duyệt (Leader nhóm / mọi TP).</summary>
     public async Task OvertimeDoneSubmittedAsync(int person, Role role, DateOnly d, string start, string end)

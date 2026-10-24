@@ -85,11 +85,11 @@
         }
         else if (x.Status == OtStatus.PendingManager && canUndo)
         {
-            <p class="note" style="margin-bottom:0">Đang chờ Trưởng phòng duyệt <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
+            <p class="note" style="margin-bottom:0">Đang chờ @D.ManagersText() duyệt <button class="link" form="otUndo@(x.Id)">Hoàn tác</button></p>
         }
         else if (x.Status == OtStatus.PendingManager)
         {
-            <p class="note" style="margin-bottom:0">Đang chờ Trưởng phòng duyệt</p>
+            <p class="note" style="margin-bottom:0">Đang chờ @D.ManagersText() duyệt</p>
         }
         @if (canUndo)
         {

@@ -44,7 +44,7 @@
             }
             @if (st == PlanState.Pending)
             {
-                <p class="note" style="margin:0">Đang chờ Leader duyệt trước.</p>
+                <p class="note" style="margin:0">Đang chờ @D.ApproverName(D.P(p.EmployeeId)) duyệt trước.</p>
             }
             @if (st == PlanState.PendingManager)
             {
@@ -99,7 +99,7 @@ else if (Model.Mode == "extra")
             </div>
             @if (x.Status == ExtraStatus.Pending)
             {
-                <p class="note" style="margin:0">Chờ Leader duyệt.</p>
+                <p class="note" style="margin:0">Chờ @D.ApproverName(D.P(x.EmployeeId)) duyệt.</p>
             }
         </section>
     }

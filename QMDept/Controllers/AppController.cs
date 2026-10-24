@@ -32,6 +32,21 @@ public sealed class AnyUiRoleAttribute : Attribute;
 public abstract class AppController : Controller
 {
     protected AppDbContext Db => HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+
+    /// <summary>Tên NGƯỜI DUYỆT cấp trực tiếp của <paramref name="p"/> (nhân viên → Leader nhóm; Leader / TP → Trưởng phòng) để ghi vào thông báo — không ghi chung "Leader" / "Trưởng phòng" (yêu cầu 2026-10-24).</summary>
+    protected async Task<string> ApproverNameAsync(Person? p)
+    {
+        if (p is { Role: Role.Staff })
+            return (p.LeaderId is int l ? await Db.People.AsNoTracking().Where(x => x.Id == l && !x.IsDeleted).Select(x => x.Name).FirstOrDefaultAsync() : null) ?? "Leader (chưa xếp nhóm)";
+        return await ManagersNameAsync();
+    }
+
+    /// <summary>Tên Trưởng phòng đang hoạt động (nhiều người thì cách nhau dấu phẩy).</summary>
+    protected async Task<string> ManagersNameAsync()
+    {
+        var n = await Db.People.AsNoTracking().Where(x => x.Role == Role.Manager && !x.IsDeleted).Select(x => x.Name).ToListAsync();
+        return n.Count > 0 ? string.Join(", ", n) : "Trưởng phòng";
+    }
     protected Dept D => HttpContext.RequestServices.GetRequiredService<Dept>();
     protected ViewScope Scope => HttpContext.RequestServices.GetRequiredService<ViewScope>();
     protected WorkflowService Flow => HttpContext.RequestServices.GetRequiredService<WorkflowService>();
