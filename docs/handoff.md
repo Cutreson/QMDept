@@ -343,3 +343,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Báo cáo cuối ngày: nhãn "✓ Đã cập nhật" tách khỏi nút "Sửa" (quy tắc 84); đã xem trên trình duyệt.
 - (2026-10-24) Bảng nhập nhiều công việc: ô giờ nhỏ chữ lại (13px, lề gọn, cột 98px) để không che số giờ; đã xem ở máy tính + 375px.
 - (2026-10-24) Ô giờ trong bảng nhập nhiều công việc: chỉ chỉnh riêng `.tlines .tl-row select` (chữ 14px, cột 104px); đã quét toàn bộ trang + sheet của nhân viên / Leader / TP ở 375px, không còn chỗ chữ bị che.
+- (2026-10-24) Bảng (sheet) không đóng khi bấm / kéo chuột ra ngoài; Esc chỉ đóng khi chưa nhập gì (quy tắc 85); đã thử trên trình duyệt.

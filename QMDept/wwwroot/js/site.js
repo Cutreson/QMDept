@@ -47,7 +47,8 @@
   // ---------- bảng trượt (sheet) ----------
   const dlg = $('#dlg');
   let onClose = null;
-  function closeSheet() { if (!dlg || dlg.hidden) return; dlg.hidden = true; dlg.innerHTML = ''; const c = onClose; onClose = null; c && c(); }
+  let dirty = false;   // người dùng đã nhập / đổi gì trong bảng đang mở
+  function closeSheet() { if (!dlg || dlg.hidden) return; dirty = false; dlg.hidden = true; dlg.innerHTML = ''; const c = onClose; onClose = null; c && c(); }
   window.qmCloseSheet = closeSheet;
   // Mở sheet với nội dung HTML là MỘT <form>; trả về form đó.
   function openSheet(html, opts) {
@@ -55,7 +56,7 @@
     dlg.innerHTML = html;
     const form = dlg.firstElementChild;
     form.classList.add('card'); form.setAttribute('role', 'dialog'); form.setAttribute('aria-modal', 'true');
-    dlg.hidden = false; onClose = opts.onClose || null;
+    dlg.hidden = false; dirty = false; onClose = opts.onClose || null;
     $$('[data-x=close]', form).forEach(b => b.addEventListener('click', e => { e.preventDefault(); closeSheet(); }));
     const f = form.querySelector('input:not([type=hidden]):not([type=radio]):not([type=checkbox]),textarea,select');
     f && f.focus();
@@ -79,8 +80,11 @@
     const sc = el.closest('.dlg>.card'); if (sc) sc.scrollTop += over; else window.scrollBy(0, over);
   };
   if (dlg) {
-    dlg.addEventListener('click', e => { if (e.target === dlg) closeSheet(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+    // Bảng chỉ đóng bằng nút Hủy / gửi (yêu cầu 2026-10-24): bấm hoặc kéo chuột ra ngoài KHÔNG đóng, để không mất phần đang nhập dở.
+    // Esc chỉ đóng khi chưa nhập gì.
+    dlg.addEventListener('input', () => { dirty = true; });
+    dlg.addEventListener('change', () => { dirty = true; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dirty) closeSheet(); });
   }
   const sheetButtons = (okLabel, okClass) =>
     `<div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn ${okClass || 'btn-primary'}" data-ok>${esc(okLabel)}</button></div>`;

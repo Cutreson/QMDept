@@ -352,3 +352,5 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     Đề xuất công việc phát sinh ở Báo cáo cuối ngày (`_ExtraSheet`, có mô tả + giờ kết thúc không bắt buộc) giữ nguyên một việc / lần.
 84. **Báo cáo cuối ngày: "Đã cập nhật" là nhãn, "Sửa" là nút riêng** (yêu cầu 2026-10-24, sửa quy tắc 82 mục 1): việc chưa cập nhật = nút xanh dương **"Cập nhật"**; việc đã cập nhật = nhãn xanh lá **"✓ Đã cập nhật"** (không bấm được) + nút viền **"Sửa"** đứng riêng bên cạnh để mở lại bảng cập nhật
     (`Views/Shared/_UpdateBtn.cshtml`, CSS `.upd-row / .upd-done / .upd-edit`) — áp cho mọi nhân sự (việc của mình, việc của người hỗ trợ trong dự án mình phụ trách; nhân viên, Leader).
+85. **Bảng nhập (sheet) không đóng khi bấm / kéo chuột ra ngoài** (yêu cầu 2026-10-24): mọi bảng mở trên khung `#dlg` (Giao thêm việc, Đề xuất, Sửa công việc, Cập nhật báo cáo, xác nhận, hỏi lý do… — `site.js` `openSheet`) chỉ đóng bằng nút **Hủy** hoặc khi gửi; bấm / kéo chuột ra vùng tối bên ngoài KHÔNG làm mất phần đang nhập.
+    Phím Esc chỉ đóng khi người dùng chưa nhập / đổi gì (`dirty`). Không thêm lại trình xử lý bấm nền để đóng.
