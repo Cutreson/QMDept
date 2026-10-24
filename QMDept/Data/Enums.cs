@@ -41,6 +41,14 @@ public enum TaskSource
     Proposed,  // (mới 2026-10-15)  NV đề xuất ở lịch tháng, Leader duyệt ("Đề xuất")
 }
 
+/// <summary>Mức độ ưu tiên của công việc khi cấp quản lý giao (yêu cầu 2026-10-24): người được giao biết việc có được ưu tiên hay không.</summary>
+public enum TaskPriority
+{
+    Normal, // Bình thường
+    High,   // Ưu tiên
+    Urgent, // Khẩn cấp
+}
+
 /// <summary>Trạng thái dự án (PS). Override chỉ dùng OnTrack/InProgress/Behind/AtRisk; Completed là trạng thái tính ra.</summary>
 public enum ProjectStatus
 {

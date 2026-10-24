@@ -87,7 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     /// Nếu NV đã gửi kế hoạch ngày đó → việc được chọn sẵn và thêm vào kế hoạch. Cập nhật vai trò trong dự án.
     /// </summary>
     public async Task<int> AssignTaskAsync(DateOnly date, int projectId, int? itemId, string? title, string start, string end,
-        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned, int? actorId = null)
+        IReadOnlyList<int> people, string actor, TaskSource source = TaskSource.Assigned, int? actorId = null, TaskPriority priority = TaskPriority.Normal)
     {
         if (people.Count == 0) throw new BizException("Tích chọn ít nhất 1 người tham gia");
         var item = itemId is int iid ? await db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid && i.ProjectId == projectId) : null;
@@ -107,7 +107,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             var t = new WorkTask
             {
                 Date = date, EmployeeId = emp, ProjectId = projectId, PlanItemId = item?.Id, Title = t0, Start = start, End = end,
-                Status = TaskState.NotStarted, Source = source, GivenBy = actor, GivenById = actorId is int gid && gid != emp ? gid : null, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
+                Status = TaskState.NotStarted, Source = source, Priority = priority, GivenBy = actor, GivenById = actorId is int gid && gid != emp ? gid : null, Selected = plan is not null, CreatedAt = VnTime.UtcNow,
             };
             db.WorkTasks.Add(t);
             await db.SaveChangesAsync();
@@ -116,7 +116,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             await db.SaveChangesAsync();
         }
         if (tx is not null) await tx.CommitAsync();
-        await notify.TaskAssignedAsync(people, date, t0);
+        await notify.TaskAssignedAsync(people, date, t0, priority: priority);
         return people.Count;
     }
 
@@ -300,7 +300,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     }
 
     /// <summary>Sửa nội dung / dự án / giờ của một việc (Leader / TP sửa việc trong quyền của mình — yêu cầu 2026-10-21). Quyền + khóa do controller kiểm.</summary>
-    public async Task EditTaskAsync(WorkTask t, int projectId, string? title, string start, string end, string actor)
+    public async Task EditTaskAsync(WorkTask t, int projectId, string? title, string start, string end, string actor, TaskPriority? priority = null)
     {
         var tt = (title ?? "").Trim();
         if (tt.Length == 0) throw new BizException("Nhập nội dung công việc");
@@ -314,6 +314,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
             await UpsertAssignmentAsync(projectId, t.EmployeeId, leadId == t.EmployeeId ? ProjectRole.Lead : ProjectRole.Support, actor, keepNote: true);
         }
         t.Title = tt; t.Start = start; t.End = end; t.UpdatedAt = VnTime.UtcNow;
+        if (priority is TaskPriority np) t.Priority = np;
         await db.SaveChangesAsync();
     }
 

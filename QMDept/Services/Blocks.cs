@@ -21,6 +21,14 @@ public static class Blocks
 
     /// <summary>taskRow(t). showEmployee: thêm tên NV ở dòng phụ (dùng ở Theo dõi → theo dự án). tail: HTML thêm vào cột giờ (vd nút xóa).
     /// Luôn có dòng "Leader dự án: …" (yêu cầu 2026-10-14) — hiện ở lịch của NV, lịch nhóm của Leader, Theo dõi, Báo cáo.</summary>
+    /// <summary>Nhãn mức độ ưu tiên của công việc (Bình thường không hiện nhãn) — yêu cầu 2026-10-24.</summary>
+    public static string PriorityTag(TaskPriority p) => p switch
+    {
+        TaskPriority.Urgent => " <span class=\"pill p-solid-bad\">Khẩn cấp</span>",
+        TaskPriority.High => " <span class=\"pill p-warn\">Ưu tiên</span>",
+        _ => "",
+    };
+
     /// <summary>Render một partial thành chuỗi HTML (để nhét vào cột của TaskRow).</summary>
     public static async Task<string> PartialStr(this IHtmlHelper html, string name, object model)
     {
@@ -46,7 +54,7 @@ public static class Blocks
         var ackLine = t.GivenById is null ? ""
             : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Hm(ak)} {Fmt.Dm(VnTime.DateOf(ak))}</b></div>"
             : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
-        return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}</div>"
+        return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}{PriorityTag(t.Priority)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")}</div>{leadLine}{ackLine}{noteLine}</div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span></span>{(actions is null ? "" : $"<span class=\"act\">{actions}</span>")}</div>");
     }

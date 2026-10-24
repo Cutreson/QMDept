@@ -101,6 +101,8 @@ else
                 @Ui.ProjectLeadHint(D, D.AllPj(), "calP", pj0)
                 <label class="f" for="calT">Nội dung công việc phát sinh</label><input class="in" id="calT" name="title" maxlength="300">
                 <div class="pick2 eq"><div><label class="f" for="calS">Bắt đầu</label>@Ui.TimeSelect("start", "08:00", id: "calS")</div><div><label class="f" for="calE">Kết thúc</label>@Ui.TimeSelect("end", "17:00", end: true, id: "calE")</div></div>
+                <label class="f" for="calPri">Mức độ ưu tiên</label>
+                <select class="in" name="priority" id="calPri"><option value="Normal">Bình thường</option><option value="High">Ưu tiên</option><option value="Urgent">Khẩn cấp</option></select>
                 <label class="f">Người tham gia</label>
                 <div class="optbox">
                     @foreach (var p in (Scope.IsManager ? ppl.Where(x => x.Role == Role.Leader).ToList() : ppl))   @* Trưởng phòng chỉ giao cho Leader (không giao vượt cấp) *@

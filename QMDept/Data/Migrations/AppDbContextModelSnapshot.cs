@@ -1202,6 +1202,11 @@ b.HasIndex("OwnerLeaderId");
                     b.Property<int?>("PlanItemId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
                     b.Property<int>("ProjectId")
                         .HasColumnType("int");
 

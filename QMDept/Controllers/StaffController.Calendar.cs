@@ -45,7 +45,7 @@ public partial class StaffController
     /// đặt vai trò trong dự án (Hỗ trợ / Leader dự án). Leader: nhân viên trong nhóm (+ chính mình); TP / Quản trị: chỉ Leader (không giao vượt cấp).
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> AssignTask(int projectId, int? itemId, string? title, string? start, string? end)
+    public async Task<IActionResult> AssignTask(int projectId, int? itemId, string? title, string? start, string? end, string? priority)
     {
         return await Do(async () =>
         {
@@ -55,7 +55,7 @@ public partial class StaffController
             if (Scope.IsManager && Request.Form["emp"].Any(s => int.TryParse(s, out var i) && Scope.TeamPeople.Any(p => p.Id == i && p.Role == Role.Staff)))
                 throw new BizException("Trưởng phòng chỉ giao việc cho Leader — Leader giao tiếp cho nhân viên, không giao vượt cấp");
             var people = StaffCalendar.ReadPeople(Request.Form, pool);
-            var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName, TaskSource.Assigned, Scope.Account.Id);
+            var n = await Flow.AssignTaskAsync(Date, projectId, itemId, title, start ?? "", end ?? "", people, Scope.ActorName, TaskSource.Assigned, Scope.Account.Id, StaffReports.ParseEnum<TaskPriority>(priority) ?? TaskPriority.Normal);
             Toast($"Đã giao việc cho {n} người ngày {Fmt.Dm(Date)}");
         });
     }
@@ -118,7 +118,7 @@ public partial class StaffController
     /// Chuyển lịch gộp vào Sửa (yêu cầu 2026-10-21). Người nhận nghỉ cả ngày thì chặn; việc đã chuyển tiếp đi nơi khác không đổi ngày / người được.
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> EditTask(int id, int projectId, string? title, string? start, string? end, string? to, int? emp) => await Do(async () =>
+    public async Task<IActionResult> EditTask(int id, int projectId, string? title, string? start, string? end, string? to, int? emp, string? priority) => await Do(async () =>
     {
         var t = await LoadManagedTaskAsync(id);
         // Kiểm tra phần chuyển lịch TRƯỚC khi ghi gì (để lỗi không ghi dở).
@@ -138,10 +138,10 @@ public partial class StaffController
                 throw new BizException($"{tp.Name} nghỉ cả ngày {Fmt.Dmy(day)} — chọn ngày hoặc người khác");
         }
         await using var tx = await Db.Database.BeginTransactionAsync();
-        await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName);
+        await Flow.EditTaskAsync(t, projectId, title, start ?? "", end ?? "", Scope.ActorName, StaffReports.ParseEnum<TaskPriority>(priority));
         if (moved) await Flow.MoveTaskAsync(t, day, target, Scope.ActorName, Scope.Account.Id);
         await tx.CommitAsync();
-        if (moved && target != Scope.Account.Id) await Notify.TaskAssignedAsync([target], day, t.Title, "Bạn được chuyển việc");
+        if (moved && target != Scope.Account.Id) await Notify.TaskAssignedAsync([target], day, t.Title, "Bạn được chuyển việc", t.Priority);
         Toast(moved ? $"Đã sửa và chuyển “{t.Title}” sang {(target == Scope.Account.Id || tp is null ? "" : tp.Name + " · ")}ngày {Fmt.Dmy(day)}" : "Đã sửa công việc");
     });
 

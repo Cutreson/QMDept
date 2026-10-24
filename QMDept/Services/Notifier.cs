@@ -178,14 +178,15 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync([emp], NotifyType.CarryOver, $"Việc chuyển tiếp sang ngày {Fmt.Dm(date)} {what}", title, Q("/Staff/Month", date));
 
     /// <summary>Giao việc / thêm / xóa việc trong lịch (what: "Bạn được giao việc", "Việc mới trong lịch", "Việc bị xóa khỏi lịch") → NV.</summary>
-    public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc")
+    public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc", TaskPriority priority = TaskPriority.Normal)
     {
         var ppl = await People();
         var list = emps.Distinct().ToList();
         var leaders = list.Where(i => ppl.Find(p => p.Id == i)?.Role == Role.Leader).ToList();   // Leader mở lịch cá nhân ?as=mine
-        var body = $"{title} · bởi {Actor}";
-        await SendAsync(list.Except(leaders).Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", body, Q("/Staff/Month", d));
-        await SendAsync(leaders.Cast<int?>(), NotifyType.TaskAssigned, $"{what} ngày {Fmt.Dm(d)}", body, $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
+        var tag = priority == TaskPriority.Urgent ? "[KHẨN CẤP] " : priority == TaskPriority.High ? "[ƯU TIÊN] " : "";   // người được giao biết việc có được ưu tiên không
+        var body = $"{tag}{title} · bởi {Actor}";
+        await SendAsync(list.Except(leaders).Cast<int?>(), NotifyType.TaskAssigned, $"{tag}{what} ngày {Fmt.Dm(d)}", body, Q("/Staff/Month", d));
+        await SendAsync(leaders.Cast<int?>(), NotifyType.TaskAssigned, $"{tag}{what} ngày {Fmt.Dm(d)}", body, $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
     }
 
     /// <summary>Người được giao việc xác nhận đã nhận → người giao (yêu cầu 2026-10-21).</summary>

@@ -127,6 +127,7 @@ public class WorkTask
 
     [MaxLength(100)] public string? GivenBy { get; set; }            // người giao (source = Assigned)
     public int? GivenById { get; set; }                              // id người giao (cấp quản lý giao / chuyển việc cho người khác) — null = tự thêm
+    public TaskPriority Priority { get; set; } = TaskPriority.Normal;   // mức độ ưu tiên (cấp quản lý đặt khi giao / sửa việc)
     public DateTime? AckAt { get; set; }                             // người nhận đã xác nhận đã nhận việc (null = chờ xác nhận)
     public int? ExtraId { get; set; }                                // phát sinh đã tạo ra việc này (source = Extra)
 
