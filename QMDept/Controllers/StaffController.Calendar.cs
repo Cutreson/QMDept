@@ -130,6 +130,65 @@ public partial class StaffController
     }, "Đã xác nhận nhận việc");
 
     /// <summary>
+    /// POST /Staff/UpdateOwnTask — Trưởng phòng / Quản trị tự cập nhật việc CỦA CHÍNH MÌNH để quản lý kế hoạch cá nhân (yêu cầu 2026-10-24): Chưa làm / Đang làm / Hoàn thành + ghi chú,
+    /// và chuyển việc chưa xong sang ngày khác (kế hoạch tiếp theo). KHÔNG phải báo cáo cho ai: không báo cáo cuối ngày, không duyệt, không thông báo. Việc đã chuyển tiếp hiện "Chuyển sang dd/MM/yyyy" ở ngày gốc.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> UpdateOwnTask(int id, string? state, string? note, string? to, string? start, string? end) => await Do(async () =>
+    {
+        if (Scope.IsViewingOther || Scope.Account.Role is not (Role.Manager or Role.Admin)) throw new BizException("Chỉ Trưởng phòng tự cập nhật việc của mình ở mục này");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
+        if (t.EmployeeId != Scope.Account.Id) throw new BizException("Chỉ cập nhật được việc của chính mình");
+        if (t.NeedsGiverReview) throw new BizException($"Việc do {t.GivenBy} giao — báo kết quả để người giao duyệt");
+        var s = StaffReports.ParseEnum<TaskState>(state);
+        if (s is not (TaskState.NotStarted or TaskState.InProgress or TaskState.Done)) throw new BizException("Chọn trạng thái: Chưa làm / Đang làm / Hoàn thành");
+        var cur = t.CarriedToId is int cid ? await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == cid) : null;
+        DateOnly? nd = null;
+        string ns = "", ne = "";
+        if (s != TaskState.Done && !string.IsNullOrWhiteSpace(to))
+        {
+            nd = Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày đúng dạng dd/MM/yyyy");
+            if (nd <= t.Date || nd < Scope.Today) throw new BizException("Chuyển sang ngày sau ngày của việc và từ hôm nay trở đi");
+            ns = string.IsNullOrEmpty(start) ? t.Start : start; ne = string.IsNullOrEmpty(end) ? t.End : end;
+            if (!Fmt.IsHhmm(ns) || !Fmt.IsHhmm(ne) || ne.Le(ns)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+            if ((await Db.Leaves.AsNoTracking().Where(l => l.Date == nd && l.EmployeeId == t.EmployeeId).ToListAsync()).Any(Dept.IsFullDayLeave))
+                throw new BizException($"Bạn nghỉ cả ngày {Fmt.Dmy(nd.Value)} — chọn ngày khác");
+            await TaskLines.EnsureFreeAsync(Db, t.EmployeeId, null, nd.Value, [new TaskLines.Line(t.Title, ns, ne)], cur?.Id);
+        }
+        await using var tx = await Db.Database.BeginTransactionAsync();
+        if (nd is DateOnly d1)
+        {
+            if (cur is not null)
+            {
+                cur.Date = d1; cur.Start = ns; cur.End = ne; cur.CarryOk = true;
+                await Flow.SyncCarryToPlanAsync(cur);
+            }
+            else
+            {
+                var n = new WorkTask
+                {
+                    Date = d1, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = t.Title, Start = ns, End = ne,
+                    Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = true, CarriedFromId = t.Id, FromDate = t.Date, Selected = false, CreatedAt = VnTime.UtcNow,
+                };
+                Db.WorkTasks.Add(n);
+                await Db.SaveChangesAsync();
+                await Flow.SyncCarryToPlanAsync(n);
+                t.CarriedToId = n.Id;
+            }
+            t.CarryDate = d1; t.CarryBy = Scope.ActorName; t.CarryAt = VnTime.UtcNow;
+        }
+        else if (cur is not null)
+        {
+            // bỏ chuyển tiếp: xóa việc đã chuyển nếu còn "Chưa làm"; đã làm dở ở ngày mới thì giữ lại nhưng gỡ liên kết
+            if (cur.Status == TaskState.NotStarted) await Flow.DeleteTaskAsync(cur.Id);
+            t.CarriedToId = null; t.CarryDate = null;
+        }
+        t.Status = s.Value; t.Note = StaffReports.Clip(note, 2000); t.UpdatedAt = VnTime.UtcNow;
+        await Db.SaveChangesAsync();
+        await tx.CommitAsync();
+    }, "Đã cập nhật");
+
+    /// <summary>
     /// POST /Staff/ReviewDone — NGƯỜI GIAO duyệt kết quả việc đã giao (yêu cầu 2026-10-24): v=ok → tính là xong; v=no (bắt buộc lý do) → việc về "Đang làm", báo cáo cuối ngày của người nhận mở lại để cập nhật.
     /// Chỉ người giao, chỉ việc người nhận đã báo hoàn thành và đã gửi báo cáo cuối ngày.
     /// </summary>

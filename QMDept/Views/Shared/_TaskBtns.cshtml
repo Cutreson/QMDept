@@ -1,8 +1,12 @@
 @model WorkTask
-@* Nút ở CỘT CUỐI của dòng việc (Blocks.TaskRow, tham số actions): Sửa / Xóa (người giao / quyền quản lý) hoặc "Đề xuất lại" (người nhận việc do người khác giao — không được xóa; yêu cầu 2026-10-24).
-   Sheet + form xóa ở _TaskActions / _TaskEdit / _TaskRepropose. *@
+@* Nút ở CỘT CUỐI của dòng việc (Blocks.TaskRow, tham số actions): Sửa / Xóa (người giao / quyền quản lý), "Đề xuất lại" (người nhận việc do người khác giao — không được xóa; yêu cầu 2026-10-24)
+   và "Cập nhật" (Trưởng phòng / Quản trị tự quản lý việc của mình — không báo cáo cho ai). Sheet + form xóa ở _TaskActions / _TaskEdit / _TaskRepropose / _SelfUpdate. *@
 @{
     var t = Model;
+}
+@if (StaffCalendar.CanSelfUpdate(Scope, t))
+{
+    <button type="button" class="link ro-ok" data-sheet="su@(t.Id)">Cập nhật</button>
 }
 @if (StaffCalendar.CanManage(Scope, D, t))
 {

@@ -564,3 +564,9 @@
     }
   }, true);
 })();
+
+// Cập nhật việc của Trưởng phòng: chọn "Hoàn thành" thì ẩn phần chuyển sang ngày khác (yêu cầu 2026-10-24)
+document.addEventListener('change', e => {
+  const sel = e.target.closest && e.target.closest('[data-su-state]'); if (!sel) return;
+  const box = sel.closest('form').querySelector('[data-su-carry]'); if (box) box.hidden = sel.value === 'Done';
+});

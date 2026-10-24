@@ -63,7 +63,7 @@ else
                 <div class="tmd"><div class="tmd-h">@if (Scope.Subordinates.Any(s => s.Id == p.Id)) {<a class="link" href="@Ui.Here(req, ("as", p.Id.ToString()), ("d", Fmt.Key(sel)), ("m", mKey), ("w", null))" style="color:var(--fg)">@p.Name</a>} else {<b>@p.Name</b>} @Ui.LevelPill(p) <span class="note">@if (leave is not null) {<b class="red" title="@Blocks.LeaveBrief(leave)">@(leave.LeaveType is null ? "Nghỉ" : Blocks.LeaveBrief(leave))</b>@(" · ")}@t.Count(x => x.Status == TaskState.Done && x.CarriedToId is null)/@t.Count việc@(ot is not null ? $" · ĐK làm thêm {ot.Start}–{ot.End}" : "")</span></div>
                     @foreach (var x in t)
                     {
-                        var act = StaffCalendar.CanManage(Scope, D, x) || StaffCalendar.CanRepropose(Scope, D, x) ? await Html.PartialStr("_TaskBtns", x) : "";
+                        var act = StaffCalendar.CanManage(Scope, D, x) || StaffCalendar.CanRepropose(Scope, D, x) || StaffCalendar.CanSelfUpdate(Scope, x) ? await Html.PartialStr("_TaskBtns", x) : "";
                         @D.TaskRow(x, leadOnly: true, actions: act)
                         <partial name="_TaskActions" model="x" />
                     }
@@ -136,7 +136,7 @@ else
             {
                 foreach (var x in t)
                 {
-                    var act = (ownLead && StaffCalendar.CanManage(Scope, D, x)) || StaffCalendar.CanRepropose(Scope, D, x) ? await Html.PartialStr("_TaskBtns", x) : (ownLead ? "" : null);
+                    var act = (ownLead && StaffCalendar.CanManage(Scope, D, x)) || StaffCalendar.CanRepropose(Scope, D, x) || StaffCalendar.CanSelfUpdate(Scope, x) ? await Html.PartialStr("_TaskBtns", x) : (ownLead ? "" : null);
                     @D.TaskRow(x, actions: act)
                     <partial name="_TaskAck" model="x" />
                     <partial name="_TaskActions" model="x" />

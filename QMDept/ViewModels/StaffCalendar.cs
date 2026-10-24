@@ -58,6 +58,9 @@ public static class StaffCalendar
         return actor.Role == Role.Leader ? emp.Role == Role.Staff && emp.LeaderId == actor.Id : isManager && emp.Role == Role.Leader;
     }
 
+    /// <summary>Trưởng phòng / Quản trị tự cập nhật trạng thái + chuyển tiếp việc CỦA MÌNH (quản lý kế hoạch cá nhân, không báo cáo cho ai) — yêu cầu 2026-10-24.</summary>
+    public static bool CanSelfUpdate(ViewScope s, WorkTask t) => !s.IsViewingOther && s.Account.Role is Role.Manager or Role.Admin && t.EmployeeId == s.Account.Id && !t.NeedsGiverReview;
+
     /// <summary>Hiện nút Sửa / Xóa / Chuyển lịch cho việc này không (quyền + chưa khóa). Việc do NGƯỜI KHÁC giao thì người nhận KHÔNG sửa / xóa được (chỉ "Đề xuất lại" để người giao duyệt) — yêu cầu 2026-10-24.</summary>
     public static bool CanManage(ViewScope s, Dept d, WorkTask t) => s.CanLead && OwnsTask(s.Account, s.IsManager, s.IsViewingOther, d.P(t.EmployeeId), t) && !TaskLocked(d, t)
         && !(t.NeedsGiverReview && t.EmployeeId == s.Account.Id);

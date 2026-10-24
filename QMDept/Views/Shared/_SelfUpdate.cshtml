@@ -1,0 +1,31 @@
+@model WorkTask
+@* Sheet "Cập nhật" việc của CHÍNH Trưởng phòng / Quản trị (yêu cầu 2026-10-24): chỉ để quản lý kế hoạch cá nhân — không phải báo cáo cho ai, không duyệt.
+   Trạng thái (Chưa làm / Đang làm / Hoàn thành) + ghi chú; việc chưa xong có thể chuyển sang ngày khác. Nút mở: data-sheet="su{id}". Server: StaffController.UpdateOwnTask. *@
+@{
+    var t = Model;
+    if (!StaffCalendar.CanSelfUpdate(Scope, t)) { return; }
+    var cur = D.Task(t.CarriedToId);
+    var st = t.Status == TaskState.Late ? TaskState.InProgress : t.Status;
+}
+<template id="su@(t.Id)">
+    <form method="post" action="/Staff/UpdateOwnTask?id=@(t.Id)&d=@(Fmt.Key(t.Date))&as=mine">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(Context.Request)
+        <h3>Cập nhật công việc</h3>
+        <div class="note" style="margin:2px 0 0"><b>@t.Title</b> · @D.PjName(t.ProjectId) · @Fmt.Dmy(t.Date) @t.Start–@t.End</div>
+        <label class="f" for="suS@(t.Id)">Trạng thái</label>
+        <select class="in" name="state" id="suS@(t.Id)" data-su-state>
+            <option value="NotStarted" selected="@(st == TaskState.NotStarted)">Chưa làm</option>
+            <option value="InProgress" selected="@(st == TaskState.InProgress)">Đang làm</option>
+            <option value="Done" selected="@(st == TaskState.Done)">Hoàn thành</option>
+        </select>
+        <label class="f" for="suN@(t.Id)">Ghi chú</label>
+        <textarea class="in" id="suN@(t.Id)" name="note" maxlength="2000">@t.Note</textarea>
+        <div data-su-carry @(st == TaskState.Done ? "hidden" : null)>
+            <label class="f" for="suD@(t.Id)">Chuyển việc chưa xong sang ngày (để trống = không chuyển)</label>
+            @Ui.DateInput("to", cur?.Date, "suD" + t.Id)
+            <div class="pick2 eq"><div><label class="f" for="suB@(t.Id)">Bắt đầu</label>@Ui.TimeSelect("start", cur?.Start ?? t.Start, id: "suB" + t.Id)</div><div><label class="f" for="suE@(t.Id)">Kết thúc</label>@Ui.TimeSelect("end", cur?.End ?? t.End, end: true, id: "suE" + t.Id)</div></div>
+        </div>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+    </form>
+</template>

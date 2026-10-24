@@ -1,8 +1,12 @@
 @model WorkTask
-@* Sheet Sửa + form Xóa (người giao / quyền quản lý) hoặc sheet "Đề xuất lại" (người nhận việc do người khác giao) của một công việc — yêu cầu 2026-10-20, 2026-10-21, 2026-10-24.
-   Nút nằm ở cột cuối dòng việc (_TaskBtns). Server kiểm quyền lại (StaffController.EditTask / DeleteTask / ProposeChange). *@
+@* Sheet Sửa + form Xóa (người giao / quyền quản lý), sheet "Đề xuất lại" (người nhận việc do người khác giao) hoặc sheet "Cập nhật" (Trưởng phòng / Quản trị tự quản lý việc của mình) — yêu cầu 2026-10-20, 2026-10-21, 2026-10-24.
+   Nút nằm ở cột cuối dòng việc (_TaskBtns). Server kiểm quyền lại (StaffController.EditTask / DeleteTask / ProposeChange / UpdateOwnTask). *@
 @{
     var t = Model;
+}
+@if (StaffCalendar.CanSelfUpdate(Scope, t))
+{
+    <partial name="_SelfUpdate" model="t" />
 }
 @if (StaffCalendar.CanManage(Scope, D, t))
 {
