@@ -342,3 +342,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Nhập nhiều công việc / dự án trong một bảng + chặn trùng giờ (quy tắc 83): Giao việc, Đề xuất, Kế hoạch cá nhân, Thêm việc ngoài kế hoạch, Sửa việc; đã test trên DB thật (client + server, 375px) và dọn dữ liệu thử. Chưa làm: đề xuất phát sinh cuối ngày (giữ một việc / lần).
 - (2026-10-24) Báo cáo cuối ngày: nhãn "✓ Đã cập nhật" tách khỏi nút "Sửa" (quy tắc 84); đã xem trên trình duyệt.
 - (2026-10-24) Bảng nhập nhiều công việc: ô giờ nhỏ chữ lại (13px, lề gọn, cột 98px) để không che số giờ; đã xem ở máy tính + 375px.
+- (2026-10-24) Ô giờ trong bảng nhập nhiều công việc: chỉ chỉnh riêng `.tlines .tl-row select` (chữ 14px, cột 104px); đã quét toàn bộ trang + sheet của nhân viên / Leader / TP ở 375px, không còn chỗ chữ bị che.
