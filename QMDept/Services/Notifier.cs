@@ -167,15 +167,15 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
 
     /// <summary>NV đề xuất phát sinh → Leader nhóm.</summary>
     public async Task ExtraProposedAsync(int emp, DateOnly d, string title) =>
-        await SendAsync([await LeaderOf(emp)], NotifyType.ExtraProposed, $"{await Name(emp)} đề xuất phát sinh", title, Q("/Planning/Approvals", d));
+        await SendAsync([await LeaderOf(emp)], NotifyType.ExtraProposed, $"{await Name(emp)} đề xuất phát sinh ngày {Fmt.Dm(d)}", title, Q("/Planning/Approvals", d));
 
     /// <summary>Kết quả phát sinh (what: "đã duyệt", "từ chối", "Leader thêm phát sinh") → NV.</summary>
     public async Task ExtraDecidedAsync(int emp, DateOnly d, string title, string what, string? note = null) =>
-        await SendAsync([emp], NotifyType.ExtraDecided, $"Phát sinh {what}: {title}", Body(note), Q("/Staff/Evening", d));
+        await SendAsync([emp], NotifyType.ExtraDecided, $"Phát sinh ngày {Fmt.Dm(d)} {what}: {title}", Body(note), Q("/Staff/Evening", d));
 
     /// <summary>Kế hoạch chuyển tiếp (what: "đã duyệt", "đã chỉnh và duyệt", "bị hoàn tác") → NV.</summary>
     public async Task CarryOverAsync(int emp, DateOnly date, string title, string what) =>
-        await SendAsync([emp], NotifyType.CarryOver, $"Việc chuyển tiếp {what}", $"{title} · {Fmt.Short(date)}", Q("/Staff/Month", date));
+        await SendAsync([emp], NotifyType.CarryOver, $"Việc chuyển tiếp sang ngày {Fmt.Dm(date)} {what}", title, Q("/Staff/Month", date));
 
     /// <summary>Giao việc / thêm / xóa việc trong lịch (what: "Bạn được giao việc", "Việc mới trong lịch", "Việc bị xóa khỏi lịch") → NV.</summary>
     public async Task TaskAssignedAsync(IEnumerable<int> emps, DateOnly d, string title, string what = "Bạn được giao việc")

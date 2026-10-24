@@ -48,6 +48,10 @@ public sealed class ChromeModel
     public int TodoMorning { get; init; }
     public int TodoEvening { get; init; }
     public int TodoOt { get; init; }
+    /// <summary>Ngày → số việc mình phải làm (báo cáo đầu / cuối ngày, kết quả làm thêm) — để trang báo rõ NGÀY (yêu cầu 2026-10-24).</summary>
+    public Dictionary<DateOnly, int> MorningDays { get; init; } = [];
+    public Dictionary<DateOnly, int> EveningDays { get; init; } = [];
+    public Dictionary<DateOnly, int> OtDays { get; init; } = [];
     /// <summary>Nhắc nhở báo cáo đầu ngày (từ 07:00) / cuối ngày (từ 17:00) khi chưa báo cáo — dải cam đầu trang (yêu cầu 2026-10-23).</summary>
     public List<(string Text, string Href)> Reminders { get; init; } = [];
 }
@@ -175,9 +179,9 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             var own = acc.Role == Role.Staff ? "me" : "mine";
             var plan0 = d.PlanOf(tday, acc.Id);
             if (plan0 is null && string.CompareOrdinal(nowHm, "07:00") >= 0)
-                reminders.Add(("Chưa báo cáo đầu ngày — hãy báo cáo trạng thái làm việc hôm nay", "/Staff/Morning?as=" + own));
+                reminders.Add(($"Chưa báo cáo đầu ngày {Fmt.Dmy(tday)} — hãy báo cáo trạng thái làm việc hôm nay", "/Staff/Morning?as=" + own));
             else if (plan0 is not null && !LeaveRules.IsLeave(plan0.Status) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
-                reminders.Add(("Chưa báo cáo cuối ngày — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
+                reminders.Add(($"Chưa báo cáo cuối ngày {Fmt.Dmy(tday)} — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
         }
 
         return _cache = new ChromeModel
@@ -197,26 +201,28 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, SupportPending = supportPending, Reminders = reminders, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(),
+            Unread = unread, SupportPending = supportPending, Reminders = reminders, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
-        // ---- Việc MÌNH phải làm mà chưa làm (badge ĐỎ trên mục chính + mục con — yêu cầu 2026-10-23) ----
-        // Báo cáo đầu ngày: hôm nay (từ 07:00) chưa gửi, hoặc kế hoạch hôm nay trở đi bị từ chối cần sửa gửi lại.
-        int TodoMorning()
+        // ---- Việc MÌNH phải làm mà chưa làm (badge ĐỎ trên mục chính + mục con — yêu cầu 2026-10-23); mỗi loại trả về "ngày → số việc" để trang báo rõ NGÀY nào (yêu cầu 2026-10-24) ----
+        // Báo cáo đầu ngày: hôm nay (từ 07:00) chưa gửi, hoặc kế hoạch (hôm nay trở đi) bị từ chối cần gửi lại.
+        Dictionary<DateOnly, int> MorningDays()
         {
-            if (scope.IsViewingOther || acc.Role == Role.Admin) return 0;
-            var tday = scope.Today; var n = 0;
-            if (tday.DayOfWeek != DayOfWeek.Sunday && d.OnLeave(tday, acc.Id) is null && d.PlanOf(tday, acc.Id) is null && string.CompareOrdinal(VnTime.NowHm, "07:00") >= 0) n++;
-            n += d.Plans.Count(p => p.EmployeeId == acc.Id && p.Date >= tday && Dept.PlanSt(p) == PlanState.Rejected);
-            return n;
+            var r = new Dictionary<DateOnly, int>();
+            if (scope.IsViewingOther || acc.Role == Role.Admin) return r;
+            var tday = scope.Today;
+            if (tday.DayOfWeek != DayOfWeek.Sunday && d.OnLeave(tday, acc.Id) is null && d.PlanOf(tday, acc.Id) is null && string.CompareOrdinal(VnTime.NowHm, "07:00") >= 0) r[tday] = 1;
+            foreach (var p in d.Plans.Where(p => p.EmployeeId == acc.Id && p.Date >= tday && Dept.PlanSt(p) == PlanState.Rejected)) r[p.Date] = r.GetValueOrDefault(p.Date) + 1;
+            return r;
         }
         // Báo cáo cuối ngày (nhân viên + Leader): mỗi việc phải xử lý như kiểm tra khi gửi — việc hỗ trợ chưa tích "Đã hỗ trợ", việc của mình / của dự án mình phụ trách chưa xong chưa có kế hoạch tiếp;
         // báo cáo chưa gửi (≥ 1) hoặc bị yêu cầu bổ sung. Ngày hôm nay chỉ tính từ 17:00; 7 ngày gần nhất.
-        int TodoEvening()
+        Dictionary<DateOnly, int> EveningDays()
         {
-            if (scope.IsViewingOther || acc.Role is not (Role.Staff or Role.Leader)) return 0;
-            var tday = scope.Today; var n = 0;
+            var r = new Dictionary<DateOnly, int>();
+            if (scope.IsViewingOther || acc.Role is not (Role.Staff or Role.Leader)) return r;
+            var tday = scope.Today;
             for (var day = tday.AddDays(-7); day <= tday; day = day.AddDays(1))
             {
                 if (day == tday && string.CompareOrdinal(VnTime.NowHm, "17:00") < 0) continue;
@@ -229,20 +235,25 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 if (own.Count == 0 && team.Count == 0) continue;
                 var miss = own.Count(t => d.IsSupportTask(t) ? !t.Supported : t.Status != TaskState.Done && t.CarriedToId is null)
                     + team.Count(t => t.Status != TaskState.Done && t.CarriedToId is null);
-                n += Math.Max(miss, 1);
+                r[day] = Math.Max(miss, 1);
             }
-            return n;
+            return r;
         }
+        // Làm thêm đã được duyệt, đã tới giờ làm nhưng chưa cập nhật kết quả (hoặc kết quả bị từ chối cần làm lại).
+        Dictionary<DateOnly, int> OtDays()
+        {
+            var r = new Dictionary<DateOnly, int>();
+            if (scope.IsViewingOther) return r;
+            var tday = scope.Today; var hm = VnTime.NowHm;
+            foreach (var x in d.Ots.Where(x => x.PersonId == acc.Id && x.Status == OtStatus.Approved && x.Completion is OtCompletion.None or OtCompletion.Rejected
+                && (x.Date < tday || (x.Date == tday && string.CompareOrdinal(hm, x.End) >= 0)))) r[x.Date] = r.GetValueOrDefault(x.Date) + 1;
+            return r;
+        }
+        int TodoMorning() => MorningDays().Values.Sum();
+        int TodoEvening() => EveningDays().Values.Sum();
+        int TodoOt() => OtDays().Values.Sum();
         // Việc được cấp quản lý giao mà mình chưa "Xác nhận đã nhận việc" (7 ngày gần nhất trở đi) — badge đỏ trên mục Kế hoạch tháng (yêu cầu 2026-10-23).
         int TodoAck() => scope.IsViewingOther ? 0 : d.Tasks.Count(t => t.EmployeeId == acc.Id && t.GivenById != null && t.AckAt == null && t.Date >= scope.Today.AddDays(-7));
-        // Làm thêm đã được duyệt, đã tới giờ làm nhưng chưa cập nhật kết quả (hoặc kết quả bị từ chối cần làm lại).
-        int TodoOt()
-        {
-            if (scope.IsViewingOther) return 0;
-            var tday = scope.Today; var hm = VnTime.NowHm;
-            return d.Ots.Count(x => x.PersonId == acc.Id && x.Status == OtStatus.Approved && x.Completion is OtCompletion.None or OtCompletion.Rejected
-                && (x.Date < tday || (x.Date == tday && string.CompareOrdinal(hm, x.End) >= 0)));
-        }
 
         // Số hạng mục MÌNH đã đề xuất / gửi mà chưa được duyệt (mọi ngày đã nạp) — badge CAM trên các mục chính để tự theo dõi (yêu cầu 2026-10-23).
         // Khác badge đỏ (việc người khác cần mình duyệt).

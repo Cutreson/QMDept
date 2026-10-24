@@ -8,6 +8,13 @@
     var ctl = Context.GetRouteValue("controller")?.ToString() ?? ""; var act = Context.GetRouteValue("action")?.ToString() ?? "";
     var onApprove = (ctl == "Planning" && act is "Proposals" or "Leave" or "Reports" or "Support") || (ctl == "Manager" && act == "Approvals") || (ctl == "Overtime" && Context.Request.Query["tab"] == "approve");
     var pend = onApprove ? D.PendingDays(Scope.Account.Role, Scope.Account.Id).Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList() : [];
+    // Việc MÌNH phải làm ở NGÀY khác (báo cáo đầu / cuối ngày, kết quả làm thêm) — chip đỏ để biết vào ngày nào (yêu cầu 2026-10-24)
+    var chrome = await Context.RequestServices.GetRequiredService<QMDept.Services.ChromeBuilder>().BuildAsync();
+    var otTab = Context.Request.Query["tab"].ToString();
+    var todoDays = ctl == "Staff" && act == "Evening" ? chrome?.EveningDays
+        : ctl == "Staff" && act == "Morning" ? chrome?.MorningDays
+        : ctl == "Overtime" && otTab != "approve" && otTab != "summary" ? chrome?.OtDays : null;
+    var todo = todoDays is null || Scope.IsViewingOther ? [] : todoDays.Where(x => x.Key != d).OrderBy(x => x.Key).Take(12).ToList();
 }
 <div class="daybar">
     <a class="icon-btn" href="@Ui.Here(req, ("d", Fmt.Key(d.AddDays(-1))), ("w", null), ("m", null), ("edit", null), ("open", null))" aria-label="Ngày trước">‹</a>
@@ -25,6 +32,16 @@
         @foreach (var (pd, n) in pend)
         {
             <a class="pday" href="@Ui.Here(req, ("d", Fmt.Key(pd)), ("w", null), ("m", null), ("edit", null), ("open", null))">@Fmt.Dmy(pd) <b class="badge">@n</b></a>
+        }
+    </div>
+}
+@if (todo.Count > 0)
+{
+    <div class="pdays">
+        <span class="note">Cần làm ngày khác:</span>
+        @foreach (var (td, n) in todo)
+        {
+            <a class="pday" href="@Ui.Here(req, ("d", Fmt.Key(td)), ("w", null), ("m", null), ("edit", null), ("open", null))">@Fmt.Dmy(td) <b class="badge">@n</b></a>
         }
     </div>
 }
