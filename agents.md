@@ -345,3 +345,4 @@ Không ghi mật khẩu tài khoản người dùng vào file được commit.
     chọn tháng `?om=yyyy-MM`, cơ sở `?ob=reg` (theo đăng ký) | `actual` (theo kết quả đã duyệt); nút "⬇ Xuất Excel" xuất đúng bảng đang xem (quy tắc 81). `OtMonthVm` không còn dùng.
     **Sửa lại 2026-10-24 (quy tắc 81)**: file Excel xuất ra **dựng từ chính file mẫu** `QMDept/Assets/ot-template.xlsx` (= `Tháng 9.1.xlsx`, copy khi build / publish — `QMDept.csproj`): giữ NGUYÊN font (Times New Roman), cỡ chữ, khung, cách ẩn dòng trống, logo, ghi chú, chữ ký, sheet "Danh sách CBCNV"; `OtXlsx.BuildFromTemplate` chỉ thay tiêu đề tháng và các dòng dữ liệu (dòng 5.., giữ kiểu ô của mẫu),
     **không thêm dòng tổng cộng** và không thêm nội dung nào khác mẫu. Muốn đổi bố cục → sửa file mẫu rồi build lại (không sửa code định dạng). Bảng trên màn hình cũng không có dòng tổng.
+    Ô **Suất cơm** của bảng Nhân sự (`_PeopleTable`) ghi rõ **Cơm n · Bún m** ngay dưới con số (yêu cầu 2026-10-24).
