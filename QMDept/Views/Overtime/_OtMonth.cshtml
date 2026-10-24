@@ -1,41 +1,66 @@
-@* Bảng tổng hợp làm thêm tại công ty của TOÀN BỘ nhân sự trong THÁNG (trừ Trưởng phòng / Quản trị) — yêu cầu 2026-10-24. Tháng chọn bằng ?om=yyyy-MM (mặc định tháng của ngày đang chọn). *@
+@* BẢNG ĐĂNG KÝ LÀM THÊM GIỜ THÁNG — đúng mẫu file Excel của phòng (Tháng 9.1.xlsx): mỗi dòng một lần làm thêm của người CÓ làm thêm tại công ty (trừ Trưởng phòng / Quản trị) — yêu cầu 2026-10-24.
+   Tháng ?om=yyyy-MM (mặc định tháng của ngày đang chọn); cơ sở ?ob=reg (đăng ký đã duyệt, giờ đăng ký) | actual (kết quả đã duyệt, giờ thực tế). Xuất Excel cùng dữ liệu: OtXlsx. *@
 @{
     var req = Context.Request;
     var m0 = Fmt.ParseKey(req.Query["om"].ToString() + "-01") ?? Fmt.MonthStart(Scope.Date);
-    var mv = await OtMonthVm.LoadAsync(Context.RequestServices.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext>>(), Context.RequestServices.GetRequiredService<QMDept.Services.DataCache>(), m0);
+    var ob = req.Query["ob"] == "actual" ? "actual" : "reg";
+    var rows = await OtXlsx.LoadAsync(Context.RequestServices.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext>>(), Context.RequestServices.GetRequiredService<QMDept.Services.DataCache>(), m0, ob);
     string Om(DateOnly x) => x.ToString("yyyy-MM");
+    string[] dow = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    string H(double v) => v > 0 ? Fmt.Num((decimal)v) : "";
     var no = 0;
+    var canExport = Scope.IsManager || Scope.Account is { Role: Role.Leader, HrDuty: true };
 }
 <section class="card sec" style="grid-column:1/-1">
-    <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Tổng hợp làm thêm tháng @mv.Month.ToString("MM/yyyy")</h2>
-        @if (Scope.IsManager || Scope.Account is { Role: Role.Leader, HrDuty: true })
+    <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2 style="margin:0">BẢNG ĐĂNG KÝ LÀM THÊM GIỜ THÁNG @m0.Month/@m0.Year</h2>
+        @if (canExport)
         {
-            <div class="row" style="gap:8px"><a class="btn btn-sm" href="/Overtime/ExportMonth?om=@Om(mv.Month)&basis=reg">⬇ Xuất Excel (theo đăng ký)</a><a class="btn btn-sm" href="/Overtime/ExportMonth?om=@Om(mv.Month)&basis=actual">⬇ Xuất Excel (theo kết quả đã duyệt)</a></div>
+            <a class="btn btn-sm" href="/Overtime/ExportMonth?om=@Om(m0)&basis=@ob">⬇ Xuất Excel</a>
         }
     </div>
+    <p class="note" style="margin:2px 0 8px">Bộ phận: Quản lý chất lượng và bảo dưỡng</p>
+    @Ui.Seg(new[]
+    {
+        (Ui.Here(req, ("ob", null), ("om", Om(m0))), "Theo đăng ký", ob == "reg", 0),
+        (Ui.Here(req, ("ob", "actual"), ("om", Om(m0))), "Theo kết quả đã duyệt", ob == "actual", 0),
+    })
     <div class="daybar" style="margin-bottom:10px">
-        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(mv.Month.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
-        <span class="date">Tháng @mv.Month.ToString("MM/yyyy")</span>
-        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(mv.Month.AddMonths(1))))" aria-label="Tháng sau">›</a>
+        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(m0.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
+        <span class="date">Tháng @m0.ToString("MM/yyyy")</span>
+        <a class="icon-btn" href="@Ui.Here(req, ("om", Om(m0.AddMonths(1))))" aria-label="Tháng sau">›</a>
     </div>
+    @if (rows.Count == 0)
+    {
+        <div class="empty">Tháng này chưa có ai làm thêm tại công ty@(ob == "actual" ? " (chưa có kết quả được duyệt)" : "").</div>
+    }
+    else
+    {
     <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Họ tên</th><th>Nhóm</th><th>Số ngày</th><th>Giờ đăng ký</th><th>Giờ được tính</th><th>Chờ duyệt đăng ký</th><th>Chờ duyệt kết quả</th></tr></thead>
+        <thead>
+            <tr><th rowspan="2">STT</th><th rowspan="2">ID</th><th rowspan="2">Họ và Tên</th><th colspan="2" rowspan="2">Ngày làm thêm</th><th rowspan="2">Nội dung công việc</th><th colspan="2">Thời gian làm thêm</th><th>150%</th><th>200%</th><th>210%</th><th>270%</th><th rowspan="2">Tổng giờ làm thêm</th><th rowspan="2">Ghi chú</th></tr>
+            <tr><th>Từ</th><th>Đến</th><th></th><th></th><th></th><th></th></tr>
+        </thead>
         <tbody>
-        @foreach (var r in mv.Rows)
+        @foreach (var x in rows)
         {
             no++;
             <tr>
                 <td class="n">@no</td>
-                <td style="white-space:nowrap"><b>@r.P.Name</b> @Ui.LevelPill(r.P)</td>
-                <td>@r.Group</td>
-                <td class="mono">@(r.Days > 0 ? r.Days.ToString() : "—")</td>
-                <td class="mono">@(r.RegHours > 0 ? Fmt.Num(r.RegHours) : "—")</td>
-                <td class="mono"><b>@(r.CountedHours > 0 ? Fmt.Num(r.CountedHours) : "—")</b></td>
-                <td>@if (r.PendingReg > 0) { <span class="pill p-warn">@r.PendingReg · @Fmt.Num(r.PendingHours) giờ</span> } else { <span class="note">—</span> }</td>
-                <td>@if (r.PendingResult > 0) { <span class="pill p-warn">@r.PendingResult · @Fmt.Num(r.PendingResultHours) giờ</span> } else { <span class="note">—</span> }</td>
+                <td class="mono">@x.Code</td>
+                <td style="white-space:nowrap"><b>@x.Name</b></td>
+                <td style="white-space:nowrap">@Fmt.Dmy(x.Date)</td>
+                <td>@dow[(int)x.Date.DayOfWeek]</td>
+                <td style="min-width:220px">@x.Content</td>
+                <td class="mono">@Fmt.Num((decimal)x.From)</td>
+                <td class="mono">@Fmt.Num((decimal)x.To)</td>
+                <td class="mono">@H(x.H150)</td><td class="mono">@H(x.H200)</td><td class="mono">@H(x.H210)</td><td class="mono">@H(x.H270)</td>
+                <td class="mono"><b>@Fmt.Num((decimal)x.Total)</b></td>
+                <td>@x.Note</td>
             </tr>
         }
-        <tr style="font-weight:700"><td></td><td colspan="2">Tổng cộng</td><td class="mono">@mv.Days</td><td class="mono">@Fmt.Num(mv.RegHours)</td><td class="mono">@Fmt.Num(mv.CountedHours)</td><td></td><td></td></tr>
+        <tr style="font-weight:700"><td></td><td></td><td colspan="5">Tổng cộng</td><td></td><td class="mono">@Fmt.Num((decimal)rows.Sum(x => x.H150))</td><td class="mono">@Fmt.Num((decimal)rows.Sum(x => x.H200))</td><td class="mono">@Fmt.Num((decimal)rows.Sum(x => x.H210))</td><td class="mono">@Fmt.Num((decimal)rows.Sum(x => x.H270))</td><td class="mono">@Fmt.Num((decimal)rows.Sum(x => x.Total))</td><td></td></tr>
         </tbody></table></div>
-    <p class="note" style="margin-bottom:0">Giờ đăng ký = các đăng ký đã duyệt; giờ được tính = kết quả làm thêm đã được duyệt. Không gồm Trưởng phòng.</p>
+    }
+    <p class="note" style="margin-bottom:0">Chỉ gồm người có làm thêm tại công ty (đăng ký đã duyệt), không gồm Trưởng phòng. Ngày thường: 150% đến 22:00, sau 22:00 là 210%; Chủ nhật / ngày nghỉ: 200% đến 22:00, sau 22:00 là 270%; đã trừ nghỉ trưa 12:00–13:00.</p>
 </section>
