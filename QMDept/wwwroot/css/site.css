@@ -528,3 +528,5 @@ body.readonly #app form[method="post" i]:not(.ro-ok) .choice{pointer-events:none
 .tabbar .badge.wait{background:var(--warn)}
 body.has-side .tabbar .bgs{position:static;margin-left:auto;left:auto;top:auto;gap:4px}
 body.has-side .tabbar .bgs .badge{min-width:20px;height:20px;font-size:11px;margin:0}
+.trow-st .st .st-note{display:block;font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.25}
+.trow-st .st .st-note.bad{color:var(--bad);font-weight:600}

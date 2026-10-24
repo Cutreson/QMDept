@@ -332,3 +332,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Thông báo + số đỏ luôn nêu ngày (chip 'Cần làm ngày khác', tiêu đề có ngày) — quy tắc 75.
 - (2026-10-24) Khung đỏ nội dung việc cần làm ở Báo cáo cuối ngày + ĐK làm thêm (quy tắc 76).
 - (2026-10-24) Mức độ ưu tiên khi giao việc: Bình thường / Ưu tiên / Khẩn cấp (quy tắc 77, migration TaskPriority). Đã test Leader giao + sửa, NV thấy nhãn + thông báo; dữ liệu thử đã xóa.
+- (2026-10-24) Số lần chuyển tiếp, ghi chú 'Chưa có kế hoạch chuyển', chuyển tiếp của Leader/TP luôn hiện (quy tắc 78); đã sửa dữ liệu CarryOk cho việc Leader.

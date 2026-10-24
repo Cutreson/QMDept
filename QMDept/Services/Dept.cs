@@ -230,6 +230,13 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public List<WorkTask> PlanTasks(DayPlan p) => p.PlanTasks.Select(x => Task(x.WorkTaskId)).OfType<WorkTask>()
         .OrderBy(t => t.Start, StringComparer.Ordinal).ThenBy(t => t.Id).ToList();
 
+    /// <summary>Số lần việc này đã bị chuyển tiếp (đếm chuỗi việc gốc qua CarriedFromId): việc gốc = 0, bản chuyển tiếp thứ nhất = 1, … — để biết việc bị delay mấy lần (yêu cầu 2026-10-24).</summary>
+    public int CarryTimes(WorkTask t)
+    {
+        var n = 0; var cur = t;
+        while (n < 30 && cur.CarriedFromId is int fid && Task(fid) is { } prev) { n++; cur = prev; }
+        return n;
+    }
     /// <summary>okCal(t): việc chỉ hiện trên lịch tháng khi đã được duyệt.
     /// Ngoài kế hoạch → Leader đã duyệt kế hoạch đầu ngày chứa việc đó; chuyển tiếp → Leader đã duyệt chuyển.</summary>
     public bool OkCal(WorkTask t)
@@ -239,7 +246,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
             var p = PlanOf(t.Date, t.EmployeeId);
             return p?.LeaderDecision == Decision.Ok && TaskIdsOf(p).Contains(t.Id);
         }
-        if (t.Source == TaskSource.CarryOver) return t.CarryOk;
+        if (t.Source == TaskSource.CarryOver) return t.CarryOk || P(t.EmployeeId) is { Role: Role.Leader or Role.Manager or Role.Admin };   // việc chuyển tiếp của Leader / TP tự duyệt
         return true;
     }
 

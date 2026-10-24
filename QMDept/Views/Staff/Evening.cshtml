@@ -135,7 +135,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                 }
                 @if (t.Source == TaskSource.CarryOver && t.FromDate is DateOnly fd)
                 {
-                    <div class="note" style="margin:-4px 0 8px">Chuyển tiếp từ @Fmt.Dm(fd)</div>
+                    <div class="note" style="margin:-4px 0 8px">Chuyển tiếp lần @Math.Max(D.CarryTimes(t), 1) · từ @Fmt.Dm(fd)</div>
                 }
                 <div class="btn-row">@if (!ro && sup)
                     {

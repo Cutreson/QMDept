@@ -49,6 +49,16 @@ public static class Blocks
             : lead is null ? "<div class=\"s\">Leader dự án: chưa chọn</div>" : $"<div class=\"s\">Leader dự án: <b>{E(lead.Name)}</b></div>";
         // Trạng thái RIÊNG từng việc ở cuối dòng + lý do chưa xong (yêu cầu 2026-10-22)
         var res = QMDept.ViewModels.StaffCalendar.TaskResult(t, d.Scope.Today);
+        // Số lần chuyển tiếp (delay) + giải thích trạng thái (yêu cầu 2026-10-24)
+        var times = t.Source == TaskSource.CarryOver ? d.CarryTimes(t) : 0;
+        if (t.Source == TaskSource.CarryOver) src = times >= 2 ? $"<b style=\"color:var(--bad)\">Chuyển tiếp lần {times}</b>" : $"Chuyển tiếp lần {Math.Max(times, 1)}";
+        var stNote = "";
+        if (t.CarriedToId is not null)
+        {
+            var nx = d.Task(t.CarriedToId);
+            stNote = $"Chuyển tiếp lần {d.CarryTimes(t) + 1}" + (nx is { CarryOk: false } && !(d.P(nx.EmployeeId) is { Role: Role.Leader or Role.Manager or Role.Admin }) ? " · chờ Leader duyệt" : "");
+        }
+        else if (t.Status != TaskState.Done && t.Date < d.Scope.Today) stNote = "Chưa có kế hoạch chuyển";
         var noteLine = t.Status != TaskState.Done && !string.IsNullOrWhiteSpace(t.Note) ? $"<div class=\"s\">Ghi chú: {E(t.Note)}</div>" : "";
         // Việc do cấp quản lý giao: hiện người giao + trạng thái xác nhận (yêu cầu 2026-10-21)
         var ackLine = t.GivenById is null ? ""
@@ -56,7 +66,7 @@ public static class Blocks
             : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
         return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}{PriorityTag(t.Priority)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")}</div>{leadLine}{ackLine}{noteLine}</div>"
-            + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span></span>{(actions is null ? "" : $"<span class=\"act\">{actions}</span>")}</div>");
+            + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span>{(stNote.Length > 0 ? $"<span class=\"st-note{(t.CarriedToId is null ? " bad" : "")}\">{E(stNote)}</span>" : "")}</span>{(actions is null ? "" : $"<span class=\"act\">{actions}</span>")}</div>");
     }
 
     /// <summary>extraRow(x)</summary>
