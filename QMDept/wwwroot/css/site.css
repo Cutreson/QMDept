@@ -532,8 +532,8 @@ body.has-side .tabbar .bgs .badge{min-width:20px;height:20px;font-size:11px;marg
 .trow-st .st .st-note.bad{color:var(--bad);font-weight:600}
 .toast.sticky{background:var(--bad);color:#fff;max-width:min(560px,92vw);white-space:normal;text-align:center;line-height:1.45;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 /* Nhập nhiều công việc trong một bảng (yêu cầu 2026-10-24) */
-.tlines .tl-row{display:grid;grid-template-columns:1fr 92px 92px 30px;gap:6px;margin-bottom:6px;align-items:center}
-.tlines .tl-row select{padding-left:8px;padding-right:20px}
+.tlines .tl-row{display:grid;grid-template-columns:1fr 98px 98px 30px;gap:6px;margin-bottom:6px;align-items:center}
+.tlines .tl-row select{padding:8px 18px 8px 7px;font-size:13px;min-width:0;background-position:right 5px center;background-size:10px}
 .tlines .tl-del{border:1px solid var(--line);background:var(--surface);border-radius:8px;height:34px;color:var(--bad);font-weight:700;cursor:pointer}
 .tlines .tl-row.bad select,.tlines .tl-row.bad .tl-t{border-color:var(--bad);background:var(--bad-soft)}
 .tlines .tl-warn{color:var(--bad);font-size:12px;font-weight:600;margin:0 0 6px}
