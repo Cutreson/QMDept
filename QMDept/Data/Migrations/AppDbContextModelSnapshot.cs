@@ -662,6 +662,13 @@ namespace QMDept.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("Declined")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("date");
 

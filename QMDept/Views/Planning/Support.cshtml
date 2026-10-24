@@ -25,14 +25,18 @@
 {
     var tasks = D.Chosen(x.Date, x.RequesterId);
     <section class="card apv">
-        <div class="hd">@Ui.Av(D.PName(x.RequesterId))<b>@D.PName(x.RequesterId)</b><span class="pill @(x.Confirmed ? "p-ok" : "p-warn")">@(x.Confirmed ? "Đã xác nhận" : "Chờ xác nhận")</span></div>
+        <div class="hd">@Ui.Av(D.PName(x.RequesterId))<b>@D.PName(x.RequesterId)</b><span class="pill @(x.Confirmed ? "p-ok" : x.Declined ? "p-bad" : "p-warn")">@(x.Confirmed ? "Đã xác nhận" : x.Declined ? "Đã từ chối" : "Chờ xác nhận")</span></div>
         <p class="note" style="margin:0 0 6px">Xin <b>@x.Qty</b> người hỗ trợ · @Fmt.DayLabel(x.Date)</p>
         @if (tasks.Count > 0)
         {
             <div class="note" style="margin:0 0 6px">@foreach (var t in tasks) { <div>@D.PjName(t.ProjectId) · @t.Title · <span class="mono">@t.Start–@t.End</span></div> }</div>
         }
         @if (!string.IsNullOrEmpty(x.Reason)) { <div class="cmt"><b>Lý do:</b> @x.Reason</div> }
-        @if (x.Confirmed)
+        @if (x.Declined)
+        {
+            <p class="note red" style="margin:8px 0 0"><b>Không đáp ứng được:</b> @x.DeclineReason · @x.ConfirmedBy @VnTime.Hm(x.ConfirmedAt)</p>
+        }
+        else if (x.Confirmed)
         {
             <p class="note" style="margin:8px 0 0">Nhân viên hỗ trợ: <b>@string.Join(", ", x.StaffList.Select(sid => D.PName(sid)))</b> · @x.ConfirmedBy @VnTime.Hm(x.ConfirmedAt)</p>
         }
@@ -49,6 +53,11 @@
                     }
                 </div>
                 <button class="btn btn-ok btn-block">✓ Xác nhận (chọn tối đa @x.Qty người)</button>
+            </form>
+            <form method="post" action="/Planning/DeclineSupport" asp-antiforgery="true" data-prompt="Không đáp ứng được yêu cầu hỗ trợ" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason" data-prompt-ok="Từ chối" style="margin-top:8px">
+                @Ui.ReturnField(req)
+                <input type="hidden" name="id" value="@x.Id">
+                <button class="btn btn-no btn-block">Không đáp ứng được</button>
             </form>
         }
     </section>

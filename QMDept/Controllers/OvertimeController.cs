@@ -91,6 +91,7 @@ public class OvertimeController : AppController
         try
         {
             var me = RequireOwnOt();
+            if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới đăng ký làm thêm được");
             var d = Date;
             var role = Scope.Role;
             var dt = OvertimeUi.ParseDay(dayType) ?? throw new BizException("Chọn loại ngày");
@@ -175,6 +176,7 @@ public class OvertimeController : AppController
         await Do(async () =>
         {
             var me = RequireOwnOt();
+            if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới đăng ký làm thêm được");
             var d = Date;
             var x = await Db.Overtimes.Include(o => o.Items).FirstOrDefaultAsync(o => o.Date == d && o.PersonId == me.Id);
             if (x is null) return;
@@ -301,6 +303,7 @@ public class OvertimeController : AppController
         await Do(async () =>
         {
             var me = RequireOwnOt();
+            if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới đăng ký làm thêm được");
             var d = Date;
             var x = await Db.Overtimes.FirstOrDefaultAsync(o => o.Date == d && o.PersonId == me.Id) ?? throw new BizException("Chưa có đăng ký làm thêm ngày này");
             if (x.Status != OtStatus.Approved) throw new BizException("Đăng ký chưa được duyệt, chưa cập nhật kết quả được");

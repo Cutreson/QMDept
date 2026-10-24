@@ -1,0 +1,37 @@
+@* Ai chưa báo cáo cuối ngày trong 7 ngày gần nhất (đã có kế hoạch, có việc, không nghỉ, chưa có báo cáo) — cho Leader (nhóm mình) và Trưởng phòng (cả phòng, gồm Leader) — yêu cầu 2026-10-24 *@
+@{
+    var acc = Scope.Account;
+    var today = Scope.Today;
+    var people = acc.Role == Role.Leader ? D.Team(acc.Id) : D.Active.Where(p => p.Role is Role.Staff or Role.Leader).OrderBy(p => p.Role == Role.Leader ? 0 : 1).ThenBy(p => p.Name, Fmt.ViCompare).ToList();
+    var miss = new List<(Person P, List<DateOnly> Days)>();
+    foreach (var p in people)
+    {
+        var days = new List<DateOnly>();
+        for (var day = today.AddDays(-7); day <= today; day = day.AddDays(1))
+        {
+            if (day.DayOfWeek == DayOfWeek.Sunday) continue;
+            if (day == today && string.CompareOrdinal(VnTime.NowHm, "17:00") < 0) continue;
+            var plan = D.PlanOf(day, p.Id);
+            if (plan is null || LeaveRules.IsLeave(plan.Status) || D.OnLeave(day, p.Id) is not null) continue;
+            if (D.ReportOf(day, p.Id) is not null) continue;
+            if (D.Chosen(day, p.Id).Count == 0 && D.TeamTasksOf(p.Id, day).Count == 0) continue;
+            days.Add(day);
+        }
+        if (days.Count > 0) miss.Add((p, days));
+    }
+}
+@if (miss.Count > 0)
+{
+    <section class="card sec" style="grid-column:1/-1">
+        <h2>Chưa báo cáo cuối ngày · 7 ngày gần nhất (@miss.Sum(m => m.Days.Count) lượt)</h2>
+        <div class="tbl-wrap"><table>
+            <thead><tr><th>Họ tên</th><th>Ngày chưa báo cáo</th></tr></thead>
+            <tbody>
+            @foreach (var (p, days) in miss)
+            {
+                <tr><td style="white-space:nowrap"><b>@p.Name</b> @Ui.LevelPill(p)</td>
+                    <td>@foreach (var dd in days) { <span class="pill p-bad" style="margin:0 4px 4px 0">@Fmt.Dmy(dd)</span> }</td></tr>
+            }
+            </tbody></table></div>
+    </section>
+}

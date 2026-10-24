@@ -61,6 +61,7 @@ public static class NotifyCatalog
         new(NotifyType.TaskAcked, "Xác nhận nhận việc", "Người bạn giao việc đã xác nhận nhận việc và bắt đầu triển khai", [Role.Leader, Role.Manager]),
         new(NotifyType.SupportRequested, "Yêu cầu hỗ trợ từ nhóm khác", "Nhóm khác xin nhân sự hỗ trợ — bạn xác nhận và chọn nhân viên", [Role.Leader]),
         new(NotifyType.SupportConfirmed, "Xác nhận nhân sự hỗ trợ", "Leader nhóm được xin đã xác nhận và chọn nhân viên hỗ trợ (người đề xuất, Leader của họ, nhân viên được chọn)", [Role.Staff, Role.Leader]),
+        new(NotifyType.SupportDeclined, "Từ chối hỗ trợ nhân sự", "Leader nhóm được xin không đáp ứng được yêu cầu hỗ trợ nhân sự của bạn (hoặc của nhân viên nhóm bạn)", [Role.Staff, Role.Leader]),
         new(NotifyType.LeaveMarked, "Báo nghỉ", "Leader ghi nghỉ / bỏ nghỉ cho bạn", [Role.Staff]),
         new(NotifyType.OvertimeDecided, "Kết quả làm thêm", "Đăng ký làm thêm của bạn được duyệt / từ chối / hoàn tác", [Role.Staff, Role.Leader]),
     ];
@@ -199,6 +200,15 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     public async Task SupportRequestedAsync(int groupLeader, int requester, DateOnly d, int qty) =>
         await SendAsync([groupLeader], NotifyType.SupportRequested, $"{await Name(requester)} xin {qty} người hỗ trợ ngày {Fmt.Dm(d)}", "Hãy xác nhận và chọn nhân viên sẽ hỗ trợ.", Q("/Planning/Support", d));
 
+
+    /// <summary>Leader nhóm được xin KHÔNG đáp ứng được → người đề xuất + Leader trực tiếp của họ (yêu cầu 2026-10-24).</summary>
+    public async Task SupportDeclinedAsync(int requester, int groupLeader, DateOnly d, string reason)
+    {
+        var title = $"{await Name(groupLeader)} từ chối hỗ trợ nhân sự ngày {Fmt.Dm(d)}";
+        var rl = (await People()).Find(p => p.Id == requester);
+        await SendAsync([requester], NotifyType.SupportDeclined, title, $"Lý do: {reason}", Q("/Staff/Morning", d));
+        if (rl?.LeaderId is int ld) await SendAsync([ld], NotifyType.SupportDeclined, $"{await Name(requester)}: {title}", $"Lý do: {reason}", $"/Staff/Month?as=mine&d={Fmt.Key(d)}");
+    }
     /// <summary>Leader nhóm được xin đã xác nhận + chọn nhân viên → người đề xuất, Leader trực tiếp của họ, nhân viên được chọn.</summary>
     public async Task SupportConfirmedAsync(int requester, int groupLeader, IReadOnlyList<int> staff, DateOnly d)
     {

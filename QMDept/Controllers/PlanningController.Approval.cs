@@ -196,6 +196,33 @@ public partial class PlanningController
         return n;
     }
 
+    /// <summary>
+    /// rejectCarry (yêu cầu 2026-10-24): Leader TỪ CHỐI đề xuất chuyển tiếp của nhân viên (bắt buộc lý do) → xóa việc chuyển tiếp, việc gốc trở lại "chưa có kế hoạch chuyển";
+    /// báo cáo cuối ngày của nhân viên (và của Leader dự án báo thay) được mở lại để cập nhật + gửi lại; thông báo kèm lý do.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> RejectCarry(int id, string? reason) => await Do(async () =>
+    {
+        var n = await LoadCarryTaskAsync(id);
+        if (n.CarryOk) throw new BizException("Đề xuất chuyển đã được duyệt — dùng Hoàn tác trước nếu cần từ chối");
+        var why = PlanningApproval.CleanNote(reason) ?? throw new BizException("Nhập lý do từ chối kế hoạch chuyển");
+        var src = n.CarriedFromId is int sid ? await Db.WorkTasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == sid) : null;
+        var day = n.FromDate ?? src?.Date ?? n.Date;
+        var title = n.Title;
+        await Flow.DeleteTaskAsync(n.Id);
+        // mở lại báo cáo cuối ngày của nhân viên + Leader dự án (người báo thay) để cập nhật và gửi lại
+        var lead = src is null ? null : await Db.Assignments.AsNoTracking().Where(a => a.ProjectId == src.ProjectId && a.Role == ProjectRole.Lead).Select(a => (int?)a.EmployeeId).FirstOrDefaultAsync();
+        var reopen = new[] { n.EmployeeId, lead ?? n.EmployeeId }.Distinct().ToList();
+        foreach (var pid in reopen)
+        {
+            var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == day && x.EmployeeId == pid);
+            if (r is null || r.LeaderDecision == Decision.No) continue;
+            r.LeaderDecision = Decision.No; r.LeaderBy = Scope.ActorName; r.LeaderAt = VnTime.UtcNow; r.LeaderNote = $"Từ chối kế hoạch chuyển “{title}”: {why}";
+        }
+        await Db.SaveChangesAsync();
+        foreach (var pid in reopen) await Notify.ReportDecidedAsync(pid, day, false, $"Từ chối kế hoạch chuyển “{title}”: {why}");
+    }, "Đã từ chối kế hoạch chuyển — báo cáo được mở lại để nhân viên cập nhật");
+
     /// <summary>carryOk: duyệt một đề xuất chuyển → việc vào lịch NV.</summary>
     [HttpPost]
     public async Task<IActionResult> ApproveCarry(int id) => await Do(async () =>

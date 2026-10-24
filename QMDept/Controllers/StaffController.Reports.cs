@@ -48,6 +48,7 @@ public partial class StaffController
         {
             RequireSelfStaff(leaderOk: true, managerOk: true);
             var me = Scope.Me!;
+            if (me.Role == Role.Staff && me.LeaderId is null) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới gửi được");
             var plan = await Db.DayPlans.Include(p => p.PlanTasks).FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == me.Id);
             if (!SelfApproves(me)) StaffReports.RequireEditable(plan);
             var status = StaffReports.ParseEnum<WorkStatus>(input.Status) ?? throw new BizException("Chọn trạng thái làm việc");
@@ -334,6 +335,7 @@ public partial class StaffController
     public async Task<IActionResult> ProposeExtra(ExtraInput input) => await Do(async () =>
     {
         RequireSelfStaff(leaderOk: true);
+        if (Scope.Me is { Role: Role.Staff, LeaderId: null }) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới gửi được");
         await EnsureReportOpenAsync();
         await StaffReports.RequireActiveProjectAsync(Db, input.ProjectId);
         StaffReports.Clip(input.Title, 300);
@@ -348,6 +350,7 @@ public partial class StaffController
     public async Task<IActionResult> SubmitReport(StaffEveningInput input) => await Do(async () =>
     {
         RequireSelfStaff(leaderOk: true);
+        if (Scope.Me is { Role: Role.Staff, LeaderId: null }) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới gửi được");
         await EnsureReportOpenAsync();
         var me = Scope.Me!.Id;
         // Dự án đã có Leader dự án (yêu cầu 2026-10-14): người hỗ trợ chỉ cần tích "đã hỗ trợ" mọi việc của mình; Leader dự án báo cáo kết quả

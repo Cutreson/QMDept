@@ -79,7 +79,8 @@
         @foreach (var sr in supReqs)
         {
             <div class="cmt" style="margin-top:8px"><b>Nhóm @D.PName(sr.GroupLeaderId) (@sr.Qty người):</b>
-                @if (sr.Confirmed) { <span class="pill p-ok">Đã xác nhận</span> <span>@string.Join(", ", sr.StaffList.Select(sid => D.PName(sid)))</span> }
+                @if (sr.Declined) { <span class="pill p-bad">Không đáp ứng được</span> <span class="red">@sr.DeclineReason</span> }
+                else if (sr.Confirmed) { <span class="pill p-ok">Đã xác nhận</span> <span>@string.Join(", ", sr.StaffList.Select(sid => D.PName(sid)))</span> }
                 else { <span class="pill p-warn">Chờ Leader nhóm xác nhận</span> }</div>
         }
     </section>

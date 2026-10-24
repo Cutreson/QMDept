@@ -108,6 +108,22 @@ else if (Model.Mode == "leader")
 {
     @* Trạng thái làm việc trong ngày của Leader (Leader tự gửi → Trưởng phòng duyệt) — yêu cầu 2026-10-16 *@
     <partial name="_DayBar" />
+    @* Báo cáo cuối ngày của Leader: Leader tự xác nhận khi gửi, Trưởng phòng chỉ XEM kết quả (yêu cầu 2026-10-24) *@
+    var leaderReports = D.Reports.Where(r => r.Date == Scope.Date && D.P(r.EmployeeId) is { Role: Role.Leader }).OrderBy(r => D.PName(r.EmployeeId), Fmt.ViCompare).ToList();
+    if (leaderReports.Count > 0 && Model.Filter != "rejected")
+    {
+        <section class="card sec"><h2>Báo cáo cuối ngày của Leader (@leaderReports.Count) <span class="note">chỉ xem</span></h2>
+            @foreach (var lr in leaderReports)
+            {
+                var lts = D.Chosen(lr.Date, lr.EmployeeId); var lc = Dept.Count(lts);
+                <div class="trow" style="grid-template-columns:1fr auto auto">
+                    <div><div class="t">@D.PName(lr.EmployeeId)</div><div class="s">gửi @VnTime.Hm(lr.SentAt)@(lr.Blocked ? " · Có vướng mắc" : "")@(string.IsNullOrEmpty(lr.Note) ? "" : " · " + lr.Note)</div></div>
+                    <span class="mono">@lc.Done/@lts.Count</span>
+                    <span class="pill p-ok">@(lr.LeaderBy ?? "Đã xác nhận")</span>
+                </div>
+            }
+        </section>
+    }
     if (Model.LeaderNotSentPlan.Count > 0 && Model.Filter != "approved" && Model.Filter != "rejected")
     {
         <p class="note">Chưa khai báo trạng thái làm việc: @string.Join(", ", Model.LeaderNotSentPlan.Select(p => p.Name))</p>

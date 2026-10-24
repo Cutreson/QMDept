@@ -25,10 +25,10 @@ public partial class PlanningController
         return View(new PlanningSupportVm
         {
             Filter = pending ? "pending" : "done",
-            Requests = today.Where(x => x.Confirmed != pending).OrderBy(x => x.CreatedAt).ToList(),
-            PendingTotal = today.Count(x => !x.Confirmed),
-            DoneTotal = today.Count(x => x.Confirmed),
-            OtherPending = all.Where(x => !x.Confirmed && x.Date != Date).GroupBy(x => x.Date).OrderBy(g => g.Key).Select(g => (g.Key, g.Count())).ToList(),
+            Requests = today.Where(x => (x.Confirmed || x.Declined) != pending).OrderBy(x => x.CreatedAt).ToList(),
+            PendingTotal = today.Count(x => !x.Confirmed && !x.Declined),
+            DoneTotal = today.Count(x => x.Confirmed || x.Declined),
+            OtherPending = all.Where(x => !x.Confirmed && !x.Declined && x.Date != Date).GroupBy(x => x.Date).OrderBy(g => g.Key).Select(g => (g.Key, g.Count())).ToList(),
         });
     }
 
@@ -40,7 +40,7 @@ public partial class PlanningController
         var me = Scope.Account;
         var x = await Db.SupportRequests.FirstOrDefaultAsync(r => r.Id == id) ?? throw new BizException("Không tìm thấy yêu cầu hỗ trợ — có thể kế hoạch đã được gửi lại, tải lại trang");
         if (x.GroupLeaderId != me.Id) throw new BizException("Yêu cầu này không gửi tới nhóm của bạn");
-        if (x.Confirmed) throw new BizException("Yêu cầu này đã được xác nhận");
+        if (x.Confirmed || x.Declined) throw new BizException("Yêu cầu này đã được xử lý");
         var picked = new List<int>();
         foreach (var raw in Request.Form["emp"]) if (int.TryParse(raw, out var e) && !picked.Contains(e)) picked.Add(e);
         if (picked.Count == 0) throw new BizException("Chọn ít nhất một nhân viên sẽ hỗ trợ");
@@ -51,5 +51,20 @@ public partial class PlanningController
         await Db.SaveChangesAsync();
         await Notify.SupportConfirmedAsync(x.RequesterId, me.Id, picked, x.Date);
         Toast("Đã xác nhận — thông tin đã gửi cho người đề xuất và nhân viên được chọn");
+    });
+
+    /// <summary>POST /Planning/DeclineSupport — Leader nhóm được xin không đáp ứng được (bắt buộc lý do) → báo người đề xuất + Leader trực tiếp của họ (yêu cầu 2026-10-24).</summary>
+    [HttpPost]
+    public async Task<IActionResult> DeclineSupport(int id, string? reason) => await Do(async () =>
+    {
+        RequireLead();
+        var x = await Db.SupportRequests.FirstOrDefaultAsync(r => r.Id == id) ?? throw new BizException("Không tìm thấy yêu cầu hỗ trợ — có thể kế hoạch đã được gửi lại, tải lại trang");
+        if (x.GroupLeaderId != Scope.Account.Id) throw new BizException("Yêu cầu này không gửi tới nhóm của bạn");
+        if (x.Confirmed || x.Declined) throw new BizException("Yêu cầu này đã được xử lý");
+        var why = PlanningApproval.CleanNote(reason) ?? throw new BizException("Nhập lý do không đáp ứng được");
+        x.Declined = true; x.DeclineReason = why.Length > 500 ? why[..500] : why; x.ConfirmedBy = Scope.ActorName; x.ConfirmedAt = VnTime.UtcNow;
+        await Db.SaveChangesAsync();
+        await Notify.SupportDeclinedAsync(x.RequesterId, Scope.Account.Id, x.Date, x.DeclineReason!);
+        Toast("Đã từ chối — thông tin đã gửi cho người đề xuất");
     });
 }

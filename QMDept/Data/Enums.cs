@@ -217,6 +217,7 @@ public enum NotifyType
     TaskAcked,           // người được giao việc đã xác nhận → người giao (Leader / Trưởng phòng)
     SupportRequested,    // kế hoạch xin người hỗ trợ từ nhóm khác đã được duyệt → Leader nhóm được xin (xác nhận + chọn nhân viên)
     SupportConfirmed,    // Leader nhóm được xin đã xác nhận + chọn nhân viên → người đề xuất, Leader của họ, nhân viên được chọn
+    SupportDeclined,     // Leader nhóm được xin KHÔNG đáp ứng được → người đề xuất + Leader trực tiếp của họ
 }
 
 /// <summary>

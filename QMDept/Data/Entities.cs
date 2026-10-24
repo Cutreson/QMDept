@@ -472,6 +472,9 @@ public class SupportRequest
     public int Qty { get; set; }
     [MaxLength(1500)] public string? Reason { get; set; }
     public bool Confirmed { get; set; }
+    /// <summary>Leader nhóm được xin KHÔNG đáp ứng được (kèm lý do) — yêu cầu 2026-10-24.</summary>
+    public bool Declined { get; set; }
+    [MaxLength(500)] public string? DeclineReason { get; set; }
     /// <summary>Id nhân viên được chọn hỗ trợ, phân cách dấu phẩy.</summary>
     [MaxLength(200)] public string StaffIds { get; set; } = "";
     [MaxLength(100)] public string? ConfirmedBy { get; set; }

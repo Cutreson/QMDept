@@ -124,7 +124,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             await using var idb = await dbf.CreateDbContextAsync();
             unread = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.InboxItems.Where(x => x.PersonId == acc.Id && x.ReadAt == null));
             if (acc.Role == Role.Leader)   // yêu cầu hỗ trợ từ nhóm khác chờ Leader nhóm này xác nhận (mọi ngày)
-                supportPending = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.SupportRequests.Where(x => x.GroupLeaderId == acc.Id && !x.Confirmed));
+                supportPending = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(idb.SupportRequests.Where(x => x.GroupLeaderId == acc.Id && !x.Confirmed && !x.Declined));
         }
         catch { /* chuông / số đỏ phụ — không làm hỏng trang */ }
         // Thanh tab: giao diện của người đang xem; ở lịch cả nhóm (AllStaff) → tab của chính tài khoản (kèm as=me để thoát).
@@ -182,6 +182,33 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 reminders.Add(($"Chưa báo cáo đầu ngày {Fmt.Dmy(tday)} — hãy báo cáo trạng thái làm việc hôm nay", "/Staff/Morning?as=" + own));
             else if (plan0 is not null && !LeaveRules.IsLeave(plan0.Status) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
                 reminders.Add(($"Chưa báo cáo cuối ngày {Fmt.Dmy(tday)} — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
+        }
+        // ---- Nhắc người duyệt / người giao việc (yêu cầu 2026-10-24) ----
+        if (!scope.IsViewingOther && acc.Role is Role.Leader or Role.Manager or Role.Admin)
+        {
+            var tdy = scope.Today;
+            // (a) việc CHỜ DUYỆT quá 2 ngày của chính mình; TP thấy thêm Leader nào đang tồn việc quá hạn (leo thang)
+            var mine = d.PendingDays(acc.Role, acc.Id).Where(x => x.Key <= tdy.AddDays(-2)).OrderBy(x => x.Key).ToList();
+            if (mine.Count > 0)
+                reminders.Add(($"Bạn còn {mine.Sum(x => x.Value)} việc chờ duyệt đã quá 2 ngày (từ {Fmt.Dmy(mine[0].Key)})",
+                    acc.Role == Role.Leader ? $"/Planning/Proposals?as=me&d={Fmt.Key(mine[0].Key)}" : $"/Manager/Approvals?d={Fmt.Key(mine[0].Key)}"));
+            if (acc.Role is Role.Manager or Role.Admin)
+                foreach (var l in d.Leaders())
+                {
+                    var od = d.PendingDays(Role.Leader, l.Id).Where(x => x.Key <= tdy.AddDays(-2)).OrderBy(x => x.Key).ToList();
+                    if (od.Count > 0) reminders.Add(($"Leader {l.Name} còn {od.Sum(x => x.Value)} việc chờ duyệt quá 2 ngày (từ {Fmt.Dmy(od[0].Key)})", $"/Staff/Month?as={l.Id}&d={Fmt.Key(od[0].Key)}"));
+                }
+            // (b) việc MÌNH đã giao mà người nhận chưa xác nhận quá 24 giờ
+            var cutoff = VnTime.UtcNow.AddHours(-24);
+            var unack = d.Tasks.Where(t => t.GivenById == acc.Id && t.AckAt is null && t.CreatedAt < cutoff && t.Date >= tdy.AddDays(-7)).ToList();
+            if (unack.Count > 0)
+                reminders.Add(($"{unack.Count} việc bạn giao chưa được xác nhận quá 24 giờ ({string.Join(", ", unack.Select(t => d.PName(t.EmployeeId)).Distinct().Take(4))})", $"/Staff/Month?as=all&d={Fmt.Key(unack.Min(t => t.Date))}"));
+            // (c) TP / Quản trị: nhân viên chưa xếp nhóm (không có Leader duyệt)
+            if (acc.Role is Role.Manager or Role.Admin)
+            {
+                var noTeam = d.Active.Where(p => p.Role == Role.Staff && p.LeaderId is null).ToList();
+                if (noTeam.Count > 0) reminders.Add(($"{noTeam.Count} nhân viên chưa xếp nhóm, không có Leader duyệt: {string.Join(", ", noTeam.Select(p => p.Name).Take(4))}", "/Planning/People?as=me"));
+            }
         }
 
         return _cache = new ChromeModel

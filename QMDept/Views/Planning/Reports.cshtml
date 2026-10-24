@@ -24,6 +24,7 @@
 })
 
 
+@if (f == "pending") { <partial name="_EodMissing" /> }
 @if (f == "pending" && Model.NotSent.Count > 0)
 {
     <p class="note">Chưa gửi báo cáo cuối ngày: @string.Join(", ", Model.NotSent.Select(p => p.Name))</p>
@@ -39,6 +40,7 @@
             @if (canWrite)
             {
                 <form method="post" action="/Planning/ApproveCarry" class="inline" asp-antiforgery="true">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-ok">Duyệt</button></form>
+<form method="post" action="/Planning/RejectCarry" class="inline" asp-antiforgery="true" data-prompt="Từ chối kế hoạch chuyển" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason" data-prompt-ok="Từ chối">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-no">Từ chối</button></form>
                 @if (PlanningReportsVm.CanEditCarry(n)) { <button type="button" class="btn btn-sm" data-sheet="carrySheet@(n.Id)">Sửa</button> }
             }
         </div>
@@ -98,6 +100,7 @@
                     {
                         @* Duyệt riêng đề xuất chuyển (vd. NV sửa chuyển tiếp sau khi báo cáo đã duyệt) — mục "Đề xuất chuyển kế hoạch" riêng đã bỏ *@
                         <form method="post" action="/Planning/ApproveCarry" class="inline" asp-antiforgery="true">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-ok">Duyệt</button></form>
+<form method="post" action="/Planning/RejectCarry" class="inline" asp-antiforgery="true" data-prompt="Từ chối kế hoạch chuyển" data-prompt-label="Lý do" data-prompt-required data-prompt-name="reason" data-prompt-ok="Từ chối">@Ui.ReturnField(req)<input type="hidden" name="id" value="@n.Id"><button class="btn btn-sm btn-no">Từ chối</button></form>
                     }
                     @if (canWrite && PlanningReportsVm.CanEditCarry(n))
                     {
