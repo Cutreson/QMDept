@@ -43,6 +43,21 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
 {
     <p class="note">Trạng thái kế hoạch: @Ui.Pill(Dept.PlanSt(plan))</p>
 }
+@{
+    // Việc phải làm ở ngày này, ghi rõ để người dùng biết cần xử lý gì (yêu cầu 2026-10-24): hiện khi báo cáo chưa gửi / bị yêu cầu bổ sung, ngày đã qua hoặc từ 17:00.
+    var needReport = !Scope.IsViewingOther && (rep is null || es0 == EodState.Rejected) && (list.Count > 0 || teamTasks.Count > 0)
+        && (plan is not null && !LeaveRules.IsLeave(plan.Status)) && (d < Scope.Today || string.CompareOrdinal(VnTime.NowHm, "17:00") >= 0);
+}
+@if (needReport)
+{
+    <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@Fmt.DayLabel(d): cần làm để gửi báo cáo cuối ngày</b>
+        <div class="note" style="color:var(--bad)">
+            @if (supCnt > 0) { <div>• @supCnt việc hỗ trợ chưa tích “Đã hỗ trợ”</div> }
+            @if (openCnt > 0) { <div>• @openCnt việc chưa hoàn thành: bấm Cập nhật, ghi lý do và chọn ngày chuyển sang (sau hôm nay)</div> }
+            @if (teamOpen > 0) { <div>• @teamOpen việc của dự án bạn phụ trách chưa báo hoàn thành hay kế hoạch tiếp theo</div> }
+            <div>• Bấm <b>Gửi báo cáo cuối ngày</b> ở cuối trang (<a class="link" href="#eodForm">đi tới nút gửi</a>)</div>
+        </div></div></div>
+}
 @if (rep is not null)
 {
     var es = Dept.EodSt(rep);

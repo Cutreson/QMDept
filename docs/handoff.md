@@ -330,3 +330,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-23) Báo cáo cuối ngày: việc chưa xong bắt buộc lý do + chuyển sang sau ngày gửi, kiểm lại lúc gửi (quy tắc 73). Đã test NV 13 trên DB thật + dọn dữ liệu thử.
 - (2026-10-24) Thêm dự án 'Công việc chung' (id 164, quy tắc 74); đã test NV + Leader + TP, dữ liệu thử đã xóa.
 - (2026-10-24) Thông báo + số đỏ luôn nêu ngày (chip 'Cần làm ngày khác', tiêu đề có ngày) — quy tắc 75.
+- (2026-10-24) Khung đỏ nội dung việc cần làm ở Báo cáo cuối ngày + ĐK làm thêm (quy tắc 76).

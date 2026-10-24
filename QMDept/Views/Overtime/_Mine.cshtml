@@ -21,6 +21,10 @@ else if (x is not null && (!Model.Edit || !self))
         @if (x.Status == OtStatus.Approved)
         {
             @* Kết quả làm thêm: đăng ký đã duyệt → làm thêm → cập nhật giờ thực tế + công việc → người duyệt duyệt kết quả (yêu cầu 2026-10-19) *@
+            @if (self && role != Role.Manager && d <= Scope.Today && x.Completion is OtCompletion.None or OtCompletion.Rejected)
+            {
+                <div class="notice" style="--nbg:var(--bad-soft);--nfg:var(--bad)"><span class="ic">!</span><div><b>@Fmt.DayLabel(d): cần cập nhật kết quả làm thêm</b><div class="note" style="color:var(--bad)">@(x.Completion == OtCompletion.Rejected ? "Kết quả bị từ chối — cập nhật lại công việc đã triển khai và giờ thực tế bên dưới." : "Nhập công việc đã triển khai và giờ thực tế bên dưới rồi bấm Gửi cập nhật.")</div></div></div>
+            }
             <div class="h2" style="margin-top:14px">Kết quả làm thêm</div>
             @if (x.Completion != OtCompletion.None)
             {
