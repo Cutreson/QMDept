@@ -60,6 +60,8 @@ public sealed class ChromeModel
     public List<DoneReviewItem> DoneReviews { get; init; } = [];
     /// <summary>Đề xuất lại nội dung / thời gian của việc MÌNH giao — chờ mình duyệt (yêu cầu 2026-10-24).</summary>
     public List<ChangeReviewItem> ChangeReviews { get; init; } = [];
+    /// <summary>Việc của CHÍNH Trưởng phòng / Quản trị đã qua (hoặc hôm nay sau 17:00) mà chưa cập nhật Hoàn thành / chuyển tiếp — nhắc đỏ ở đầu mọi trang (yêu cầu 2026-10-24).</summary>
+    public List<OwnTodoItem> OwnTodo { get; init; } = [];
 }
 
 /// <summary>Dựng phần khung (thanh trên + combobox xem màn hình + thanh tab + badge) cho _Layout (renderChrome của artifact).</summary>
@@ -155,6 +157,12 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             .OrderBy(t => t.Date).ThenBy(t => t.Start)
             .Select(t => new ChangeReviewItem(t.Id, d.PName(t.EmployeeId), d.PjName(t.ProjectId), t.Date, t.Title, t.Start, t.End,
                 t.ReDate ?? t.Date, t.ReTitle ?? t.Title, t.ReStart ?? t.Start, t.ReEnd ?? t.End, t.ReReason ?? "", t.Priority)).ToList();
+        // Việc của CHÍNH TP / Quản trị chưa cập nhật (không phải báo cáo — chỉ để tự quản lý): đã qua ngày, hoặc hôm nay sau 17:00, chưa Hoàn thành và chưa chuyển tiếp (yêu cầu 2026-10-24).
+        var ownTodo = scope.IsViewingOther || acc.Role is not (Role.Manager or Role.Admin) ? new List<OwnTodoItem>() : d.Tasks
+            .Where(t => t.EmployeeId == acc.Id && !t.NeedsGiverReview && t.Status != TaskState.Done && t.CarriedToId == null
+                && (t.Date < scope.Today || (t.Date == scope.Today && string.CompareOrdinal(VnTime.NowHm, "17:00") >= 0)))
+            .OrderBy(t => t.Date).ThenBy(t => t.Start)
+            .Select(t => new OwnTodoItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId))).ToList();
 
         var onMgrOvertime = onOvertime && !otApprove;   // ĐK làm thêm của chính TP thuộc tab Trạng thái làm việc
         IEnumerable<TabDef> defs = TabDefs.GetValueOrDefault(tabRole) ?? [];
@@ -252,7 +260,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             TeamActive = scope.AllStaff,
             TeamLabel = acc.Role is Role.Manager or Role.Admin ? "Lịch của phòng" : "Lịch nhóm",
             MineActive = !scope.AllStaff && (!scope.OwnCalendar || onStatus) && !scope.IsViewingOther,
-            Unread = unread, SupportPending = supportPending, Reminders = reminders, AckTasks = ackItems, DoneReviews = doneReviews, ChangeReviews = changeReviews, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
+            Unread = unread, SupportPending = supportPending, Reminders = reminders, AckTasks = ackItems, DoneReviews = doneReviews, ChangeReviews = changeReviews, OwnTodo = ownTodo, TodoMorning = TodoMorning(), TodoEvening = TodoEvening(), TodoOt = TodoOt(), MorningDays = MorningDays(), EveningDays = EveningDays(), OtDays = OtDays(),
             NotifyEnabled = (await cache.GetBaseAsync()).Notify.TryGetValue(acc.Id, out var ns) ? ns.Enabled : true,
         };
 
@@ -341,7 +349,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (id == "overtime" && acc.Role is Role.Manager or Role.Admin) return d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);   // Leader duyệt làm thêm ở Kế hoạch đề xuất
             // Việc mình phải làm mà chưa làm (yêu cầu 2026-10-23)
             if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); if (id == "month") return TodoAck(); }
-            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "status") return TodoMorning() + TodoEvening() + TodoOt();
+            if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "status") return TodoMorning() + TodoEvening() + TodoOt() + ownTodo.Count;
             if (acc.Role is Role.Leader or Role.Manager or Role.Admin && id == "overview") return TodoAck() + doneReviews.Count + changeReviews.Count;
             return 0;
         }
@@ -357,3 +365,6 @@ public sealed record DoneReviewItem(int Id, DateOnly Date, string Title, string 
 /// <summary>Một đề xuất lại (nội dung / thời gian) của người nhận việc đang chờ người giao duyệt.</summary>
 public sealed record ChangeReviewItem(int Id, string Employee, string Project, DateOnly Date, string Title, string Start, string End,
     DateOnly NewDate, string NewTitle, string NewStart, string NewEnd, string Reason, TaskPriority Priority);
+
+/// <summary>Một việc của chính Trưởng phòng / Quản trị chưa cập nhật kết quả.</summary>
+public sealed record OwnTodoItem(int Id, DateOnly Date, string Title, string Start, string End, string Project);

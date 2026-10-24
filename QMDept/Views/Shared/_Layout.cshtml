@@ -114,6 +114,22 @@
         {
             <div class="notice remind" style="--nbg:var(--warn-soft);--nfg:var(--warn);margin-top:12px"><span class="ic">!</span><div><b>@rtext</b> <a class="link" href="@rhref">Xử lý ngay ›</a></div></div>
         }
+        @* Việc của CHÍNH Trưởng phòng / Quản trị chưa cập nhật: nhắc đỏ + liên kết tới đúng ngày để bấm "Cập nhật" (yêu cầu 2026-10-24) *@
+        @if (chrome.OwnTodo.Count > 0)
+        {
+            <div class="notice ackbox" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:12px"><span class="ic">!</span><div>
+                <b>Bạn còn @chrome.OwnTodo.Count việc của mình chưa cập nhật kết quả (Hoàn thành / chuyển sang ngày khác)</b>
+                @foreach (var o in chrome.OwnTodo.Take(5))
+                {
+                    <div class="ack-row">
+                        <div class="ack-main"><div class="ack-t">@o.Title</div>
+                            <div class="note">@o.Project · @Fmt.Dmy(o.Date) @o.Start–@o.End</div></div>
+                        <div class="ack-act"><a class="btn btn-sm btn-primary" href="/Staff/Morning?as=mine&d=@Fmt.Key(o.Date)">Cập nhật ngày @Fmt.Dm(o.Date)</a></div>
+                    </div>
+                }
+                @if (chrome.OwnTodo.Count > 5) { <div class="note" style="margin-top:6px">… và @(chrome.OwnTodo.Count - 5) việc khác — cập nhật các việc trên để xem tiếp</div> }
+            </div></div>
+        }
         @* Việc MÌNH đã giao mà người nhận báo hoàn thành + gửi báo cáo: duyệt mới tính là xong (yêu cầu 2026-10-24) *@
         @if (chrome.DoneReviews.Count > 0)
         {

@@ -60,7 +60,7 @@ public static class Blocks
             var nx = d.Task(t.CarriedToId);
             stNote = $"Chuyển tiếp lần {d.CarryTimes(t) + 1}" + (nx is { CarryOk: false } && !(d.P(nx.EmployeeId) is { Role: Role.Leader or Role.Manager or Role.Admin }) ? $" · chờ {d.ApproverName(d.P(nx.EmployeeId))} duyệt" : "");
         }
-        else if (t.Status != TaskState.Done && t.Date < d.Scope.Today) stNote = "Chưa có kế hoạch chuyển";
+        else if (t.Status != TaskState.Done && t.Date < d.Scope.Today) stNote = d.P(t.EmployeeId) is { Role: Role.Manager or Role.Admin } ? "Chưa cập nhật kết quả" : "Chưa có kế hoạch chuyển";
         var noteLine = t.Status != TaskState.Done && !string.IsNullOrWhiteSpace(t.Note) ? $"<div class=\"s\">Ghi chú: {E(t.Note)}</div>" : "";
         // Việc do cấp quản lý giao: hiện người giao + trạng thái xác nhận (yêu cầu 2026-10-21)
         var ackLine = t.GivenById is null ? ""
