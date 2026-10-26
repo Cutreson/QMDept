@@ -4,6 +4,8 @@
     var req = Context.Request;
     var d = Scope.Date;
     var rows = Model;
+    // Một dòng kết quả việc (cột "Kết quả"): tên việc + nhãn kết quả + lý do / kết quả / chuyển sang ngày
+    Func<WorkTask, object> RenderResult = @<div style="margin-bottom:4px"><b>@item.Title</b> <span class="pill @StaffCalendar.TaskResult(item, Scope.Today).Css">@StaffCalendar.TaskResult(item, Scope.Today).Text</span>@if (!string.IsNullOrWhiteSpace(item.Note)) {<div class="note">@(item.Status == TaskState.Done ? "Kết quả" : "Lý do"): @item.Note</div>}@if (item.RePending == false && item.DoneRejectNote is not null) {<div class="note red">Chưa duyệt: @item.DoneRejectNote</div>}</div>;
 // info: 0 = đã duyệt, 1 = chờ duyệt, 2 = bị từ chối, 3 = chưa báo, 4 = Leader ghi nghỉ (không qua duyệt), 9 = không áp dụng (TP)
 (int Info, DayPlan? Plan, Leave? Lv) Get(Person p)
 {
@@ -40,7 +42,7 @@
 <p class="note" style="margin:-4px 0 10px;grid-column:1/-1">Làm việc: tại công ty @nOffice · công tác @nTrip — Suất cơm: cơm @nRice · bún @nNoodle</p>
 <section class="card sec" style="grid-column:1/-1"><h2>Bảng nhân sự · @Fmt.DayLabel(d)</h2>
     <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Họ tên</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th></tr></thead>
+        <thead><tr><th>#</th><th>Họ tên</th><th>Trạng thái làm việc</th><th>Địa chỉ công tác</th><th>Nội dung dự án</th><th>Báo cơm</th><th>Thông tin</th><th>Kết quả</th></tr></thead>
         <tbody>
         @{ var no = 0; }
         @foreach (var (p, group, g) in rows.Select(r => (r.P, r.Group, G: Get(r.P))))
@@ -81,6 +83,28 @@
                         case 4: <span class="pill p-info">Leader ghi nghỉ</span> break;
                         default: <span class="note">—</span> break;
                     }</td>
+                @* Kết quả (yêu cầu 2026-10-26): sau khi nhân sự báo cáo cuối ngày và báo cáo được duyệt (Leader tự xác nhận) → kết quả từng việc + lý do / chuyển sang ngày nào; TP không có báo cáo nên hiện kết quả việc đã tự cập nhật *@
+                <td>@{
+                    var rep = D.ReportOf(d, p.Id);
+                    var isMgr = p.Role is Role.Manager or Role.Admin;
+                    var repOk = rep is not null && rep.LeaderDecision == Decision.Ok;
+                    var rts = !ok || onLeave ? new List<WorkTask>() : ts.Where(t => D.IsSupportTask(t) ? t.Supported : true).ToList();
+                }
+                    @if (isMgr && ok && !onLeave)
+                    {
+                        var upd = rts.Where(t => t.Status != TaskState.NotStarted || t.CarriedToId is not null).ToList();
+                        if (upd.Count == 0) { <span class="note">—</span> }
+                        foreach (var t in upd) { @RenderResult(t) }
+                    }
+                    else if (repOk && !onLeave)
+                    {
+                        foreach (var t in ts) { @RenderResult(t) }
+                        if (rep!.Blocked || !string.IsNullOrWhiteSpace(rep.Note)) { <div class="note"><b class="@(rep.Blocked ? "red" : "")">@(rep.Blocked ? "Có vướng mắc" : "Ghi chú")</b>@(string.IsNullOrWhiteSpace(rep.Note) ? "" : ": " + rep.Note)</div> }
+                        <div class="note mono">@Ui.Timeline("Gửi", rep.SentAt, rep.LeaderBy, "duyệt", rep.LeaderAt)</div>
+                    }
+                    else if (rep is not null && !onLeave) { <span class="pill p-warn">@(rep.LeaderDecision == Decision.No ? "Báo cáo bị yêu cầu bổ sung" : "Báo cáo chờ duyệt")</span><div class="note mono">@Ui.Timeline("Gửi", rep.SentAt)</div> }
+                    else if (ok && !onLeave && !isMgr && d <= Scope.Today && ts.Count > 0) { <span class="pill p-idle">Chưa báo cáo</span> }
+                    else { <span class="note">—</span> }</td>
             </tr>
         }
         </tbody></table></div>

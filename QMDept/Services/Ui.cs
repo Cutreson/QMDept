@@ -173,7 +173,7 @@ public static class Ui
     {
         var s = sentAt is null ? "" : $"{sentLabel} {VnTime.Stamp(sentAt)}";
         if (decision is null || decidedAt is null) return s;
-        var d = $"{(string.IsNullOrWhiteSpace(by) ? "" : by + " ")}đã {decision} {VnTime.Stamp(decidedAt)}";
+        var d = by == "Tự xác nhận" ? $"Tự xác nhận {VnTime.Stamp(decidedAt)}" : $"{(string.IsNullOrWhiteSpace(by) ? "" : by + " ")}đã {decision} {VnTime.Stamp(decidedAt)}";
         return s.Length > 0 ? s + " · " + d : d;
     }
 
