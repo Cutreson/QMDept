@@ -146,6 +146,7 @@ public class WorkTask
     public DateTime? ReAt { get; set; }
     [MaxLength(500)] public string? ReRejectNote { get; set; }       // lý do người giao không đồng ý (hiện cho người nhận)
     [MaxLength(100)] public string? ReReviewBy { get; set; }
+    public DateTime? ReReviewAt { get; set; }                        // giờ người giao đồng ý / không đồng ý đề xuất lại
     /// <summary>Việc được giao: người nhận có phải gửi kết quả cho NGƯỜI GIAO duyệt mới tính là xong không (giao cho người khác, không tự giao).</summary>
     [NotMapped] public bool NeedsGiverReview => GivenById is int g && g != EmployeeId;
     /// <summary>Đã tính là xong: Hoàn thành VÀ (không cần người giao duyệt, hoặc người giao đã duyệt).</summary>

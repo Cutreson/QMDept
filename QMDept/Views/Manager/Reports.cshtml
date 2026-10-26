@@ -26,7 +26,7 @@ else
         var r = it.Report;
         var s = it.Summary;
         <section class="card sec">
-            <h2><span class="grow">@Fmt.DayLabel(r.Date)</span><span class="note mono" style="text-transform:none">@ManagerText.Sender(r) · @VnTime.Hm(r.SentAt)</span></h2>
+            <h2><span class="grow">@Fmt.DayLabel(r.Date)</span><span class="note mono" style="text-transform:none">@ManagerText.Sender(r) · @VnTime.Stamp(r.SentAt)</span></h2>
             <div class="kpis k4">
                 <div class="kpi k-info"><b>@it.Val("working", s.Working)/@it.Val("staff", s.Staff)</b><span>Nhân sự</span></div>
                 <div class="kpi k-ok"><b>@it.Val("done", s.Done)</b><span>Hoàn thành</span></div>

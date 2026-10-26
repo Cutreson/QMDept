@@ -68,14 +68,14 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
     }
     else if (es == EodState.Approved)
     {
-        <div class="notice"><span class="ic">✓</span><div><b>@by đã duyệt báo cáo lúc @VnTime.Hm(rep.LeaderAt)</b>@if (!string.IsNullOrEmpty(rep.LeaderNote))
+        <div class="notice"><span class="ic">✓</span><div><b>@by đã duyệt báo cáo lúc @VnTime.Stamp(rep.LeaderAt)</b>@if (!string.IsNullOrEmpty(rep.LeaderNote))
             {
                 <div class="note">Góp ý: @rep.LeaderNote</div>
             }</div></div>
     }
     else
     {
-        <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Hm(rep.SentAt) · chờ @(me.Role == Role.Leader ? "Trưởng phòng" : "Leader") duyệt</b></div></div>
+        <div class="notice" style="--nbg:var(--warn-soft);--nfg:var(--warn)"><span class="ic">✓</span><div><b>Đã gửi báo cáo lúc @VnTime.Stamp(rep.SentAt) · chờ @(me.Role == Role.Leader ? "Trưởng phòng" : "Leader") duyệt</b></div></div>
         @if (!Scope.IsReadOnly)
         {
             <form method="post" action="@Ui.To(req, "/Staff/WithdrawReport", ("d", dkey))" asp-antiforgery="true" class="inline" data-confirm="Rút lại báo cáo để sửa? Leader sẽ không còn thấy báo cáo này cho đến khi bạn gửi lại." data-confirm-label="Rút lại">
@@ -147,7 +147,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                     <div><span class="muted">@(st == TaskState.Done ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành"):</span> @(string.IsNullOrEmpty(t.Note) ? "—" : t.Note)</div>
                     @if (t.UpdatedAt is DateTime ua)
                     {
-                        <div class="note">Cập nhật lúc @VnTime.Hm(ua)</div>
+                        <div class="note">Cập nhật lúc @VnTime.Stamp(ua)</div>
                     }
                 </div>
                 <div class="btn-row">@if (!ro && sup)

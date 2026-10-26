@@ -163,7 +163,7 @@
     foreach (var r in Model.Reports)
     {
         <div class="notice" style="--nbg:var(--mgr-soft);--nfg:var(--mgr)"><span class="ic">✉</span><div>
-            <b>Leader @ManagerText.LeaderName(r) đã gửi báo cáo ngày lúc @VnTime.Hm(r.SentAt)</b>
+            <b>Leader @ManagerText.LeaderName(r) đã gửi báo cáo ngày lúc @VnTime.Stamp(r.SentAt)</b>
             @if (ManagerText.OtherSender(r) is string by) { <div class="note">Người gửi: @by</div> }
             @if (!string.IsNullOrEmpty(r.Note)) { <div class="note">@r.Note</div> }
             <a class="link" href="@Ui.To(req, "/Manager/Reports", ("tab", "day"))">Xem báo cáo ›</a>

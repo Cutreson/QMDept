@@ -60,7 +60,7 @@ else
         @Ui.ReturnField(req)
         @if (sent is not null)
         {
-            <div class="notice"><span class="ic">✓</span><div><b>Đã gửi lúc @VnTime.Hm(sent.SentAt)</b></div></div>
+            <div class="notice"><span class="ic">✓</span><div><b>Đã gửi lúc @VnTime.Stamp(sent.SentAt)</b></div></div>
         }
         <label class="f" for="lrN" style="margin-top:0">Ghi chú cho TP (nếu có)</label><textarea class="in" id="lrN" name="note" maxlength="@LeaderUi.NoteMax">@(sent?.Note)</textarea>
         @if (canWrite)

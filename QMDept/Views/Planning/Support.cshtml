@@ -26,7 +26,7 @@
     var tasks = D.Chosen(x.Date, x.RequesterId);
     <section class="card apv">
         <div class="hd">@Ui.Av(D.PName(x.RequesterId))<b>@D.PName(x.RequesterId)</b><span class="pill @(x.Confirmed ? "p-ok" : x.Declined ? "p-bad" : "p-warn")">@(x.Confirmed ? "Đã xác nhận" : x.Declined ? "Đã từ chối" : "Chờ xác nhận")</span></div>
-        <p class="note" style="margin:0 0 6px">Xin <b>@x.Qty</b> người hỗ trợ · @Fmt.DayLabel(x.Date)</p>
+        <p class="note" style="margin:0 0 6px">Xin <b>@x.Qty</b> người hỗ trợ · @Fmt.DayLabel(x.Date) · <span class="mono">Yêu cầu @VnTime.Stamp(x.CreatedAt)</span></p>
         @if (tasks.Count > 0)
         {
             <div class="note" style="margin:0 0 6px">@foreach (var t in tasks) { <div>@D.PjName(t.ProjectId) · @t.Title · <span class="mono">@t.Start–@t.End</span></div> }</div>
@@ -34,11 +34,11 @@
         @if (!string.IsNullOrEmpty(x.Reason)) { <div class="cmt"><b>Lý do:</b> @x.Reason</div> }
         @if (x.Declined)
         {
-            <p class="note red" style="margin:8px 0 0"><b>Không đáp ứng được:</b> @x.DeclineReason · @x.ConfirmedBy @VnTime.Hm(x.ConfirmedAt)</p>
+            <p class="note red" style="margin:8px 0 0"><b>Không đáp ứng được:</b> @x.DeclineReason · @x.ConfirmedBy @VnTime.Stamp(x.ConfirmedAt)</p>
         }
         else if (x.Confirmed)
         {
-            <p class="note" style="margin:8px 0 0">Nhân viên hỗ trợ: <b>@string.Join(", ", x.StaffList.Select(sid => D.PName(sid)))</b> · @x.ConfirmedBy @VnTime.Hm(x.ConfirmedAt)</p>
+            <p class="note" style="margin:8px 0 0">Nhân viên hỗ trợ: <b>@string.Join(", ", x.StaffList.Select(sid => D.PName(sid)))</b> · @x.ConfirmedBy @VnTime.Stamp(x.ConfirmedAt)</p>
         }
         else
         {

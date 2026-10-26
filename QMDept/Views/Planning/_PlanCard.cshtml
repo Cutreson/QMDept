@@ -8,7 +8,7 @@
     var name = D.PName(p.EmployeeId);
 }
 <section class="card apv">
-    <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">gửi @VnTime.Hm(p.SentAt)</span></b>@Ui.Pill(st)</div>
+    <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">gửi @VnTime.Stamp(p.SentAt)</span></b>@Ui.Pill(st)</div>
     @Blocks.PlanMeta(p)
     @D.PlanTable(p)
     @if (!string.IsNullOrEmpty(p.Note))
@@ -52,7 +52,7 @@
     else
     {
         <div class="row" style="justify-content:space-between">
-            <span class="note">Leader @(p.LeaderDecision == Decision.Ok ? "đã duyệt" : "đã từ chối") lúc @VnTime.Hm(p.LeaderAt)</span>
+            <span class="note">@(string.IsNullOrEmpty(p.LeaderBy) ? "Leader" : p.LeaderBy) @(p.LeaderDecision == Decision.Ok ? "đã duyệt" : "đã từ chối") lúc @VnTime.Stamp(p.LeaderAt)</span>
             @if (canWrite)
             {
                 <div>

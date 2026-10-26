@@ -39,7 +39,15 @@
             <div>@x.Content <span class="note">· @(x.ProjectId is not null ? D.PjName(x.ProjectId) : "Việc chung / nội bộ")</span></div>
         }
     </dd>
-    <dt>Đăng ký</dt><dd>@Ui.Pill(x.Reg) <span class="note mono">@VnTime.Hm(x.CreatedAt) @Fmt.Dm(VnTime.DateOf(x.CreatedAt))</span></dd>
+    <dt>Đăng ký</dt><dd>@Ui.Pill(x.Reg) <span class="note mono">@VnTime.Stamp(x.CreatedAt)</span></dd>
+    @if (x.LeaderAt is not null)
+    {
+        <dt>Leader duyệt</dt><dd><span class="note mono">@x.LeaderBy đã duyệt @VnTime.Stamp(x.LeaderAt)</span></dd>
+    }
+    @if (x.DecidedAt is not null)
+    {
+        <dt>Quyết định</dt><dd><span class="note mono">@x.DecidedBy đã @(x.Status == OtStatus.Rejected ? "từ chối" : "duyệt") @VnTime.Stamp(x.DecidedAt)</span></dd>
+    }
 </dl>
 @if (!string.IsNullOrEmpty(x.Reason))
 {

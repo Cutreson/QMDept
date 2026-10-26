@@ -128,46 +128,51 @@ public partial class StaffController
         await Db.SaveChangesAsync();
         await Notify.TaskAckedAsync(giver, t.EmployeeId, t.Date, t.Title);
     }, "Đã xác nhận nhận việc");
-
     /// <summary>
-    /// POST /Staff/UpdateOwnTask — Trưởng phòng / Quản trị tự cập nhật việc CỦA CHÍNH MÌNH để quản lý kế hoạch cá nhân (yêu cầu 2026-10-24): Chưa làm / Đang làm / Hoàn thành + ghi chú,
-    /// và chuyển việc chưa xong sang ngày khác (kế hoạch tiếp theo). KHÔNG phải báo cáo cho ai: không báo cáo cuối ngày, không duyệt, không thông báo. Việc đã chuyển tiếp hiện "Chuyển sang dd/MM/yyyy" ở ngày gốc.
+    /// POST /Staff/UpdateOwnTask — Trưởng phòng / Quản trị tự cập nhật việc CỦA CHÍNH MÌNH, giống hệt cập nhật báo cáo cuối ngày của nhân viên (giờ thực tế, trạng thái, đầu mục đã xong, kế hoạch tiếp theo, lý do / kết quả)
+    /// nhưng chỉ để tự quản lý kế hoạch (yêu cầu 2026-10-24): KHÔNG báo cáo cuối ngày, không ai duyệt, không thông báo; việc chuyển tiếp tự duyệt, ở ngày gốc hiện "Chuyển sang dd/MM/yyyy".
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> UpdateOwnTask(int id, string? state, string? note, string? to, string? start, string? end) => await Do(async () =>
+    public async Task<IActionResult> UpdateOwnTask(StaffUpdateInput input) => await Do(async () =>
     {
         if (Scope.IsViewingOther || Scope.Account.Role is not (Role.Manager or Role.Admin)) throw new BizException("Chỉ Trưởng phòng tự cập nhật việc của mình ở mục này");
-        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == input.TaskId) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
         if (t.EmployeeId != Scope.Account.Id) throw new BizException("Chỉ cập nhật được việc của chính mình");
         if (t.NeedsGiverReview) throw new BizException($"Việc do {t.GivenBy} giao — báo kết quả để người giao duyệt");
-        var s = StaffReports.ParseEnum<TaskState>(state);
-        if (s is not (TaskState.NotStarted or TaskState.InProgress or TaskState.Done)) throw new BizException("Chọn trạng thái: Chưa làm / Đang làm / Hoàn thành");
+        var s = StaffReports.ParseEnum<TaskState>(input.State) ?? t.Status;
+        var tStart = string.IsNullOrEmpty(input.Start) ? t.Start : input.Start;
+        var tEnd = string.IsNullOrEmpty(input.End) ? t.End : input.End;
+        if (!Fmt.IsHhmm(tStart) || !Fmt.IsHhmm(tEnd) || tEnd.Le(tStart)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+        var note = StaffReports.Clip(input.Note, 2000);
+        if (s != TaskState.Done && note is null) throw new BizException("Nhập lý do chưa hoàn thành");
+        if (tStart != t.Start || tEnd != t.End) await TaskLines.EnsureFreeAsync(Db, t.EmployeeId, null, t.Date, [new TaskLines.Line(t.Title, tStart, tEnd)], t.Id);
         var cur = t.CarriedToId is int cid ? await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == cid) : null;
-        DateOnly? nd = null;
-        string ns = "", ne = "";
-        if (s != TaskState.Done && !string.IsNullOrWhiteSpace(to))
+        DateOnly nd = default; string ns = "", ne = "", nt = "";
+        if (s != TaskState.Done)
         {
-            nd = Fmt.ParseInput(to) ?? throw new BizException("Nhập ngày đúng dạng dd/MM/yyyy");
-            if (nd <= t.Date || nd < Scope.Today) throw new BizException("Chuyển sang ngày sau ngày của việc và từ hôm nay trở đi");
-            ns = string.IsNullOrEmpty(start) ? t.Start : start; ne = string.IsNullOrEmpty(end) ? t.End : end;
+            nt = StaffReports.Clip(input.NextTitle, 300) ?? throw new BizException("Nhập nội dung kế hoạch tiếp theo");
+            ns = input.NextStart ?? ""; ne = input.NextEnd ?? "";
             if (!Fmt.IsHhmm(ns) || !Fmt.IsHhmm(ne) || ne.Le(ns)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+            if (Fmt.ParseKey(input.NextDate) is not DateOnly d0 || !StaffReports.NextDateOptions(t.Date, cur?.Date).Contains(d0)) throw new BizException("Chọn ngày chuyển sang");
+            nd = d0;
             if ((await Db.Leaves.AsNoTracking().Where(l => l.Date == nd && l.EmployeeId == t.EmployeeId).ToListAsync()).Any(Dept.IsFullDayLeave))
-                throw new BizException($"Bạn nghỉ cả ngày {Fmt.Dmy(nd.Value)} — chọn ngày khác");
-            await TaskLines.EnsureFreeAsync(Db, t.EmployeeId, null, nd.Value, [new TaskLines.Line(t.Title, ns, ne)], cur?.Id);
+                throw new BizException($"Bạn nghỉ cả ngày {Fmt.Dmy(nd)} — chọn ngày khác");
+            await TaskLines.EnsureFreeAsync(Db, t.EmployeeId, null, nd, [new TaskLines.Line(nt, ns, ne)], cur?.Id);
         }
         await using var tx = await Db.Database.BeginTransactionAsync();
-        if (nd is DateOnly d1)
+        if (s != TaskState.Done)
         {
             if (cur is not null)
             {
-                cur.Date = d1; cur.Start = ns; cur.End = ne; cur.CarryOk = true;
+                cur.Date = nd; cur.Start = ns; cur.End = ne; cur.Title = nt; cur.CarryOk = true; cur.EditedBy = null;
                 await Flow.SyncCarryToPlanAsync(cur);
+                t.CarriedToId = cur.Id;
             }
             else
             {
                 var n = new WorkTask
                 {
-                    Date = d1, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = t.Title, Start = ns, End = ne,
+                    Date = nd, EmployeeId = t.EmployeeId, ProjectId = t.ProjectId, PlanItemId = t.PlanItemId, Title = nt, Start = ns, End = ne,
                     Status = TaskState.NotStarted, Source = TaskSource.CarryOver, CarryOk = true, CarriedFromId = t.Id, FromDate = t.Date, Selected = false, CreatedAt = VnTime.UtcNow,
                 };
                 Db.WorkTasks.Add(n);
@@ -175,15 +180,19 @@ public partial class StaffController
                 await Flow.SyncCarryToPlanAsync(n);
                 t.CarriedToId = n.Id;
             }
-            t.CarryDate = d1; t.CarryBy = Scope.ActorName; t.CarryAt = VnTime.UtcNow;
+            t.CarryDate = nd; t.CarryBy = Scope.ActorName; t.CarryAt = VnTime.UtcNow;
         }
         else if (cur is not null)
         {
-            // bỏ chuyển tiếp: xóa việc đã chuyển nếu còn "Chưa làm"; đã làm dở ở ngày mới thì giữ lại nhưng gỡ liên kết
-            if (cur.Status == TaskState.NotStarted) await Flow.DeleteTaskAsync(cur.Id);
+            if (cur.Status == TaskState.NotStarted) await Flow.DeleteTaskAsync(cur.Id);   // đổi lại thành Hoàn thành: bỏ việc chuyển tiếp chưa làm
             t.CarriedToId = null; t.CarryDate = null;
         }
-        t.Status = s.Value; t.Note = StaffReports.Clip(note, 2000); t.UpdatedAt = VnTime.UtcNow;
+        t.Start = tStart; t.End = tEnd; t.Status = s; t.Note = note; t.UpdatedAt = VnTime.UtcNow;
+        if (t.PlanItemId is int iid && await Db.PlanItems.FirstOrDefaultAsync(i => i.Id == iid) is { } it)
+        {
+            if (s == TaskState.Done && input.ItemDone && it.Status != TaskState.Done) { it.Status = TaskState.Done; it.DoneDate = t.Date; it.DoneBy = Scope.ActorName; }
+            else if (s is TaskState.InProgress or TaskState.Done or TaskState.Late && it.Status == TaskState.NotStarted) it.Status = TaskState.InProgress;
+        }
         await Db.SaveChangesAsync();
         await tx.CommitAsync();
     }, "Đã cập nhật");
@@ -250,7 +259,7 @@ public partial class StaffController
         if (nDate < Scope.Today) throw new BizException("Chỉ đề xuất ngày từ hôm nay trở đi");
         if (nDate == t.Date && nTitle == t.Title && nS == t.Start && nE == t.End) throw new BizException("Chưa thay đổi nội dung hay thời gian nào so với việc được giao");
         await EnsureProposedSlotAsync(t, nDate, nTitle, nS, nE);
-        t.RePending = true; t.ReTitle = nTitle; t.ReDate = nDate; t.ReStart = nS; t.ReEnd = nE; t.ReReason = why; t.ReAt = VnTime.UtcNow; t.ReRejectNote = null; t.ReReviewBy = null;
+        t.RePending = true; t.ReTitle = nTitle; t.ReDate = nDate; t.ReStart = nS; t.ReEnd = nE; t.ReReason = why; t.ReAt = VnTime.UtcNow; t.ReRejectNote = null; t.ReReviewBy = null; t.ReReviewAt = null;
         await Db.SaveChangesAsync();
         if (t.GivenById is int giver) await Notify.TaskChangeProposedAsync(giver, t.EmployeeId, t.Date, t.Title, why);
         Toast($"Đã gửi đề xuất — chờ {t.GivenBy} duyệt");
@@ -281,7 +290,7 @@ public partial class StaffController
             await using var tx = await Db.Database.BeginTransactionAsync();
             await Flow.EditTaskAsync(t, t.ProjectId, nTitle, nS, nE, actor, null);
             if (nDate != t.Date) await Flow.MoveTaskAsync(t, nDate, t.EmployeeId, actor, Scope.Account.Id);
-            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = null; t.ReReviewBy = actor;
+            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = null; t.ReReviewBy = actor; t.ReReviewAt = VnTime.UtcNow;
             t.AckAt ??= VnTime.UtcNow;   // người nhận tự đề xuất bản này nên coi như đã xác nhận
             await Db.SaveChangesAsync();
             await tx.CommitAsync();
@@ -291,7 +300,7 @@ public partial class StaffController
         else
         {
             var why = StaffReports.Clip(note, 500) ?? throw new BizException("Nhập lý do không đồng ý");
-            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = why; t.ReReviewBy = actor;
+            t.RePending = false; t.ReTitle = null; t.ReDate = null; t.ReStart = null; t.ReEnd = null; t.ReReason = null; t.ReRejectNote = why; t.ReReviewBy = actor; t.ReReviewAt = VnTime.UtcNow;
             await Db.SaveChangesAsync();
             await Notify.TaskChangeDecidedAsync(t.EmployeeId, oldDate, oldTitle, false, why);
             Toast("Đã gửi lý do không đồng ý cho người nhận việc");

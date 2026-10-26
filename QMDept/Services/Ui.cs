@@ -166,6 +166,18 @@ public static class Ui
     public static string Current(HttpRequest r) => r.Path + r.QueryString;
 
     /// <summary>
+    /// Dòng thời gian của một đề xuất / báo cáo (yêu cầu 2026-10-24): "Gửi 10:15 24/10/2026 · Nguyễn Văn A đã duyệt 11:02 24/10/2026". Trả chữ thường (Razor tự escape).
+    /// <paramref name="sentLabel"/> = "Gửi" / "Đề xuất" / "Đăng ký"; <paramref name="decision"/> = "duyệt" / "từ chối" / null (chưa quyết định).
+    /// </summary>
+    public static string Timeline(string sentLabel, DateTime? sentAt, string? by = null, string? decision = null, DateTime? decidedAt = null)
+    {
+        var s = sentAt is null ? "" : $"{sentLabel} {VnTime.Stamp(sentAt)}";
+        if (decision is null || decidedAt is null) return s;
+        var d = $"{(string.IsNullOrWhiteSpace(by) ? "" : by + " ")}đã {decision} {VnTime.Stamp(decidedAt)}";
+        return s.Length > 0 ? s + " · " + d : d;
+    }
+
+    /// <summary>
     /// Hidden input returnUrl = trang hiện tại (AppController.Back dùng để quay lại đúng trang/tham số)
     /// + hidden "d" = ngày đang chọn (nếu trang có ?d=) để POST thao tác đúng ngày (ScopeResolver đọc field "d" của form).
     /// Vì vậy form POST KHÔNG được có field khác tên "d".

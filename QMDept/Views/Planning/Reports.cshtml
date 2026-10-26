@@ -59,7 +59,7 @@
     var c = Dept.Count(ts);
     var xs = D.ExtrasOn(d).Count(x => x.EmployeeId == r.EmployeeId);
     <section class="card apv">
-        <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">gửi @VnTime.Hm(r.SentAt)</span></b>@Ui.Pill(st)</div>
+        <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">gửi @VnTime.Stamp(r.SentAt)</span></b>@Ui.Pill(st)</div>
         <div class="pmeta">
             <span>Hoàn thành <b class="mono">@c.Done/@ts.Count</b></span>
             @if (c.Late > 0)
@@ -139,7 +139,7 @@
         }
         else
         {
-            <div class="note" style="margin:1em 0 0">@(string.IsNullOrEmpty(r.LeaderBy) ? "Leader" : r.LeaderBy) @(st == EodState.Approved ? "đã duyệt" : "yêu cầu bổ sung") lúc @VnTime.Hm(r.LeaderAt)
+            <div class="note" style="margin:1em 0 0">@(string.IsNullOrEmpty(r.LeaderBy) ? "Leader" : r.LeaderBy) @(st == EodState.Approved ? "đã duyệt" : "yêu cầu bổ sung") lúc @VnTime.Stamp(r.LeaderAt)
                 @if (canWrite)
                 {
                     <form method="post" action="/Planning/UndoReportDecision" class="inline" asp-antiforgery="true">

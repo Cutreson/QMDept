@@ -77,6 +77,7 @@
                 <div class="asg">
                     <div class="row"><b>@D.PName(x.ProposerId)</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.Start–@x.End</span></span></div>
                     <div class="t" style="margin-top:4px">@x.Title</div>
+                    <div class="note mono">@Ui.Timeline("Đề xuất", x.CreatedAt)</div>
                     <div class="note">@D.PjName(x.ProjectId)@(who.Count > 0 ? " · Thực hiện: " + string.Join(", ", who) : "")@(string.IsNullOrEmpty(x.Departments) ? "" : " · Xin hỗ trợ: " + Fmt.QuotaText(x.Departments))</div>
                     @if (!string.IsNullOrEmpty(x.SupportReason)) { <div class="note">Lý do xin hỗ trợ: @x.SupportReason</div> }
                     @if (canWrite)
@@ -105,7 +106,8 @@
                 var ok = x.Status == ExtraStatus.Approved;
                 <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
                     <div><div class="t">@x.Title</div>
-                        <div class="s">@D.PName(x.ProposerId) · @D.PjName(x.ProjectId) · @Fmt.Short(x.Date)@(!ok && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div></div>
+                        <div class="s">@D.PName(x.ProposerId) · @D.PjName(x.ProjectId) · @Fmt.Short(x.Date)@(!ok && !string.IsNullOrEmpty(x.Reason) ? " · Lý do: " + x.Reason : "")</div>
+                        <div class="s mono">@Ui.Timeline("Đề xuất", x.CreatedAt, x.DecidedBy, ok ? "duyệt" : "từ chối", x.DecidedAt)</div></div>
                     <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
             }
         }

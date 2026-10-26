@@ -4,14 +4,14 @@
 {
     if (Model.DonePending)
     {
-        <div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:700">Đã báo hoàn thành — chờ @Model.GivenBy duyệt</div>
+        <div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:700">Đã báo hoàn thành @VnTime.Stamp(Model.UpdatedAt) — chờ @Model.GivenBy duyệt</div>
     }
     else if (Model.Status == TaskState.Done && Model.DoneReviewAt is DateTime rv)
     {
-        <div class="note" style="margin:0 0 6px;color:var(--ok);font-weight:700">✓ @Model.DoneReviewBy đã duyệt hoàn thành lúc @VnTime.Hm(rv) @Fmt.Dmy(VnTime.DateOf(rv))</div>
+        <div class="note" style="margin:0 0 6px;color:var(--ok);font-weight:700">✓ @Model.DoneReviewBy đã duyệt hoàn thành @VnTime.Stamp(rv)</div>
     }
     else if (Model.DoneRejectNote is not null)
     {
-        <div class="note" style="margin:0 0 6px;color:var(--bad);font-weight:700">@Model.DoneReviewBy chưa duyệt: @Model.DoneRejectNote — hãy cập nhật lại kết quả</div>
+        <div class="note" style="margin:0 0 6px;color:var(--bad);font-weight:700">@Model.DoneReviewBy chưa duyệt @VnTime.Stamp(Model.DoneReviewAt): @Model.DoneRejectNote — hãy cập nhật lại kết quả</div>
     }
 }

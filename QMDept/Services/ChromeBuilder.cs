@@ -151,12 +151,12 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
         var doneReviews = scope.IsViewingOther || acc.Role == Role.Staff ? new List<DoneReviewItem>() : d.Tasks
             .Where(t => t.GivenById == acc.Id && t.DonePending && d.ReportOf(t.Date, t.EmployeeId) is not null)
             .OrderBy(t => t.Date).ThenBy(t => t.Start)
-            .Select(t => new DoneReviewItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId), d.PName(t.EmployeeId), t.Note, t.Priority)).ToList();
+            .Select(t => new DoneReviewItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId), d.PName(t.EmployeeId), t.Note, t.Priority, t.UpdatedAt)).ToList();
         var changeReviews = scope.IsViewingOther || acc.Role == Role.Staff ? new List<ChangeReviewItem>() : d.Tasks
             .Where(t => t.GivenById == acc.Id && t.RePending)
             .OrderBy(t => t.Date).ThenBy(t => t.Start)
             .Select(t => new ChangeReviewItem(t.Id, d.PName(t.EmployeeId), d.PjName(t.ProjectId), t.Date, t.Title, t.Start, t.End,
-                t.ReDate ?? t.Date, t.ReTitle ?? t.Title, t.ReStart ?? t.Start, t.ReEnd ?? t.End, t.ReReason ?? "", t.Priority)).ToList();
+                t.ReDate ?? t.Date, t.ReTitle ?? t.Title, t.ReStart ?? t.Start, t.ReEnd ?? t.End, t.ReReason ?? "", t.Priority, t.ReAt)).ToList();
         // Việc của CHÍNH TP / Quản trị chưa cập nhật (không phải báo cáo — chỉ để tự quản lý): đã qua ngày, hoặc hôm nay sau 17:00, chưa Hoàn thành và chưa chuyển tiếp (yêu cầu 2026-10-24).
         var ownTodo = scope.IsViewingOther || acc.Role is not (Role.Manager or Role.Admin) ? new List<OwnTodoItem>() : d.Tasks
             .Where(t => t.EmployeeId == acc.Id && !t.NeedsGiverReview && t.Status != TaskState.Done && t.CarriedToId == null
@@ -241,7 +241,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             .Where(t => t.EmployeeId == acc.Id && t.GivenById != null && t.AckAt == null && t.Date >= scope.Today.AddDays(-7))
             .OrderBy(t => t.Date).ThenBy(t => t.Start)
             .Select(t => new AckItem(t.Id, t.Date, t.Title, t.Start, t.End, d.PjName(t.ProjectId), t.GivenBy ?? d.PName(t.GivenById), t.Priority,
-                (acc.Role == Role.Staff ? "/Staff/Month?d=" : "/Staff/Month?as=mine&d=") + Fmt.Key(t.Date))).ToList();
+                (acc.Role == Role.Staff ? "/Staff/Month?d=" : "/Staff/Month?as=mine&d=") + Fmt.Key(t.Date), t.CreatedAt)).ToList();
 
         return _cache = new ChromeModel
         {
@@ -357,14 +357,14 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
 }
 
 /// <summary>Một việc được giao đang chờ người nhận xác nhận (cho khung đỏ đầu trang).</summary>
-public sealed record AckItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string GivenBy, TaskPriority Priority, string Href);
+public sealed record AckItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string GivenBy, TaskPriority Priority, string Href, DateTime GivenAt);
 
 /// <summary>Một việc đã giao đang chờ người giao duyệt kết quả (cho khung đầu trang).</summary>
-public sealed record DoneReviewItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string Employee, string? Note, TaskPriority Priority);
+public sealed record DoneReviewItem(int Id, DateOnly Date, string Title, string Start, string End, string Project, string Employee, string? Note, TaskPriority Priority, DateTime? ReportedAt);
 
 /// <summary>Một đề xuất lại (nội dung / thời gian) của người nhận việc đang chờ người giao duyệt.</summary>
 public sealed record ChangeReviewItem(int Id, string Employee, string Project, DateOnly Date, string Title, string Start, string End,
-    DateOnly NewDate, string NewTitle, string NewStart, string NewEnd, string Reason, TaskPriority Priority);
+    DateOnly NewDate, string NewTitle, string NewStart, string NewEnd, string Reason, TaskPriority Priority, DateTime? ProposedAt);
 
 /// <summary>Một việc của chính Trưởng phòng / Quản trị chưa cập nhật kết quả.</summary>
 public sealed record OwnTodoItem(int Id, DateOnly Date, string Title, string Start, string End, string Project);

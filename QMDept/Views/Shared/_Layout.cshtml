@@ -139,7 +139,7 @@
                 {
                     <div class="ack-row">
                         <div class="ack-main"><div class="ack-t">@r.Title@Html.Raw(Blocks.PriorityTag(r.Priority))</div>
-                            <div class="note">@r.Employee · @r.Project · @Fmt.Dmy(r.Date) @r.Start–@r.End</div>
+                            <div class="note">@r.Employee · @r.Project · @Fmt.Dmy(r.Date) @r.Start–@r.End · báo hoàn thành @VnTime.Stamp(r.ReportedAt)</div>
                             @if (!string.IsNullOrWhiteSpace(r.Note)) { <div class="note">Kết quả: @r.Note</div> }</div>
                         <div class="ack-act">
                             <form method="post" action="/Staff/ReviewDone?as=mine" asp-antiforgery="true" data-prompt="Chưa duyệt kết quả công việc" data-prompt-label="Lý do" data-prompt-required data-prompt-name="note">
@@ -168,7 +168,7 @@
                     <div class="ack-row">
                         <div class="ack-main"><div class="ack-t">@c.Employee · @c.Title@Html.Raw(Blocks.PriorityTag(c.Priority))</div>
                             <div class="note">Đang giao: @c.Project · @Fmt.Dmy(c.Date) @c.Start–@c.End</div>
-                            <div class="note"><b>Đề xuất: @(c.NewTitle == c.Title ? "" : c.NewTitle + " · ")@Fmt.Dmy(c.NewDate) @c.NewStart–@c.NewEnd</b></div>
+                            <div class="note"><b>Đề xuất @VnTime.Stamp(c.ProposedAt): @(c.NewTitle == c.Title ? "" : c.NewTitle + " · ")@Fmt.Dmy(c.NewDate) @c.NewStart–@c.NewEnd</b></div>
                             <div class="note">Lý do: @c.Reason</div></div>
                         <div class="ack-act">
                             <form method="post" action="/Staff/DecideChange?as=mine" asp-antiforgery="true" data-prompt="Không đồng ý đề xuất lại" data-prompt-label="Lý do" data-prompt-required data-prompt-name="note">
@@ -196,7 +196,7 @@
                 {
                     <div class="ack-row">
                         <div class="ack-main"><div class="ack-t">@a.Title@Html.Raw(Blocks.PriorityTag(a.Priority))</div>
-                            <div class="note">@a.Project · @Fmt.Dmy(a.Date) @a.Start–@a.End · Giao bởi @a.GivenBy</div></div>
+                            <div class="note">@a.Project · @Fmt.Dmy(a.Date) @a.Start–@a.End · Giao bởi @a.GivenBy @VnTime.Stamp(a.GivenAt)</div></div>
                         <div class="ack-act">
                             <a class="btn btn-sm" href="@a.Href">Xem trong lịch</a>
                             <button type="button" class="btn btn-sm" data-sheet="rp@(a.Id)">Đề xuất lại</button>

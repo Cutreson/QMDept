@@ -48,7 +48,7 @@
     }
     else
     {
-        <div class="notice"><span class="ic">✓</span><div><b>Đã gửi @(lead ? "trạng thái làm việc" : "kế hoạch") lúc @VnTime.Hm(plan.SentAt)</b></div></div>
+        <div class="notice"><span class="ic">✓</span><div><b>Đã gửi @(lead ? "trạng thái làm việc" : "kế hoạch") lúc @VnTime.Stamp(plan.SentAt)</b></div></div>
     }
     <section class="card sec">
         <h2>Công việc đã chọn (@sel.Count)</h2>
@@ -103,10 +103,10 @@
     {
     <section class="card sec">
         <h2>Trạng thái duyệt</h2>
-        <div class="trow">@StaffReports.DecisionCk(plan.LeaderDecision)<div class="t">@(me.Role == Role.Leader ? "Trưởng phòng" : "Leader")</div><span>@StaffReports.DecisionCell(plan.LeaderDecision, plan.LeaderAt, "<span class=\"pill p-warn\">Chờ duyệt</span>")</span></div>
+        <div class="trow">@StaffReports.DecisionCk(plan.LeaderDecision)<div class="t">@D.ApproverName(me)</div><span>@StaffReports.DecisionCell(plan.LeaderDecision, plan.LeaderAt, "<span class=\"pill p-warn\">Chờ duyệt</span>")</span></div>
         @if (needsManager && me.Role != Role.Leader)
         {
-            <div class="trow">@StaffReports.DecisionCk(plan.ManagerDecision)<div class="t">Trưởng phòng <span class="note">(hỗ trợ nhân sự)</span></div><span>@StaffReports.DecisionCell(plan.ManagerDecision, plan.ManagerAt, plan.LeaderDecision == Decision.Ok ? "<span class=\"pill p-warn\">Chờ duyệt</span>" : "<span class=\"pill p-idle\">Sau Leader</span>")</span></div>
+            <div class="trow">@StaffReports.DecisionCk(plan.ManagerDecision)<div class="t">@D.ManagersText() <span class="note">(hỗ trợ nhân sự)</span></div><span>@StaffReports.DecisionCell(plan.ManagerDecision, plan.ManagerAt, plan.LeaderDecision == Decision.Ok ? "<span class=\"pill p-warn\">Chờ duyệt</span>" : "<span class=\"pill p-idle\">Sau Leader</span>")</span></div>
         }
         @if (!string.IsNullOrEmpty(plan.LeaderNote))
         {

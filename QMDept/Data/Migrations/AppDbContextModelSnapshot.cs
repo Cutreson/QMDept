@@ -1213,6 +1213,9 @@ b.HasIndex("OwnerLeaderId");
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<DateTime?>("ReReviewAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("ReReviewBy")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");

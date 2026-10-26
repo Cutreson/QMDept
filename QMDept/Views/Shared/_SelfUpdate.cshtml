@@ -1,31 +1,43 @@
 @model WorkTask
-@* Sheet "Cập nhật" việc của CHÍNH Trưởng phòng / Quản trị (yêu cầu 2026-10-24): chỉ để quản lý kế hoạch cá nhân — không phải báo cáo cho ai, không duyệt.
-   Trạng thái (Chưa làm / Đang làm / Hoàn thành) + ghi chú; việc chưa xong có thể chuyển sang ngày khác. Nút mở: data-sheet="su{id}". Server: StaffController.UpdateOwnTask. *@
+@* Sheet "Cập nhật công việc" của CHÍNH Trưởng phòng / Quản trị (yêu cầu 2026-10-24, giống hệt cập nhật báo cáo cuối ngày của nhân viên — Views/Staff/Evening.cshtml, JS wwwroot/js/staff.js `form[data-upd]`):
+   giờ thực tế, trạng thái, đầu mục đã xong, kế hoạch tiếp theo (việc chưa xong), lý do / kết quả. Chỉ để tự quản lý — không báo cáo cho ai, không duyệt. Nút mở: data-sheet="su{id}". Server: StaffController.UpdateOwnTask. *@
 @{
     var t = Model;
     if (!StaffCalendar.CanSelfUpdate(Scope, t)) { return; }
     var cur = D.Task(t.CarriedToId);
-    var st = t.Status == TaskState.Late ? TaskState.InProgress : t.Status;
+    var it = D.Item(t.PlanItemId);
+    var nds = StaffReports.NextDateOptions(t.Date, cur?.Date);
+    var ndDef = cur?.Date ?? nds.First(x => x.DayOfWeek != DayOfWeek.Sunday);
+    var done = t.Status == TaskState.Done;
 }
 <template id="su@(t.Id)">
-    <form method="post" action="/Staff/UpdateOwnTask?id=@(t.Id)&d=@(Fmt.Key(t.Date))&as=mine">
+    <form method="post" action="/Staff/UpdateOwnTask?d=@(Fmt.Key(t.Date))&as=mine" data-upd data-state="@t.Status" data-end="@t.End">
         @Html.AntiForgeryToken()
         @Ui.ReturnField(Context.Request)
+        <input type="hidden" name="taskId" value="@t.Id">
         <h3>Cập nhật công việc</h3>
-        <div class="note" style="margin:2px 0 0"><b>@t.Title</b> · @D.PjName(t.ProjectId) · @Fmt.Dmy(t.Date) @t.Start–@t.End</div>
-        <label class="f" for="suS@(t.Id)">Trạng thái</label>
-        <select class="in" name="state" id="suS@(t.Id)" data-su-state>
-            <option value="NotStarted" selected="@(st == TaskState.NotStarted)">Chưa làm</option>
-            <option value="InProgress" selected="@(st == TaskState.InProgress)">Đang làm</option>
-            <option value="Done" selected="@(st == TaskState.Done)">Hoàn thành</option>
-        </select>
-        <label class="f" for="suN@(t.Id)">Ghi chú</label>
-        <textarea class="in" id="suN@(t.Id)" name="note" maxlength="2000">@t.Note</textarea>
-        <div data-su-carry @(st == TaskState.Done ? "hidden" : null)>
-            <label class="f" for="suD@(t.Id)">Chuyển việc chưa xong sang ngày (để trống = không chuyển)</label>
-            @Ui.DateInput("to", cur?.Date, "suD" + t.Id)
-            <div class="pick2 eq"><div><label class="f" for="suB@(t.Id)">Bắt đầu</label>@Ui.TimeSelect("start", cur?.Start ?? t.Start, id: "suB" + t.Id)</div><div><label class="f" for="suE@(t.Id)">Kết thúc</label>@Ui.TimeSelect("end", cur?.End ?? t.End, end: true, id: "suE" + t.Id)</div></div>
+        <p class="note" style="margin:0 0 4px">@t.Title</p>
+        <div class="pick2 eq"><div><label class="f" for="wS" style="margin-top:0">Bắt đầu</label>@Ui.TimeSelect("start", t.Start, id: "wS")</div><div><label class="f" for="wE" style="margin-top:0">Kết thúc</label>@Ui.TimeSelect("end", t.End, end: true, id: "wE")</div></div>
+        <div class="choices" role="radiogroup" aria-label="Trạng thái">
+            @foreach (var s in new[] { TaskState.InProgress, TaskState.Done, TaskState.Late, TaskState.NotStarted })
+            {
+                <label class="choice" style="--cc:@Labels.Color(s)"><input type="radio" name="state" value="@s" checked="@(t.Status == s)">@Labels.Of(s)</label>
+            }
         </div>
-        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+        @if (it is not null && it.Status != TaskState.Done)
+        {
+            <label class="row" style="margin-top:10px;font-size:13px"><input type="checkbox" id="itDone" name="itemDone" value="true"> Đầu mục “@it.Title” đã xong toàn bộ</label>
+        }
+        <div id="nxWrap" class="nx" hidden="@done">
+            <div class="nx-h">Kế hoạch tiếp theo</div>
+            <label class="f" for="nxD">Chuyển sang ngày</label>@Ui.Select("nextDate", nds.Select(x => (Fmt.Key(x), StaffReports.NextDateLabel(x))), Fmt.Key(ndDef), id: "nxD")
+            <div class="pick2 eq">
+                <div><label class="f" for="nxS">Bắt đầu</label>@Ui.TimeSelect("nextStart", cur?.Start ?? t.Start, id: "nxS")</div>
+                <div><label class="f" for="nxE">Kết thúc</label>@Ui.TimeSelect("nextEnd", cur?.End ?? t.End, end: true, id: "nxE")</div>
+            </div>
+            <label class="f" for="nxT">Nội dung tiếp theo</label><input class="in" id="nxT" name="nextTitle" maxlength="300" value="@(cur?.Title ?? t.Title)">
+        </div>
+        <label class="f" for="uN" id="uNL">@(done ? "Kết quả / ghi chú" : "Lý do chưa hoàn thành (bắt buộc)")</label><textarea class="in" id="uN" name="note" maxlength="2000">@t.Note</textarea>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">Lưu cập nhật</button></div>
     </form>
 </template>

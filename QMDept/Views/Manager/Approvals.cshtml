@@ -27,7 +27,7 @@
         var name = D.PName(p.EmployeeId);
         <section class="card apv">
             <div class="hd">@Ui.Av(name)<b>@name</b>@Ui.Pill(st)</div>
-            <p class="note" style="margin:0 0 8px">Leader: @(p.LeaderDecision is Decision ld ? (ld == Decision.Ok ? "đã duyệt" : "từ chối") + " lúc " + VnTime.Hm(p.LeaderAt) : "chưa duyệt")</p>
+            <p class="note" style="margin:0 0 8px">@(string.IsNullOrEmpty(p.LeaderBy) ? D.ApproverName(D.P(p.EmployeeId)) : p.LeaderBy): @(p.LeaderDecision is Decision ld ? (ld == Decision.Ok ? "đã duyệt" : "từ chối") + " lúc " + VnTime.Stamp(p.LeaderAt) : "chưa duyệt")</p>
             @Blocks.PlanMeta(p)
             @D.PlanTable(p)
             @if (!string.IsNullOrEmpty(p.Note))
@@ -90,7 +90,7 @@ else if (Model.Mode == "extra")
                 }
                 @if (!string.IsNullOrEmpty(x.DecidedBy))
                 {
-                    <div class="note">@(x.Status == ExtraStatus.Rejected ? "Từ chối" : "Duyệt") bởi @x.DecidedBy lúc @VnTime.Hm(x.DecidedAt)</div>
+                    <div class="note">@(x.Status == ExtraStatus.Rejected ? "Từ chối" : "Duyệt") bởi @x.DecidedBy lúc @VnTime.Stamp(x.DecidedAt)</div>
                 }
                 @if (!string.IsNullOrEmpty(x.Reason))
                 {
@@ -117,7 +117,7 @@ else if (Model.Mode == "leader")
             {
                 var lts = D.Chosen(lr.Date, lr.EmployeeId); var lc = Dept.Count(lts);
                 <div class="trow" style="grid-template-columns:1fr auto auto">
-                    <div><div class="t">@D.PName(lr.EmployeeId)</div><div class="s">gửi @VnTime.Hm(lr.SentAt)@(lr.Blocked ? " · Có vướng mắc" : "")@(string.IsNullOrEmpty(lr.Note) ? "" : " · " + lr.Note)</div></div>
+                    <div><div class="t">@D.PName(lr.EmployeeId)</div><div class="s">gửi @VnTime.Stamp(lr.SentAt)@(lr.Blocked ? " · Có vướng mắc" : "")@(string.IsNullOrEmpty(lr.Note) ? "" : " · " + lr.Note)</div></div>
                     <span class="mono">@lc.Done/@lts.Count</span>
                     <span class="pill p-ok">@(lr.LeaderBy ?? "Đã xác nhận")</span>
                 </div>
@@ -146,6 +146,7 @@ else if (Model.Mode == "leader")
                         <div class="row"><b>@who</b><span class="note" style="margin-left:auto">@Fmt.Short(x.Date) · <span class="mono">@x.LeaveFrom–@x.LeaveTo</span></span></div>
                         <div class="t" style="margin-top:4px">@kind</div>
                         <div class="note">Lý do: @x.Reason</div>
+                        <div class="note mono">@Ui.Timeline("Gửi", x.CreatedAt)</div>
                         <div class="btn-row">
                             <form method="post" action="/Manager/DecideLeave" asp-antiforgery="true">
                                 @Ui.ReturnField(req)
@@ -166,7 +167,8 @@ else if (Model.Mode == "leader")
                     var ok = x.Status == ExtraStatus.Approved;
                     <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
                         <div><div class="t">@who · @kind</div>
-                            <div class="s">@Fmt.Short(x.Date) · @x.LeaveFrom–@x.LeaveTo · Lý do: @x.Reason@(!ok && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")</div></div>
+                            <div class="s">@Fmt.Short(x.Date) · @x.LeaveFrom–@x.LeaveTo · Lý do: @x.Reason@(!ok && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")</div>
+                            <div class="s mono">@Ui.Timeline("Gửi", x.CreatedAt, x.DecidedBy, ok ? "duyệt" : "từ chối", x.DecidedAt)</div></div>
                         <span class="pill @(ok ? "p-ok" : "p-bad")">@(ok ? "Đã duyệt" : "Từ chối")</span></div>
                 }
             }
@@ -177,7 +179,7 @@ else if (Model.Mode == "leader")
         var st = Dept.PlanSt(p);
         var name = D.PName(p.EmployeeId);
         <section class="card apv">
-            <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">trạng thái làm việc · gửi @VnTime.Hm(p.SentAt)</span></b>@Ui.Pill(st)</div>
+            <div class="hd">@Ui.Av(name)<b>@name <span class="note mono">trạng thái làm việc · gửi @VnTime.Stamp(p.SentAt)</span></b>@Ui.Pill(st)</div>
             @Blocks.PlanMeta(p)
             @D.PlanTable(p)
             @if (!string.IsNullOrEmpty(p.Note))
@@ -208,7 +210,7 @@ else if (Model.Mode == "leader")
             else
             {
                 <div class="row" style="justify-content:space-between">
-                    <span class="note">@(p.LeaderDecision == Decision.Ok ? "Đã duyệt" : "Đã từ chối") lúc @VnTime.Hm(p.LeaderAt)</span>
+                    <span class="note">@(p.LeaderDecision == Decision.Ok ? "Đã duyệt" : "Đã từ chối") lúc @VnTime.Stamp(p.LeaderAt)</span>
                     <form method="post" action="/Manager/UndoLeaderPlan" class="inline" asp-antiforgery="true">
                         @Ui.ReturnField(req)
                         <input type="hidden" name="id" value="@p.Id">

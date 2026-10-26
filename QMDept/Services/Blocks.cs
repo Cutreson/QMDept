@@ -64,18 +64,18 @@ public static class Blocks
         var noteLine = t.Status != TaskState.Done && !string.IsNullOrWhiteSpace(t.Note) ? $"<div class=\"s\">Ghi chú: {E(t.Note)}</div>" : "";
         // Việc do cấp quản lý giao: hiện người giao + trạng thái xác nhận (yêu cầu 2026-10-21)
         var ackLine = t.GivenById is null ? ""
-            : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Hm(ak)} {Fmt.Dm(VnTime.DateOf(ak))}</b></div>"
-            : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
+            : t.AckAt is DateTime ak ? $"<div class=\"s\">Giao bởi {E(t.GivenBy)} {VnTime.Stamp(t.CreatedAt)} · <b style=\"color:var(--ok)\">✓ Đã xác nhận {VnTime.Stamp(ak)}</b></div>"
+            : $"<div class=\"s\">Giao bởi {E(t.GivenBy)} {VnTime.Stamp(t.CreatedAt)} · <b style=\"color:var(--warn,#b45309)\">Chờ xác nhận</b></div>";
         // Đề xuất lại nội dung / thời gian của người nhận (yêu cầu 2026-10-24)
         if (t.RePending)
-            ackLine += $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã đề xuất lại: {E(t.ReTitle)} · {(t.ReDate is DateOnly rd && rd != t.Date ? Fmt.Dmy(rd) + " " : "")}{E(t.ReStart)}–{E(t.ReEnd)} — chờ {E(t.GivenBy)} duyệt</b></div>";
+            ackLine += $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã đề xuất lại {VnTime.Stamp(t.ReAt)}: {E(t.ReTitle)} · {(t.ReDate is DateOnly rd && rd != t.Date ? Fmt.Dmy(rd) + " " : "")}{E(t.ReStart)}–{E(t.ReEnd)} — chờ {E(t.GivenBy)} duyệt</b></div>";
         else if (t.ReRejectNote is not null)
-            ackLine += $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.ReReviewBy)} không đồng ý đề xuất lại: {E(t.ReRejectNote)}</b></div>";
+            ackLine += $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.ReReviewBy)} không đồng ý đề xuất lại {VnTime.Stamp(t.ReReviewAt)}: {E(t.ReRejectNote)}</b></div>";
         // Nghiệm thu việc được giao: báo hoàn thành → chờ người giao duyệt → duyệt mới tính xong (yêu cầu 2026-10-24)
         if (t.NeedsGiverReview)
-            ackLine += t.DonePending ? $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã báo hoàn thành — chờ {E(t.GivenBy)} duyệt</b></div>"
-                : t.Status == TaskState.Done && t.DoneReviewAt is DateTime rv ? $"<div class=\"s\"><b style=\"color:var(--ok)\">✓ {E(t.DoneReviewBy)} đã duyệt hoàn thành {VnTime.Hm(rv)} {Fmt.Dm(VnTime.DateOf(rv))}</b></div>"
-                : t.DoneRejectNote is not null ? $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.DoneReviewBy)} chưa duyệt: {E(t.DoneRejectNote)} — cập nhật lại kết quả</b></div>" : "";
+            ackLine += t.DonePending ? $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã báo hoàn thành {VnTime.Stamp(t.UpdatedAt)} — chờ {E(t.GivenBy)} duyệt</b></div>"
+                : t.Status == TaskState.Done && t.DoneReviewAt is DateTime rv ? $"<div class=\"s\"><b style=\"color:var(--ok)\">✓ {E(t.DoneReviewBy)} đã duyệt hoàn thành {VnTime.Stamp(rv)}</b></div>"
+                : t.DoneRejectNote is not null ? $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.DoneReviewBy)} chưa duyệt {VnTime.Stamp(t.DoneReviewAt)}: {E(t.DoneRejectNote)} — cập nhật lại kết quả</b></div>" : "";
         return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}{PriorityTag(t.Priority)}</div>"
             + $"<div class=\"s\">{(showEmployee ? E(d.PName(t.EmployeeId)) + " · " : "")}{E(d.PjName(t.ProjectId))}{(src.Length > 0 ? " · " + src : "")}</div>{leadLine}{ackLine}{noteLine}</div>"
             + $"<span class=\"tm\">{E(t.Start)} – {E(t.End)}{tail}</span><span class=\"st\"><span class=\"pill {res.Css}\">{E(res.Text)}</span>{(stNote.Length > 0 ? $"<span class=\"st-note{(t.CarriedToId is null ? " bad" : "")}\">{E(stNote)}</span>" : "")}</span>{(actions is null ? "" : $"<span class=\"act\">{actions}</span>")}</div>");
@@ -87,6 +87,7 @@ public static class Blocks
         var st = d.ExSt(x);
         var sb = new StringBuilder($"<div class=\"issue\"><span class=\"ic\" style=\"--ic:{Labels.Color(st)}\">!</span><div><div class=\"t\">{E(x.Title)}</div>");
         sb.Append($"<div class=\"m\">{E(d.PjName(x.ProjectId))} · {E(d.PName(x.EmployeeId))} · <span class=\"mono\">{E(x.Start ?? VnTime.Hm(x.CreatedAt))}{(x.End is null ? "" : " – " + E(x.End))}</span>{(x.Date != d.Scope.Date ? " · " + Fmt.Dm(x.Date) : "")}</div>");
+        sb.Append($"<div class=\"m mono\">{E(Ui.Timeline("Đề xuất", x.CreatedAt, x.DecidedBy, x.Status == ExtraStatus.Approved ? "duyệt" : x.Status == ExtraStatus.Rejected ? "từ chối" : null, x.DecidedAt))}</div>");
         if (!string.IsNullOrEmpty(x.Description)) sb.Append($"<div class=\"m\">{E(x.Description)}</div>");
         if (!string.IsNullOrEmpty(x.Reason)) sb.Append($"<div class=\"m\" style=\"color:var(--bad)\">Lý do từ chối: {E(x.Reason)}</div>");
         sb.Append($"</div>{Labels.PillHtml(st)}</div>");

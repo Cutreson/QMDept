@@ -25,6 +25,8 @@ public static class VnTime
 
     /// <summary>hm(iso): "HH:mm" giờ VN của một mốc UTC; null → "".</summary>
     public static string Hm(DateTime? utc) => utc is null ? "" : ToVn(utc.Value).ToString("HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>"HH:mm dd/MM/yyyy" (giờ Việt Nam) — hiện giờ + ngày gửi / đề xuất / duyệt ở mọi nội dung (yêu cầu 2026-10-24).</summary>
+    public static string Stamp(DateTime? utc) => utc is null ? "" : ToVn(utc.Value).ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture);
     /// <summary>Ngày VN của một mốc UTC.</summary>
     public static DateOnly DateOf(DateTime utc) => DateOnly.FromDateTime(ToVn(utc));
     /// <summary>"HH:mm" giờ VN hiện tại (nowHMs).</summary>

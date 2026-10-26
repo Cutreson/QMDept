@@ -9,6 +9,7 @@
     <div class="trow"><span class="ck @(ok ? "on" : "")">@(ok ? "✓" : "")</span>
         <div><div class="t">Xin nghỉ · @(x.LeaveType == LeaveType.Paid ? "Nghỉ phép" : "Nghỉ không lương")@(x.LeaveSession is LeaveSession ls ? " · " + LeaveRules.Session(ls).Label : "")</div>
             <div class="s">Lý do: @x.Reason@(x.Status == ExtraStatus.Rejected && !string.IsNullOrEmpty(x.DecisionNote) ? " · Từ chối: " + x.DecisionNote : "")@(ok ? " · Đã ghi vào lịch" : "")</div>
+            <div class="s mono">@Ui.Timeline("Gửi", x.CreatedAt, x.DecidedBy, x.Status == ExtraStatus.Approved ? "duyệt" : x.Status == ExtraStatus.Rejected ? "từ chối" : null, x.DecidedAt)</div>
             @if (!ok)
             {
                 <form method="post" action="@Ui.To(req, "/Staff/CancelLeaveRequest", ("d", Fmt.Key(x.Date)))" asp-antiforgery="true" class="inline" data-confirm="Rút đề xuất xin nghỉ?" data-confirm-label="Rút lại">

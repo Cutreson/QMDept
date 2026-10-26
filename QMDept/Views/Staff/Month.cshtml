@@ -1,4 +1,7 @@
 @model StaffMonthVm
+@section Scripts {
+    <script src="~/js/staff.js" asp-append-version="true"></script>
+}
 @* nvMonth(): Kế hoạch tháng. Chế độ "Tất cả nhân sự" (Leader/TP, ?as=all): teamDayList + calAssignForm (Giao thêm việc). *@
 @{
     var req = Context.Request;

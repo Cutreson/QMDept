@@ -350,3 +350,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-24) Trưởng phòng tự cập nhật việc của mình (Chưa làm / Đang làm / Hoàn thành + chuyển sang ngày khác, không báo cáo / không duyệt) — quy tắc 90; đã test trên DB thật (id 8) + dọn dữ liệu thử.
 - (2026-10-24) Sửa chữ chồng nhau ở cột nút Cập nhật / Sửa / Xóa (cột 156px, nowrap) + nhắc đỏ việc của Trưởng phòng chưa cập nhật (quy tắc 91); đã kiểm trên trình duyệt (khung đỏ, số đỏ tab), dọn việc thử.
 - (2026-10-26) Bỏ cụm "mới tính là xong" khỏi mọi dòng chờ duyệt việc được giao (dòng việc, _DoneReview, khung duyệt, mô tả thông báo).
+- (2026-10-26) Sheet cập nhật việc của Trưởng phòng giống báo cáo cuối ngày của nhân viên (quy tắc 92) + hiện giờ / ngày gửi, đề xuất, duyệt ở mọi nội dung (quy tắc 93; migration TaskReReviewAt); đã test trên DB thật + smoke 4 vai trò, dọn dữ liệu thử.

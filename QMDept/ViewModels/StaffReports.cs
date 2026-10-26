@@ -220,7 +220,7 @@ public static class StaffReports
 
     /// <summary>Ô quyết định duyệt (Leader / TP) ở "Trạng thái duyệt": pill + giờ, hoặc HTML chờ.</summary>
     public static IHtmlContent DecisionCell(Decision? dec, DateTime? at, string waitHtml) => new HtmlString(dec is Decision d
-        ? $"{Labels.PillHtml(d)} <span class=\"mono note\">{VnTime.Hm(at)}</span>" : waitHtml);
+        ? $"{Labels.PillHtml(d)} <span class=\"mono note\">{VnTime.Stamp(at)}</span>" : waitHtml);
 
     /// <summary>Ô tích trạng thái duyệt.</summary>
     public static IHtmlContent DecisionCk(Decision? dec) => new HtmlString(
