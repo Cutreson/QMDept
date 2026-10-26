@@ -352,3 +352,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-26) Bỏ cụm "mới tính là xong" khỏi mọi dòng chờ duyệt việc được giao (dòng việc, _DoneReview, khung duyệt, mô tả thông báo).
 - (2026-10-26) Sheet cập nhật việc của Trưởng phòng giống báo cáo cuối ngày của nhân viên (quy tắc 92) + hiện giờ / ngày gửi, đề xuất, duyệt ở mọi nội dung (quy tắc 93; migration TaskReReviewAt); đã test trên DB thật + smoke 4 vai trò, dọn dữ liệu thử.
 - (2026-10-26) Cột "Kết quả" ở bảng nhân sự Tổng quan (chỉ hiện kết quả báo cáo đã duyệt; quy tắc 94); đã xem trên trình duyệt (ngày 22/10).
+- (2026-10-26) Cột "Kết quả" rút gọn theo yêu cầu: chỉ Hoàn thành / Chưa hoàn thành + lịch chuyển sang (bỏ nội dung, lý do, thời gian).
