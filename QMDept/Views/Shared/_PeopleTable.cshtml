@@ -53,11 +53,21 @@
             var onLeave = (ok && LeaveRules.IsLeave(plan!.Status)) || (g.Info is 0 or 4 && g.Lv is not null);
             var trip = ok && !onLeave && LeaveRules.IsTrip(plan!.Status);
             var ts = ok && !onLeave ? D.Chosen(d, p.Id) : new List<WorkTask>();
-            <tr>
-                <td class="n">@no</td>
-                <td style="white-space:nowrap">@if (p.Role == Role.Manager || p.Id == Scope.Account.Id || !Scope.Subordinates.Any(sb => sb.Id == p.Id)) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
+            var rep = D.ReportOf(d, p.Id);
+            var isMgr = p.Role is Role.Manager or Role.Admin;
+            var repOk = rep is not null && rep.LeaderDecision == Decision.Ok;
+            // Kết quả từng việc nằm CÙNG HÀNG với việc đó (mỗi việc một hàng, các cột còn lại gộp ô — yêu cầu 2026-10-26)
+            var perTask = ts.Count > 0 && ((isMgr && ok && !onLeave) || (repOk && !onLeave));
+            var nRows = Math.Max(1, ts.Count);
+            @for (var ri = 0; ri < nRows; ri++)
+            {
+            <tr class="@(ri > 0 ? "grp-in" : null)">
+            @if (ri == 0)
+            {
+                <td class="n" rowspan="@nRows">@no</td>
+                <td style="white-space:nowrap" rowspan="@nRows">@if (p.Role == Role.Manager || p.Id == Scope.Account.Id || !Scope.Subordinates.Any(sb => sb.Id == p.Id)) { <b>@p.Name</b> } else { <a class="link" href="@Ui.To(req, "/Staff/Month", ("as", p.Id.ToString()))" style="color:var(--fg)"><b>@p.Name</b></a> } @Ui.LevelPill(p)</td>
                 @* Trạng thái làm việc: tại công ty / công tác trong ngày / công tác dài ngày / nghỉ phép / nghỉ không lương (kèm thời gian nghỉ) *@
-                <td>@if (g.Info == 9) { <span class="note">—</span> }
+                <td rowspan="@nRows">@if (g.Info == 9) { <span class="note">—</span> }
                     else if (onLeave)
                     {
                         var lt = plan is not null && ok && plan.LeaveType is not null ? Blocks.LeaveText(plan) : null;
@@ -68,13 +78,16 @@
                     else if (ok) { <span class="pill p-ok">Làm việc tại công ty</span> }
                     else { <span class="note">—</span> }
                     @if (!onLeave && D.PartLeave(d, p.Id) is { } part) { <div class="note"><b class="red">@Blocks.LeaveBrief(part)</b></div> }</td>
-                <td>@if (trip) { <b>@(plan!.TripProvince ?? "—")</b><div class="note">@(plan.TripCustomer ?? "")</div> } else { <span class="note">—</span> }</td>
+                <td rowspan="@nRows">@if (trip) { <b>@(plan!.TripProvince ?? "—")</b><div class="note">@(plan.TripCustomer ?? "")</div> } else { <span class="note">—</span> }</td>
+            }
                 <td>@if (ts.Count == 0) { <span class="note">—</span> }
-                    else foreach (var t in ts) { <div style="margin-bottom:3px"><b>@D.PjName(t.ProjectId)</b><div class="note">@t.Title · <span class="mono">@t.Start–@t.End</span></div></div> }</td>
-                <td>@if (!ok || onLeave) { <span class="note">—</span> }
+                    else { var t = ts[ri]; <div><b>@D.PjName(t.ProjectId)</b><div class="note">@t.Title · <span class="mono">@t.Start–@t.End</span></div></div> }</td>
+            @if (ri == 0)
+            {
+                <td rowspan="@nRows">@if (!ok || onLeave) { <span class="note">—</span> }
                     else if (plan!.Meal is Meal.Rice or Meal.Noodle) { <b>@(plan.Meal == Meal.Noodle ? "Bún" : "Cơm")</b> }
                     else { <span class="red">Cắt cơm</span> }</td>
-                <td>@switch (g.Info)
+                <td rowspan="@nRows">@switch (g.Info)
                     {
                         case 0: <span class="pill p-ok">@(p.Role is Role.Manager or Role.Admin ? "Đã xác nhận" : "Đã duyệt")</span> break;
                         case 1: <span class="pill p-warn">Chờ duyệt</span> break;
@@ -83,27 +96,21 @@
                         case 4: <span class="pill p-info">Leader ghi nghỉ</span> break;
                         default: <span class="note">—</span> break;
                     }</td>
-                @* Kết quả (yêu cầu 2026-10-26): sau khi nhân sự báo cáo cuối ngày và báo cáo được duyệt (Leader tự xác nhận) → kết quả từng việc + lý do / chuyển sang ngày nào; TP không có báo cáo nên hiện kết quả việc đã tự cập nhật *@
-                <td>@{
-                    var rep = D.ReportOf(d, p.Id);
-                    var isMgr = p.Role is Role.Manager or Role.Admin;
-                    var repOk = rep is not null && rep.LeaderDecision == Decision.Ok;
-                    var rts = !ok || onLeave ? new List<WorkTask>() : ts.Where(t => D.IsSupportTask(t) ? t.Supported : true).ToList();
+            }
+                @* Kết quả (yêu cầu 2026-10-26): chỉ Hoàn thành / Chưa hoàn thành + lịch chuyển, đóng khung CÙNG HÀNG với việc; báo cáo chưa duyệt / chưa gửi thì một ô gộp *@
+                @if (perTask)
+                {
+                    var tr = ts[ri];
+                    <td>@if (isMgr && tr.Status == TaskState.NotStarted && tr.CarriedToId is null) { <span class="note">—</span> } else { @RenderResult(tr) }</td>
                 }
-                    @if (isMgr && ok && !onLeave)
-                    {
-                        var upd = rts.Where(t => t.Status != TaskState.NotStarted || t.CarriedToId is not null).ToList();
-                        if (upd.Count == 0) { <span class="note">—</span> }
-                        foreach (var t in upd) { @RenderResult(t) }
-                    }
-                    else if (repOk && !onLeave)
-                    {
-                        foreach (var t in ts) { @RenderResult(t) }
-                    }
-                    else if (rep is not null && !onLeave) { <span class="pill p-warn">@(rep.LeaderDecision == Decision.No ? "Báo cáo bị yêu cầu bổ sung" : "Báo cáo chờ duyệt")</span> }
-                    else if (ok && !onLeave && !isMgr && d <= Scope.Today && ts.Count > 0) { <span class="pill p-idle">Chưa báo cáo</span> }
-                    else { <span class="note">—</span> }</td>
+                else if (ri == 0)
+                {
+                    <td rowspan="@nRows">@if (rep is not null && !onLeave) { <span class="pill p-warn">@(rep.LeaderDecision == Decision.No ? "Báo cáo bị yêu cầu bổ sung" : "Báo cáo chờ duyệt")</span> }
+                        else if (ok && !onLeave && !isMgr && d <= Scope.Today && ts.Count > 0) { <span class="pill p-idle">Chưa báo cáo</span> }
+                        else { <span class="note">—</span> }</td>
+                }
             </tr>
+            }
         }
         </tbody></table></div>
     <p class="note" style="margin-bottom:0">Chỉ hiện trạng thái, địa chỉ công tác, nội dung dự án và báo cơm của kế hoạch đã được Leader (hoặc TP, với Leader) duyệt.</p>

@@ -550,3 +550,5 @@ body.has-side .tabbar .bgs .badge{min-width:20px;height:20px;font-size:11px;marg
 .ackbox .ack-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ackbox .ack-act form{display:inline;margin:0}
 @media (max-width:520px){.ackbox .ack-act{width:100%}.ackbox .ack-act>*{flex:1}.ackbox .ack-act form .btn{width:100%}}
+/* Bảng nhân sự: mỗi việc một hàng, các hàng việc trong cùng một người có đường kẻ nhạt (yêu cầu 2026-10-26) */
+tr.grp-in>td{border-top:1px dashed var(--line)}
