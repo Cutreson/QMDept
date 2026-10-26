@@ -73,7 +73,7 @@ public static class Blocks
             ackLine += $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.ReReviewBy)} không đồng ý đề xuất lại: {E(t.ReRejectNote)}</b></div>";
         // Nghiệm thu việc được giao: báo hoàn thành → chờ người giao duyệt → duyệt mới tính xong (yêu cầu 2026-10-24)
         if (t.NeedsGiverReview)
-            ackLine += t.DonePending ? $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã báo hoàn thành — chờ {E(t.GivenBy)} duyệt mới tính là xong</b></div>"
+            ackLine += t.DonePending ? $"<div class=\"s\"><b style=\"color:var(--warn,#b45309)\">Đã báo hoàn thành — chờ {E(t.GivenBy)} duyệt</b></div>"
                 : t.Status == TaskState.Done && t.DoneReviewAt is DateTime rv ? $"<div class=\"s\"><b style=\"color:var(--ok)\">✓ {E(t.DoneReviewBy)} đã duyệt hoàn thành {VnTime.Hm(rv)} {Fmt.Dm(VnTime.DateOf(rv))}</b></div>"
                 : t.DoneRejectNote is not null ? $"<div class=\"s\"><b style=\"color:var(--bad)\">{E(t.DoneReviewBy)} chưa duyệt: {E(t.DoneRejectNote)} — cập nhật lại kết quả</b></div>" : "";
         return H($"<div class=\"trow trow-st{(actions is null ? "" : " trow-act")}\"><span class=\"ck {ck}\" aria-hidden=\"true\">{(st == TaskState.Done ? "✓" : "")}</span><div><div class=\"t\">{E(t.Title)}{PriorityTag(t.Priority)}</div>"

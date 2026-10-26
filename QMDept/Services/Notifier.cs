@@ -59,7 +59,7 @@ public static class NotifyCatalog
         new(NotifyType.ProjectLead, "Leader dự án", "Bạn được chọn làm Leader dự án hoặc không còn là Leader dự án", [Role.Staff]),
         new(NotifyType.TaskAssigned, "Giao việc", "Bạn được giao việc, có việc mới hoặc bị xóa khỏi lịch", [Role.Staff, Role.Leader]),
         new(NotifyType.TaskAcked, "Xác nhận nhận việc", "Người bạn giao việc đã xác nhận nhận việc và bắt đầu triển khai", [Role.Leader, Role.Manager]),
-        new(NotifyType.TaskDoneReported, "Việc giao đã báo hoàn thành", "Người nhận việc bạn giao đã gửi báo cáo hoàn thành — bạn duyệt thì mới tính là xong", [Role.Leader, Role.Manager]),
+        new(NotifyType.TaskDoneReported, "Việc giao đã báo hoàn thành", "Người nhận việc bạn giao đã gửi báo cáo hoàn thành — chờ bạn duyệt", [Role.Leader, Role.Manager]),
         new(NotifyType.TaskDoneDecided, "Kết quả duyệt việc được giao", "Người giao duyệt / chưa duyệt kết quả công việc bạn đã báo hoàn thành", [Role.Staff, Role.Leader]),
         new(NotifyType.TaskChangeProposed, "Đề xuất lại việc đã giao", "Người nhận việc bạn giao đề xuất lại nội dung / thời gian — bạn duyệt lại", [Role.Leader, Role.Manager]),
         new(NotifyType.TaskChangeDecided, "Kết quả đề xuất lại việc", "Người giao đồng ý / không đồng ý đề xuất lại nội dung, thời gian việc của bạn", [Role.Staff, Role.Leader]),

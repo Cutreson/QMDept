@@ -4,7 +4,7 @@
 {
     if (Model.DonePending)
     {
-        <div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:700">Đã báo hoàn thành — chờ @Model.GivenBy duyệt mới tính là xong</div>
+        <div class="note" style="margin:0 0 6px;color:var(--warn);font-weight:700">Đã báo hoàn thành — chờ @Model.GivenBy duyệt</div>
     }
     else if (Model.Status == TaskState.Done && Model.DoneReviewAt is DateTime rv)
     {

@@ -134,7 +134,7 @@
         @if (chrome.DoneReviews.Count > 0)
         {
             <div class="notice ackbox" style="--nbg:var(--bad-soft);--nfg:var(--bad);margin-top:12px"><span class="ic">!</span><div>
-                <b>@chrome.DoneReviews.Count việc bạn giao đã báo hoàn thành — chờ bạn duyệt mới tính là xong</b>
+                <b>@chrome.DoneReviews.Count việc bạn giao đã báo hoàn thành — chờ bạn duyệt</b>
                 @foreach (var r in chrome.DoneReviews.Take(5))
                 {
                     <div class="ack-row">
