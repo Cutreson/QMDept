@@ -117,6 +117,11 @@ select.in option{color:var(--fg);background:var(--surface);font-weight:500}
 .kv2 .note{margin-bottom:3px}
 @media (max-width:360px){ .pick2{grid-template-columns:1fr} }
 .pick2.eq{grid-template-columns:1fr 1fr}
+.own-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+.own-row select.in{min-height:42px;font-weight:600}
+.own-row .btn{min-height:42px;padding:0 18px;font-size:13px;width:auto}
+@media (max-width:640px){ .own-row{grid-template-columns:1fr 1fr} .own-row .own-save{grid-column:1/-1;justify-self:end} }
+@media (max-width:420px){ .own-row{grid-template-columns:1fr} }
 .segr.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .mgrid .mg-sub{font-size:9.5px;color:var(--muted);line-height:1.15;white-space:normal;overflow-wrap:anywhere}
 .tm-wrap{overflow-x:auto;margin:0 -14px;padding:0 14px 4px}

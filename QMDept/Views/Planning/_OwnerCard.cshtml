@@ -13,7 +13,7 @@
     <input type="hidden" name="projectId" value="@p.Id">
     <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b>@if (done) { <text> </text><span class="pill p-ok">Hoàn thành</span> }<div class="note">@Dept.SubLine(p)</div></div>
         <span class="note" style="margin-left:auto;text-align:right">@(ownerText.Length == 0 ? "Chưa có Leader phụ trách" : "Leader phụ trách: " + ownerText)</span></div>
-        <div class="pick2 eq">
+        <div class="own-row">
             <div>
                 <label class="f" for="@(Model.Prefix)@(p.Id)">Leader phụ trách 1</label>
                 <select class="in" id="@(Model.Prefix)@(p.Id)" name="leaderId" style="width:100%;min-width:0">
@@ -34,6 +34,6 @@
                     }
                 </select>
             </div>
+            <div class="own-save"><button class="btn btn-primary">Lưu</button></div>
         </div>
-        <div class="btn-row" style="margin-top:10px"><button class="btn btn-primary">Lưu</button></div>
 </form>
