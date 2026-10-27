@@ -355,3 +355,4 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - (2026-10-26) Cột "Kết quả" rút gọn theo yêu cầu: chỉ Hoàn thành / Chưa hoàn thành + lịch chuyển sang (bỏ nội dung, lý do, thời gian).
 - (2026-10-26) Bảng nhân sự: mỗi việc một hàng (rowspan) để nhãn Kết quả dóng thẳng hàng với từng việc (quy tắc 94).
 - (2026-10-27) Làm thêm: mọi đăng ký NV qua Leader → TP (quy tắc 95); bảng làm thêm tháng theo phê duyệt mới nhất (quy tắc 96); nhắc việc tự động ReminderService (quy tắc 97). Đã test NV→Leader→TP→bảng tháng (giờ thực tế khi kết quả đã duyệt) trên DB thật + xem trước nhắc việc ở /Dev/Reminders (22 thông báo, không gửi thật); dọn dữ liệu thử.
+- (2026-10-27) Dự án có thêm Leader phụ trách 2 (quy tắc 98; migration ProjectOwner2); đã test gán / bỏ Leader 2 trên DB thật (dự án 108), Leader 2 thấy dự án; đã trả dữ liệu về cũ + xóa thông báo thử.

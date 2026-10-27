@@ -1093,6 +1093,9 @@ namespace QMDept.Data.Migrations
                     b.Property<int?>("OwnerLeaderId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("OwnerLeader2Id")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("PoDate")
                         .HasColumnType("date");
 

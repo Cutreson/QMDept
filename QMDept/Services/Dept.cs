@@ -170,7 +170,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         return $"{t} dự án · {a} đang triển khai · {d} đã hoàn thành";
     }
     /// <summary>Dự án người đang đăng nhập được thấy: Leader chỉ thấy dự án TP đã giao cho nhóm mình phụ trách (yêu cầu 2026-10-20); TP / Quản trị / NV thấy như cũ.</summary>
-    IEnumerable<Project> VisiblePj() => scope.Resolved && scope.Account is { Role: Role.Leader } a ? Projects.Where(p => p.OwnerLeaderId == a.Id || p.IsCommon) : Projects;   // "Công việc chung" mọi người đều thấy
+    IEnumerable<Project> VisiblePj() => scope.Resolved && scope.Account is { Role: Role.Leader } a ? Projects.Where(p => p.OwnedBy(a.Id) || p.IsCommon) : Projects;   // "Công việc chung" mọi người đều thấy
     public List<Project> ActivePj() { GuardBase(); return VisiblePj().Where(p => !p.Closed && !p.IsCommon).OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<Project> AllPj() { GuardBase(); return VisiblePj().OrderBy(p => p.SortOrder).ThenBy(p => p.Name, Fmt.ViCompare).ToList(); }
     public List<PlanItem> ItemsOf(int pid) { GuardBase(); return Items.Where(i => i.ProjectId == pid).OrderBy(i => i.SortOrder).ThenBy(i => i.Title, Fmt.ViCompare).ToList(); }
@@ -184,7 +184,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         var l = new List<(string, string)>();
         if (!string.IsNullOrEmpty(p.Code)) l.Add(("Mã dự án", p.Code));
         if (p.Quantity is int q) l.Add(("Số lượng", q.ToString()));
-        if (p.OwnerLeaderId is int o && P(o) is { } ol) l.Add(("Leader phụ trách", ol.Name));
+        { var ow = new[] { p.OwnerLeaderId, p.OwnerLeader2Id }.OfType<int>().Select(i => P(i)?.Name).Where(n => n is not null).ToList(); if (ow.Count > 0) l.Add(("Leader phụ trách", string.Join(", ", ow))); }
         if (!string.IsNullOrEmpty(p.Category)) l.Add(("Loại", p.Category));
         if (!string.IsNullOrEmpty(p.Level)) l.Add(("Cấp độ", p.Level));
         if (p.PoDate is DateOnly po) l.Add(("Ngày PO", Fmt.Dmy(po)));

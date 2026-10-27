@@ -1,25 +1,39 @@
 @model (Project P, string Prefix, List<Person> Leaders)
-@* Thẻ một dự án ở trang "Leader phụ trách dự án": tên, Leader hiện tại, ô chọn Leader + Lưu (dự án đã hoàn thành vẫn gán được Leader, để biết ai từng phụ trách). Dùng cho danh sách theo mục và kết quả tìm kiếm. *@
+@* Thẻ một dự án ở trang "Leader phụ trách dự án": tên, Leader hiện tại, ô chọn Leader phụ trách + Leader phụ trách 2 (không bắt buộc, yêu cầu 2026-10-27) + Lưu (dự án đã hoàn thành vẫn gán được Leader, để biết ai từng phụ trách). Dùng cho danh sách theo mục và kết quả tìm. *@
 @{
     var p = Model.P;
     var req = Context.Request;
     var owner = p.OwnerLeaderId is int oid ? D.P(oid) : null;
+    var owner2 = p.OwnerLeader2Id is int oid2 ? D.P(oid2) : null;
+    var ownerText = string.Join(", ", new[] { owner, owner2 }.OfType<Person>().Select(o => o.Name));
     var done = p.Closed || D.PjStatus(p.Id, Scope.Date) == ProjectStatus.Completed;
 }
 <form class="card sec" method="post" action="/Planning/SetProjectOwner" asp-antiforgery="true" data-pj-id="@p.Id">
     @Ui.ReturnField(req)
     <input type="hidden" name="projectId" value="@p.Id">
     <div class="row">@Ui.Ptile(D.Tile(p.Id), p.Name, 28)<div><b>@p.Name</b>@if (done) { <text> </text><span class="pill p-ok">Hoàn thành</span> }<div class="note">@Dept.SubLine(p)</div></div>
-        <span class="note" style="margin-left:auto;text-align:right">@(owner is null ? "Chưa có Leader phụ trách" : "Leader phụ trách: " + owner.Name)</span></div>
-        <label class="f" for="@(Model.Prefix)@(p.Id)">Leader phụ trách</label>
-        <div class="row" style="gap:8px">
-            <select class="in" id="@(Model.Prefix)@(p.Id)" name="leaderId" style="flex:1;min-width:0">
-                <option value="" selected="@(owner is null)">— Chưa chọn —</option>
-                @foreach (var l in Model.Leaders)
-                {
-                    <option value="@l.Id" selected="@(owner?.Id == l.Id)">@l.Name · nhóm @D.Team(l.Id).Count người</option>
-                }
-            </select>
-            <button class="btn btn-primary">Lưu</button>
+        <span class="note" style="margin-left:auto;text-align:right">@(ownerText.Length == 0 ? "Chưa có Leader phụ trách" : "Leader phụ trách: " + ownerText)</span></div>
+        <div class="pick2 eq">
+            <div>
+                <label class="f" for="@(Model.Prefix)@(p.Id)">Leader phụ trách 1</label>
+                <select class="in" id="@(Model.Prefix)@(p.Id)" name="leaderId" style="width:100%;min-width:0">
+                    <option value="" selected="@(owner is null)">— Chưa chọn —</option>
+                    @foreach (var l in Model.Leaders)
+                    {
+                        <option value="@l.Id" selected="@(owner?.Id == l.Id)">@l.Name · nhóm @D.Team(l.Id).Count người</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="f" for="@(Model.Prefix)2_@(p.Id)">Leader phụ trách 2 (nếu có)</label>
+                <select class="in" id="@(Model.Prefix)2_@(p.Id)" name="leader2Id" style="width:100%;min-width:0">
+                    <option value="" selected="@(owner2 is null)">— Không có —</option>
+                    @foreach (var l in Model.Leaders)
+                    {
+                        <option value="@l.Id" selected="@(owner2?.Id == l.Id)">@l.Name · nhóm @D.Team(l.Id).Count người</option>
+                    }
+                </select>
+            </div>
         </div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn btn-primary">Lưu</button></div>
 </form>

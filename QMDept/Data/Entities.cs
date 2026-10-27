@@ -41,6 +41,11 @@ public class Project
     [MaxLength(80)] public string? Code { get; set; }                 // Mã dự án (vd. TC0625-03-P1)
     public int? Quantity { get; set; }                                // Số lượng (máy / bộ)
     public int? OwnerLeaderId { get; set; }                           // Leader (trưởng nhóm) phụ trách dự án
+    public int? OwnerLeader2Id { get; set; }                          // Leader phụ trách thứ 2 (không bắt buộc) — yêu cầu 2026-10-27
+    /// <summary>Leader có phụ trách dự án này (Leader phụ trách 1 hoặc 2).</summary>
+    public bool OwnedBy(int leaderId) => OwnerLeaderId == leaderId || OwnerLeader2Id == leaderId;
+    /// <summary>Đã có ít nhất một Leader phụ trách.</summary>
+    public bool HasOwner => OwnerLeaderId is not null || OwnerLeader2Id is not null;
     public DateOnly? PoDate { get; set; }                             // Ngày PO
     public DateOnly? DeliveryDate { get; set; }                       // Ngày giao hàng theo PO
     [MaxLength(20)] public string? Level { get; set; }                // Cấp độ

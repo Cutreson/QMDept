@@ -352,7 +352,7 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader dự án";
         // Chỉ Leader chọn Leader dự án (TP / Quản trị chỉ chọn Leader phụ trách dự án). Leader thấy dự án do mình phụ trách + dự án chưa có Leader phụ trách.
-        var projects = D.AllPj().Where(p => !p.IsCommon && (p.OwnerLeaderId is null || p.OwnerLeaderId == Scope.MeId)).ToList();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
+        var projects = D.AllPj().Where(p => !p.IsCommon && (!p.HasOwner || p.OwnedBy(Scope.MeId ?? 0))).ToList();   // gồm cả dự án đã hoàn thành (vẫn phải triển khai khi khách hàng có sự cố)
         // Chia 2 mục: đã có Leader dự án (f=has) / chưa chọn Leader dự án (f=none); mặc định mục đầu có dự án (đã có → chưa chọn).
         var has = projects.Where(p => D.ProjectLead(p.Id) is not null).ToList();
         var none = projects.Where(p => D.ProjectLead(p.Id) is null).ToList();
@@ -367,7 +367,7 @@ public partial class PlanningController
         RequireLead();
         await D.EnsureAsync(Date, Date);
         var pj = await Db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (pj.OwnerLeaderId is int ow && ow != Scope.MeId) throw new BizException("Dự án này do Leader nhóm khác phụ trách");
+        if (pj.HasOwner && !pj.OwnedBy(Scope.MeId ?? 0)) throw new BizException("Dự án này do Leader nhóm khác phụ trách");
         var olds = await Db.Assignments.Where(a => a.ProjectId == projectId && a.Role == ProjectRole.Lead).ToListAsync();
         if (emp is int e)
         {
@@ -482,33 +482,37 @@ public partial class PlanningController
         await D.EnsureAsync(Date, Date);
         ViewData["Title"] = "Leader phụ trách dự án";
         var all = D.AllPj().Where(p => !p.IsCommon).ToList();   // gồm cả dự án đã bàn giao (yêu cầu 2026-10-21: dự án đã hoàn thành cũng phải có Leader phụ trách)
-        var has = all.Where(p => p.OwnerLeaderId is not null).ToList();
-        var none = all.Where(p => p.OwnerLeaderId is null).ToList();
+        var has = all.Where(p => p.HasOwner).ToList();
+        var none = all.Where(p => !p.HasOwner).ToList();
         // 2 mục: Đã có Leader / Chưa có Leader (thay "Tất cả"); mặc định mục đầu tiên có dự án
         f = f is "has" or "none" ? f : has.Count > 0 ? "has" : "none";
         return View(new PlanningOwnersVm
         {
             Projects = f == "has" ? has : none, Leaders = D.Leaders(), Filter = f,
             Total = all.Count, Unassigned = none.Count, AllProjects = all,
-            Stats = D.Leaders().Select(l => (l, has.Where(p => p.OwnerLeaderId == l.Id).ToList())).ToList(),
+            Stats = D.Leaders().Select(l => (l, has.Where(p => p.OwnedBy(l.Id)).ToList())).ToList(),
         });
     }
 
-    /// <summary>POST: chọn (hoặc bỏ chọn khi leaderId trống) Leader nhóm phụ trách một dự án. Người được chọn / người cũ nhận thông báo.</summary>
+    /// <summary>POST: chọn (hoặc bỏ chọn khi trống) Leader phụ trách chính (leaderId) và Leader phụ trách thứ 2 (leader2Id, không bắt buộc) của một dự án. Người được chọn / người cũ nhận thông báo (yêu cầu 2026-10-27).</summary>
     [HttpPost]
-    public Task<IActionResult> SetProjectOwner(int projectId, int? leaderId) => Do(async () =>
+    public Task<IActionResult> SetProjectOwner(int projectId, int? leaderId, int? leader2Id) => Do(async () =>
     {
         RequireManager();
         var pj = await Db.Projects.FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new BizException("Không tìm thấy dự án");
-        if (leaderId is int lid && !await Db.People.AnyAsync(p => p.Id == lid && p.Role == Role.Leader && !p.IsDeleted)) throw new BizException("Leader không hợp lệ");
-        var old = pj.OwnerLeaderId;
-        if (old == leaderId) { Toast("Không có thay đổi"); return; }
-        pj.OwnerLeaderId = leaderId;
+        foreach (var lid in new[] { leaderId, leader2Id })
+            if (lid is int x && !await Db.People.AnyAsync(p => p.Id == x && p.Role == Role.Leader && !p.IsDeleted)) throw new BizException("Leader không hợp lệ");
+        if (leaderId is not null && leaderId == leader2Id) throw new BizException("Leader phụ trách 2 phải khác Leader phụ trách chính");
+        if (leaderId is null && leader2Id is not null) (leaderId, leader2Id) = (leader2Id, null);   // chỉ có một Leader thì là Leader chính
+        var oldA = pj.OwnerLeaderId; var oldB = pj.OwnerLeader2Id;
+        if (oldA == leaderId && oldB == leader2Id) { Toast("Không có thay đổi"); return; }
+        pj.OwnerLeaderId = leaderId; pj.OwnerLeader2Id = leader2Id;
         await Db.SaveChangesAsync();
         await D.EnsureAsync(Date, Date);
-        if (leaderId is int nl) await Notify.ProjectOwnerAsync(nl, pj.Name, assigned: true);
-        if (old is int ol) await Notify.ProjectOwnerAsync(ol, pj.Name, assigned: false);
-        Toast(leaderId is int n2 ? $"Đã giao dự án {pj.Name} cho nhóm {D.PName(n2)} phụ trách" : $"Đã bỏ Leader phụ trách dự án {pj.Name}");
+        var before = new[] { oldA, oldB }.OfType<int>().ToHashSet(); var after = new[] { leaderId, leader2Id }.OfType<int>().ToHashSet();
+        foreach (var nl in after.Except(before)) await Notify.ProjectOwnerAsync(nl, pj.Name, assigned: true);
+        foreach (var ol in before.Except(after)) await Notify.ProjectOwnerAsync(ol, pj.Name, assigned: false);
+        Toast(after.Count > 0 ? $"Đã giao dự án {pj.Name} cho {string.Join(" và ", new[] { leaderId, leader2Id }.OfType<int>().Select(i => "nhóm " + D.PName(i)))} phụ trách" : $"Đã bỏ Leader phụ trách dự án {pj.Name}");
     });
 
     // ======================= Phân công (ldAssign) =======================
