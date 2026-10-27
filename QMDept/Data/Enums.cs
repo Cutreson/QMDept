@@ -222,6 +222,7 @@ public enum NotifyType
     TaskDoneDecided,     // người giao duyệt / chưa duyệt kết quả việc được giao → người nhận
     TaskChangeProposed,  // người nhận việc đề xuất lại nội dung / thời gian → người giao duyệt
     TaskChangeDecided,   // người giao đồng ý / không đồng ý đề xuất lại → người nhận
+    Reminder,            // nhắc việc tự động: việc nhân sự phải làm mà chưa làm (chưa báo cáo, chưa cập nhật / chưa chuyển việc, chưa xác nhận, chờ duyệt…)
 }
 
 /// <summary>

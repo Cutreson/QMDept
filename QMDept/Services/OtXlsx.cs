@@ -32,7 +32,7 @@ public static class OtXlsx
 
     static double Dec(string? hhmm) => Fmt.IsHhmm(hhmm) ? Fmt.Min(hhmm!) / 60.0 : 0;
 
-    /// <summary>basis = "reg": đăng ký đã duyệt theo giờ đăng ký; "actual": chỉ đăng ký có kết quả đã duyệt, theo giờ thực tế.</summary>
+    /// <summary>basis = "latest" (mặc định, yêu cầu 2026-10-27): đăng ký đã được Trưởng phòng duyệt, giờ theo PHÊ DUYỆT MỚI NHẤT — có kết quả đã duyệt thì giờ thực tế, chưa thì giờ đăng ký; "reg": luôn giờ đăng ký; "actual": chỉ đăng ký có kết quả đã duyệt, giờ thực tế. Cách tính hệ số giữ nguyên.</summary>
     public static async Task<List<Row>> LoadAsync(IDbContextFactory<AppDbContext> dbf, DataCache cache, DateOnly month, string basis)
     {
         var from = new DateOnly(month.Year, month.Month, 1); var to = from.AddMonths(1).AddDays(-1);
@@ -45,7 +45,7 @@ public static class OtXlsx
         foreach (var o in ots.Where(o => people.ContainsKey(o.PersonId)).OrderBy(o => o.Date).ThenBy(o => people[o.PersonId].Name, Fmt.ViCompare))
         {
             var p = people[o.PersonId];
-            var actual = basis == "actual";
+            var actual = basis == "actual" || (basis == "latest" && o.Completion == OtCompletion.Approved && !string.IsNullOrEmpty(o.ActualStart) && !string.IsNullOrEmpty(o.ActualEnd));
             var a = actual ? o.ActualStart : o.Start; var b = actual ? o.ActualEnd : o.End;
             var off = o.DayType == OtDayType.Holiday || o.Date.DayOfWeek == DayOfWeek.Sunday;
             var (normal, night) = Split(off, Dec(a), Dec(b));

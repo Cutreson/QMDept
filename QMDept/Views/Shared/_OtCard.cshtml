@@ -1,7 +1,7 @@
 @model Overtime
 @* Thẻ đăng ký làm thêm cần duyệt: duyệt / từ chối đăng ký, rồi duyệt / từ chối kết quả làm thêm (otApprove). Dùng ở Overtime/_Approve (TP) và Planning/Proposals (Leader).
-   Luồng (yêu cầu 2026-10-21): NV làm thêm kết thúc ≤ 20:00 → Leader duyệt → thông tin cập nhật lên Trưởng phòng (chỉ xem);
-   NV làm thêm kết thúc SAU 20:00 → Leader duyệt → Trưởng phòng duyệt → mới được duyệt. Leader đăng ký → Trưởng phòng duyệt. Kết quả làm thêm: Leader (NV) / TP (Leader). *@
+   Luồng (yêu cầu 2026-10-27): MỌI đăng ký làm thêm của NV → Leader duyệt → Trưởng phòng duyệt (không phân cấp theo giờ nữa);
+   Leader đăng ký → Trưởng phòng duyệt. Kết quả làm thêm: Leader (NV) / TP (Leader). *@
 @{
     var x = Model;
     var req = Context.Request;

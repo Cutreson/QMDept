@@ -27,6 +27,16 @@ public class DevController(AppDbContext db, DevSwitch dev) : Controller
         return Redirect(ScopeResolver.HomeOf(p.Role));
     }
 
+    /// <summary>GET /Dev/Reminders — XEM TRƯỚC các thông báo nhắc việc sẽ đẩy (không gửi thật, bỏ qua khung giờ) — chỉ khi bật thanh DEV.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Reminders([FromServices] ReminderService svc)
+    {
+        if (!dev.Enabled) return NotFound();
+        var list = new List<string>();
+        var n = await svc.RunOnceAsync(HttpContext.RequestAborted, dryRun: true, preview: list);
+        return Content($"{n} thông báo sẽ được đẩy:\n" + string.Join("\n", list), "text/plain; charset=utf-8");
+    }
+
     /// <summary>Đăng nhập tự động bằng một tài khoản (Trưởng phòng đầu tiên, không có thì Quản trị) — thay màn hình đăng nhập.</summary>
     public static async Task<bool> AutoSignInAsync(HttpContext http, AppDbContext db)
     {

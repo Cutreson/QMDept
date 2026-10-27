@@ -75,6 +75,8 @@ builder.Services.AddScoped<Dept>();
 builder.Services.AddScoped<ChromeBuilder>();
 builder.Services.AddScoped<WorkflowService>();
 builder.Services.AddScoped<Notifier>();
+builder.Services.AddSingleton<ReminderService>();   // nhắc việc tự động (yêu cầu 2026-10-27); bản chạy thử (Development) không tự gửi — chỉ xem trước ở /Dev/Reminders, trừ khi bật Reminders:Enabled
+builder.Services.AddHostedService(sp => sp.GetRequiredService<ReminderService>());
 builder.Services.AddSignalR();
 
 builder.Services.AddControllersWithViews(o => { o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()); o.Filters.Add(new AntiforgeryFailureFilter()); });

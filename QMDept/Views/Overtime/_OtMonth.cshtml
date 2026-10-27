@@ -3,7 +3,7 @@
 @{
     var req = Context.Request;
     var m0 = Fmt.ParseKey(req.Query["om"].ToString() + "-01") ?? Fmt.MonthStart(Scope.Date);
-    var ob = req.Query["ob"] == "actual" ? "actual" : "reg";
+    var ob = "latest";   // giờ theo phê duyệt mới nhất (yêu cầu 2026-10-27): có kết quả đã duyệt → giờ thực tế, chưa → giờ đăng ký
     var rows = await OtXlsx.LoadAsync(Context.RequestServices.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<AppDbContext>>(), Context.RequestServices.GetRequiredService<QMDept.Services.DataCache>(), m0, ob);
     string Om(DateOnly x) => x.ToString("yyyy-MM");
     string[] dow = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -20,11 +20,6 @@
         }
     </div>
     <p class="note" style="margin:2px 0 8px">Bộ phận: Quản lý chất lượng và bảo dưỡng</p>
-    @Ui.Seg(new[]
-    {
-        (Ui.Here(req, ("ob", null), ("om", Om(m0))), "Theo đăng ký", ob == "reg", 0),
-        (Ui.Here(req, ("ob", "actual"), ("om", Om(m0))), "Theo kết quả đã duyệt", ob == "actual", 0),
-    })
     <div class="daybar" style="margin-bottom:10px">
         <a class="icon-btn" href="@Ui.Here(req, ("om", Om(m0.AddMonths(-1))))" aria-label="Tháng trước">‹</a>
         <span class="date">Tháng @m0.ToString("MM/yyyy")</span>
@@ -32,7 +27,7 @@
     </div>
     @if (rows.Count == 0)
     {
-        <div class="empty">Tháng này chưa có ai làm thêm tại công ty@(ob == "actual" ? " (chưa có kết quả được duyệt)" : "").</div>
+        <div class="empty">Tháng này chưa có ai làm thêm tại công ty.</div>
     }
     else
     {
@@ -61,5 +56,5 @@
         }
         </tbody></table></div>
     }
-    <p class="note" style="margin-bottom:0">Chỉ gồm người có làm thêm tại công ty (đăng ký đã duyệt), không gồm Trưởng phòng. Ngày thường: 150% đến 22:00, sau 22:00 là 210%; Chủ nhật / ngày nghỉ: 200% đến 22:00, sau 22:00 là 270%; đã trừ nghỉ trưa 12:00–13:00.</p>
+    <p class="note" style="margin-bottom:0">Chỉ gồm người có làm thêm tại công ty (đã được Trưởng phòng duyệt), không gồm Trưởng phòng. Giờ theo phê duyệt mới nhất: có kết quả làm thêm được duyệt thì lấy giờ thực tế, chưa có thì lấy giờ đăng ký. Ngày thường: 150% đến 22:00, sau 22:00 là 210%; Chủ nhật / ngày nghỉ: 200% đến 22:00, sau 22:00 là 270%; đã trừ nghỉ trưa 12:00–13:00.</p>
 </section>

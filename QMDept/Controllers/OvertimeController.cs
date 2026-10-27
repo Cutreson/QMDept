@@ -187,7 +187,7 @@ public class OvertimeController : AppController
         }, "Đã hủy đăng ký", OvertimeUi.WithoutParam(BackUrl(), "edit"));
 
     /// <summary>
-    /// Kiểm quyền duyệt: Leader duyệt NV trong nhóm; TP duyệt Leader, và duyệt tiếp đăng ký của NV kết thúc sau 20:00 (sau khi Leader duyệt — yêu cầu 2026-10-21).
+    /// Kiểm quyền duyệt: Leader duyệt NV trong nhóm; TP duyệt Leader, và duyệt tiếp đăng ký của NV (sau khi Leader duyệt — yêu cầu 2026-10-21).
     /// <paramref name="forResult"/> = duyệt KẾT QUẢ làm thêm: NV do Leader duyệt, Leader do TP duyệt (TP không duyệt kết quả của NV). Trả về đăng ký (tracked).
     /// </summary>
     async Task<Overtime> LoadForDecisionAsync(int id, bool forResult = false)
@@ -204,7 +204,7 @@ public class OvertimeController : AppController
             RequireManager();
             var staffStep = !forResult && x.Role == Role.Staff && x.NeedsManager;
             if (x.Role != Role.Leader && !staffStep) throw new BizException(x.Role == Role.Staff && !forResult
-                ? "Đăng ký làm thêm kết thúc trước hoặc đúng 20:00 do Leader duyệt — Trưởng phòng chỉ duyệt đăng ký của Leader và đăng ký của nhân viên kết thúc sau 20:00"
+                ? "Kết quả làm thêm của nhân viên do Leader duyệt — Trưởng phòng duyệt đăng ký của Leader và duyệt tiếp đăng ký của nhân viên sau khi Leader duyệt"
                 : "Trưởng phòng duyệt đăng ký của Leader");
         }
         else throw new BizException("Chỉ Leader hoặc Trưởng phòng được thực hiện");
@@ -220,15 +220,15 @@ public class OvertimeController : AppController
     {
         if (!(Scope.IsManager || Scope.Account is { Role: Role.Leader, HrDuty: true })) return Forbid();
         var month = Fmt.ParseKey((om ?? "") + "-01") ?? Fmt.MonthStart(Scope.Today);
-        basis = basis == "actual" ? "actual" : "reg";
+        basis = basis is "actual" or "reg" ? basis : "latest";
         var dbf = HttpContext.RequestServices.GetRequiredService<IDbContextFactory<AppDbContext>>();
         var cache = HttpContext.RequestServices.GetRequiredService<DataCache>();
         var rows = await OtXlsx.LoadAsync(dbf, cache, month, basis);
         var bytes = OtXlsx.BuildFromTemplate(Path.Combine(AppContext.BaseDirectory, "Assets", "ot-template.xlsx"), month, rows);
-        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Dang-ky-lam-them-Thang-{month:MM-yyyy}{(basis == "actual" ? "-ket-qua" : "")}.xlsx");
+        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Dang-ky-lam-them-Thang-{month:MM-yyyy}.xlsx");
     }
 
-    /// <summary>otDecide: duyệt (v=ok) / từ chối (v=no, bắt buộc lý do). NV làm thêm sau 20:00: Leader duyệt → chờ Trưởng phòng duyệt → mới được duyệt.</summary>
+    /// <summary>otDecide: duyệt (v=ok) / từ chối (v=no, bắt buộc lý do). NV làm thêm: Leader duyệt → chờ Trưởng phòng duyệt → mới được duyệt.</summary>
     [HttpPost]
     public async Task<IActionResult> Decide(int id, string? v, string? reason)
     {
@@ -238,7 +238,7 @@ public class OvertimeController : AppController
         {
             if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
             var x = await LoadForDecisionAsync(id);
-            var tpStep = Scope.Role == Role.Manager && x.Role == Role.Staff;   // bước Trưởng phòng của đăng ký NV sau 20:00
+            var tpStep = Scope.Role == Role.Manager && x.Role == Role.Staff;   // bước Trưởng phòng của đăng ký NV
             if (x.Status != (tpStep ? OtStatus.PendingManager : OtStatus.Pending)) throw new BizException(tpStep && x.Status == OtStatus.Pending
                 ? $"{await ApproverNameAsync(await Db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == x.PersonId))} chưa duyệt đăng ký này — Trưởng phòng duyệt sau khi Leader duyệt"
                 : "Đăng ký đã được quyết định — tải lại trang, dùng Hoàn tác nếu cần đổi");
@@ -248,9 +248,9 @@ public class OvertimeController : AppController
                 x.Reason = "";
                 if (!tpStep && x.NeedsManager)
                 {
-                    // Leader duyệt đăng ký NV kết thúc sau 20:00 → chưa được duyệt hẳn, chờ Trưởng phòng
+                    // Leader duyệt đăng ký NV → chưa được duyệt hẳn, chờ Trưởng phòng
                     x.Status = OtStatus.PendingManager; x.LeaderBy = Scope.ActorName; x.LeaderAt = now; x.DecidedBy = null; x.DecidedAt = null;
-                    toast = $"Đã duyệt — đăng ký làm thêm sau 20:00 chờ {await ManagersNameAsync()} duyệt";
+                    toast = $"Đã duyệt — đăng ký làm thêm chờ {await ManagersNameAsync()} duyệt";
                 }
                 else { x.Status = OtStatus.Approved; x.DecidedBy = Scope.ActorName; x.DecidedAt = now; }
             }
@@ -264,7 +264,7 @@ public class OvertimeController : AppController
             await Db.SaveChangesAsync();
             if (x.Status == OtStatus.PendingManager)
             {
-                await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, $"đã được {Scope.ActorName} duyệt, chờ {await ManagersNameAsync()} duyệt (làm thêm sau 20:00)");
+                await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, $"đã được {Scope.ActorName} duyệt, chờ {await ManagersNameAsync()} duyệt ");
                 await Notify.OvertimeToManagerAsync(x.PersonId, x.Date, x.Start, x.End);
             }
             else await Notify.OvertimeDecidedAsync(x.PersonId, x.Date, ok ? "đã được duyệt" : "bị từ chối", ok ? null : x.Reason);
@@ -272,7 +272,7 @@ public class OvertimeController : AppController
         });
     }
 
-    /// <summary>otUndo: đưa về bước trước. NV sau 20:00: Trưởng phòng hoàn tác → về chờ Trưởng phòng; Leader hoàn tác → về chờ Leader (chỉ khi Trưởng phòng chưa quyết định).</summary>
+    /// <summary>otUndo: đưa về bước trước. NV: Trưởng phòng hoàn tác → về chờ Trưởng phòng; Leader hoàn tác → về chờ Leader (chỉ khi Trưởng phòng chưa quyết định).</summary>
     [HttpPost]
     public async Task<IActionResult> Undo(int id) =>
         await Do(async () =>

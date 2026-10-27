@@ -9,7 +9,7 @@
     <dt>Mức</dt><dd>@x.Tier</dd>
     @if (x.Role == Role.Staff)
     {
-        <dt>Cấp duyệt</dt><dd>@(x.NeedsManager ? "Leader → Trưởng phòng (làm thêm sau 20:00)" : "Leader (đã duyệt thì cập nhật lên Trưởng phòng)")@(x.LeaderAt is not null ? $" · Leader {x.LeaderBy} duyệt lúc {VnTime.Hm(x.LeaderAt)}" : "")</dd>
+        <dt>Cấp duyệt</dt><dd>@(x.NeedsManager ? "Leader → Trưởng phòng" : "Trưởng phòng")@(x.LeaderAt is not null ? $" · Leader {x.LeaderBy} duyệt lúc {VnTime.Stamp(x.LeaderAt)}" : "")</dd>
     }
     <dt>Nghỉ giải lao</dt><dd class="mono">@x.Break</dd>
     <dt>Suất ăn</dt><dd>@OtRules.MealText(x)</dd>

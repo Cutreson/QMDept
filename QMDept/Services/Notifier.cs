@@ -63,6 +63,7 @@ public static class NotifyCatalog
         new(NotifyType.TaskDoneDecided, "Kết quả duyệt việc được giao", "Người giao duyệt / chưa duyệt kết quả công việc bạn đã báo hoàn thành", [Role.Staff, Role.Leader]),
         new(NotifyType.TaskChangeProposed, "Đề xuất lại việc đã giao", "Người nhận việc bạn giao đề xuất lại nội dung / thời gian — bạn duyệt lại", [Role.Leader, Role.Manager]),
         new(NotifyType.TaskChangeDecided, "Kết quả đề xuất lại việc", "Người giao đồng ý / không đồng ý đề xuất lại nội dung, thời gian việc của bạn", [Role.Staff, Role.Leader]),
+        new(NotifyType.Reminder, "Nhắc việc", "Nhắc những việc bạn phải làm mà chưa làm: báo cáo, cập nhật kết quả, chuyển việc, xác nhận việc được giao, việc chờ bạn duyệt", [Role.Staff, Role.Leader, Role.Manager]),
         new(NotifyType.SupportRequested, "Yêu cầu hỗ trợ từ nhóm khác", "Nhóm khác xin nhân sự hỗ trợ — bạn xác nhận và chọn nhân viên", [Role.Leader]),
         new(NotifyType.SupportConfirmed, "Xác nhận nhân sự hỗ trợ", "Leader nhóm được xin đã xác nhận và chọn nhân viên hỗ trợ (người đề xuất, Leader của họ, nhân viên được chọn)", [Role.Staff, Role.Leader]),
         new(NotifyType.SupportDeclined, "Từ chối hỗ trợ nhân sự", "Leader nhóm được xin không đáp ứng được yêu cầu hỗ trợ nhân sự của bạn (hoặc của nhân viên nhóm bạn)", [Role.Staff, Role.Leader]),
@@ -97,7 +98,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
             if (targets.Count == 0) return;
             // Lưu vào hộp thông báo (chuông + /Inbox): người đang offline / mở điện thoại sau vẫn thấy — yêu cầu 2026-10-23
             var low = (title + " " + body).ToLowerInvariant();
-            var bad = low.Contains("từ chối") || low.Contains("bổ sung") || low.Contains("hoàn tác");
+            var bad = low.Contains("từ chối") || low.Contains("bổ sung") || low.Contains("hoàn tác") || low.StartsWith("nhắc việc");
             string Cut(string? s, int n) => s is null ? "" : s.Length <= n ? s : s[..n];
             await using (var idb = await dbf.CreateDbContextAsync())
             {
@@ -304,9 +305,9 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync(to, NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)}", $"{start}–{end}", Q("/Overtime?tab=approve", d));
     }
 
-    /// <summary>Đăng ký làm thêm của NV kết thúc sau 20:00: Leader đã duyệt → mọi TP duyệt tiếp (yêu cầu 2026-10-21).</summary>
+    /// <summary>Đăng ký làm thêm của NV: Leader đã duyệt → mọi TP duyệt tiếp (yêu cầu 2026-10-21).</summary>
     public async Task OvertimeToManagerAsync(int person, DateOnly d, string start, string end) =>
-        await SendAsync(await Managers(), NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)} (sau 20:00)", $"{start}–{end} · {(await LeaderOf(person) is int ldr2 ? await Name(ldr2) : "Leader")} đã duyệt, chờ bạn duyệt.", Q("/Overtime?tab=approve", d));
+        await SendAsync(await Managers(), NotifyType.OvertimeSubmitted, $"{await Name(person)} đăng ký làm thêm {Fmt.Dm(d)} ", $"{start}–{end} · {(await LeaderOf(person) is int ldr2 ? await Name(ldr2) : "Leader")} đã duyệt, chờ bạn duyệt.", Q("/Overtime?tab=approve", d));
 
     /// <summary>NV / Leader cập nhật kết quả làm thêm (giờ thực tế + công việc) → người duyệt (Leader nhóm / mọi TP).</summary>
     public async Task OvertimeDoneSubmittedAsync(int person, Role role, DateOnly d, string start, string end)
@@ -321,7 +322,7 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
     {
         if (role == Role.Manager) return;
         var to = role == Role.Staff ? [await LeaderOf(person)] : await Managers();
-        if (alsoManagers && role == Role.Staff) to.AddRange(await Managers());   // đăng ký sau 20:00 đã qua Leader → TP cũng cần biết
+        if (alsoManagers && role == Role.Staff) to.AddRange(await Managers());   // đăng ký đã qua Leader → TP cũng cần biết
         await SendAsync(to, NotifyType.OvertimeCancelled, $"{await Name(person)} hủy đăng ký làm thêm {Fmt.Dm(d)}",
             $"{start}–{end}{(wasApproved ? " · đã duyệt trước đó" : "")}", Q("/Overtime?tab=approve", d));
     }
