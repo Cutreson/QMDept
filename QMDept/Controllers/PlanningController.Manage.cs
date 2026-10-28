@@ -60,6 +60,7 @@ public partial class PlanningController
         RequireLead();
         var t = await Db.WorkTasks.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy công việc");
         await RequireInScopeAsync(t.EmployeeId);
+        await Flow.EnsureNotSentCarryTargetAsync(id);
         await Flow.DeleteTaskAsync(id);
         await Notify.TaskAssignedAsync([t.EmployeeId], t.Date, t.Title, "Việc bị xóa khỏi lịch");
     }, "Đã xóa");

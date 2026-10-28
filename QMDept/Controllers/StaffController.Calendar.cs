@@ -348,6 +348,7 @@ public partial class StaffController
     public async Task<IActionResult> DeleteTask(int id) => await Do(async () =>
     {
         var t = await LoadManagedTaskAsync(id);
+        await Flow.EnsureNotSentCarryTargetAsync(t.Id);
         await Flow.DeleteTaskAsync(t.Id);
     }, "Đã xóa công việc");
 
@@ -360,6 +361,7 @@ public partial class StaffController
         if (me.Role is Role.Staff) throw new BizException("Chỉ Leader / Trưởng phòng dùng mục này");
         var t = await Db.WorkTasks.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.EmployeeId == me.Id && x.Source == TaskSource.Planned)
             ?? throw new BizException("Không tìm thấy công việc");
+        await Flow.EnsureNotSentCarryTargetAsync(t.Id);
         await Flow.DeleteTaskAsync(t.Id);
     }, "Đã xóa công việc");
 

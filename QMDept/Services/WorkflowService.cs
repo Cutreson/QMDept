@@ -319,6 +319,18 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
     }
 
     /// <summary>delTask: xóa việc khỏi lịch, dọn tham chiếu chuyển tiếp.</summary>
+    /// <summary>
+    /// Việc là ĐÍCH chuyển tiếp của một việc chưa hoàn thành đã nằm trong báo cáo cuối ngày đã gửi thì KHÔNG xóa được (yêu cầu 2026-10-28):
+    /// xóa sẽ làm việc gốc mất kế hoạch tiếp theo trong khi báo cáo đã được xác nhận. Chỉ được đổi ngày / giờ (Sửa).
+    /// </summary>
+    public async Task EnsureNotSentCarryTargetAsync(int taskId)
+    {
+        var src = await db.WorkTasks.AsNoTracking().Where(x => x.CarriedToId == taskId && x.Status != TaskState.Done).ToListAsync();
+        foreach (var s in src)
+            if (await db.DayReports.AnyAsync(r => r.Date == s.Date && r.EmployeeId == s.EmployeeId))
+                throw new BizException($"Việc này là kế hoạch chuyển tiếp của “{s.Title}” ngày {Fmt.Dmy(s.Date)}, đã nằm trong báo cáo cuối ngày — không xóa được (chỉ đổi ngày / giờ ở nút Sửa)");
+    }
+
     public async Task DeleteTaskAsync(int taskId)
     {
         var t = await db.WorkTasks.FirstOrDefaultAsync(x => x.Id == taskId);
