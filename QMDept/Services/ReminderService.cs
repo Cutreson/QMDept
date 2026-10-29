@@ -122,11 +122,11 @@ public sealed class ReminderService(IServiceScopeFactory scopes, ILogger<Reminde
             if (c > 0) await Remind(lead, "việc chờ bạn duyệt", $"{c} việc của nhóm đang chờ duyệt (kế hoạch, báo cáo, đề xuất, xin nghỉ, làm thêm, hỗ trợ nhân sự)", "Vào Kế hoạch & duyệt để xử lý.", "/Planning/Proposals?as=me");
         }
         var leaderIds = people.Where(x => x.Role == Role.Leader).Select(x => x.Id).ToHashSet();
-        var cm = plans.Count(x => leaderIds.Contains(x.EmployeeId) && x.LeaderDecision == null) + leavesP.Count(l => leaderIds.Contains(l.PersonId))
+        var cm = plans.Count(x => leaderIds.Contains(x.EmployeeId) && x.LeaderDecision == null) + reports.Count(x => leaderIds.Contains(x.EmployeeId) && x.LeaderDecision == null) + leavesP.Count(l => leaderIds.Contains(l.PersonId))
             + pend.Count(o => (o.Status == OtStatus.Pending && leaderIds.Contains(o.PersonId)) || o.Status == OtStatus.PendingManager);
         if (cm > 0)
             foreach (var m in people.Where(x => x.Role is Role.Manager or Role.Admin))
-                await Remind(m, "việc chờ bạn duyệt", $"{cm} việc đang chờ bạn duyệt (trạng thái làm việc của Leader, xin nghỉ, đăng ký làm thêm của nhân sự)", "Vào Phê duyệt để xử lý.", "/Manager/Approvals");
+                await Remind(m, "việc chờ bạn duyệt", $"{cm} việc đang chờ bạn duyệt (trạng thái làm việc + báo cáo cuối ngày của Leader, xin nghỉ, đăng ký làm thêm của nhân sự)", "Vào Phê duyệt để xử lý.", "/Manager/Approvals");
 
         // 7. người GIAO việc: việc đã báo hoàn thành / đề xuất lại đang chờ duyệt
         foreach (var g in tasks.Where(t => t.GivenById != null && (t.DonePending || t.RePending)).GroupBy(t => t.GivenById!.Value))

@@ -442,6 +442,7 @@ public sealed class Dept(ViewScope scope, DataCache cache)
                 if (PlanSt(p) == (lead ? PlanState.Pending : PlanState.PendingManager)) Add(p.Date);
             }
             foreach (var x in LeaderLeaves()) Add(x.Date);
+            foreach (var x in _reports.Values) if (EodSt(x) == EodState.Pending && P(x.EmployeeId) is { IsDeleted: false, Role: Role.Leader }) Add(x.Date);
             foreach (var o in OtPendingAll(Role.Manager, me)) if (o.NeedsTpDecision) Add(o.Date);
         }
         else

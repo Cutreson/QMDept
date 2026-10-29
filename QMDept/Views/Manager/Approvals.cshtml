@@ -108,18 +108,65 @@ else if (Model.Mode == "leader")
 {
     @* Trạng thái làm việc trong ngày của Leader (Leader tự gửi → Trưởng phòng duyệt) — yêu cầu 2026-10-16 *@
     <partial name="_DayBar" />
-    @* Báo cáo cuối ngày của Leader: Leader tự xác nhận khi gửi, Trưởng phòng chỉ XEM kết quả (yêu cầu 2026-10-24) *@
-    var leaderReports = D.Reports.Where(r => r.Date == Scope.Date && D.P(r.EmployeeId) is { Role: Role.Leader }).OrderBy(r => D.PName(r.EmployeeId), Fmt.ViCompare).ToList();
-    if (leaderReports.Count > 0 && Model.Filter != "rejected")
+    @* Báo cáo cuối ngày của Leader: Trưởng phòng duyệt cuối cùng (yêu cầu 2026-10-29, thay "tự xác nhận / chỉ xem" của 2026-10-24) *@
+    var leaderReports = D.Reports.Where(r => r.Date == Scope.Date && D.P(r.EmployeeId) is { Role: Role.Leader }
+            && (Model.Filter == "approved" ? Dept.EodSt(r) == EodState.Approved : Model.Filter == "rejected" ? Dept.EodSt(r) == EodState.Rejected : Dept.EodSt(r) == EodState.Pending))
+        .OrderBy(r => D.PName(r.EmployeeId), Fmt.ViCompare).ToList();
+    foreach (var lr in leaderReports)
     {
-        <section class="card sec"><h2>Báo cáo cuối ngày của Leader (@leaderReports.Count) <span class="note">chỉ xem</span></h2>
-            @foreach (var lr in leaderReports)
+        var lname = D.PName(lr.EmployeeId);
+        var lts = D.Chosen(lr.Date, lr.EmployeeId); var lc = Dept.Count(lts);
+        var lst = Dept.EodSt(lr);
+        <section class="card apv">
+            <div class="hd">@Ui.Av(lname)<b>@lname <span class="note mono">báo cáo cuối ngày · gửi @VnTime.Stamp(lr.SentAt)</span></b>@Ui.Pill(lst)</div>
+            <div class="pmeta">
+                <span>Hoàn thành <b class="mono">@lc.Done/@lts.Count</b></span>
+                @if (lc.Late > 0) { <span class="pill p-bad">@lc.Late chậm</span> }
+                @if (lr.Blocked) { <span class="pill p-bad">Có vướng mắc</span> }
+            </div>
+            @if (lts.Count == 0) { <p class="note">Không có việc nào được chọn.</p> }
+            @foreach (var t in lts)
             {
-                var lts = D.Chosen(lr.Date, lr.EmployeeId); var lc = Dept.Count(lts);
-                <div class="trow" style="grid-template-columns:1fr auto auto">
-                    <div><div class="t">@D.PName(lr.EmployeeId)</div><div class="s">gửi @VnTime.Stamp(lr.SentAt)@(lr.Blocked ? " · Có vướng mắc" : "")@(string.IsNullOrEmpty(lr.Note) ? "" : " · " + lr.Note)</div></div>
-                    <span class="mono">@lc.Done/@lts.Count</span>
-                    <span class="pill p-ok">@(lr.LeaderBy ?? "Đã xác nhận")</span>
+                var nx = PlanningReportsVm.NextOf(D, t);
+                @D.TaskRow(t)
+                if (!string.IsNullOrEmpty(t.Note))
+                {
+                    <div class="note" style="margin:-4px 0 6px 44px">@(t.Status == TaskState.Done ? "Kết quả" : "Lý do chưa hoàn thành"): @t.Note</div>
+                }
+                if (nx is not null)
+                {
+                    <div class="nx-line" style="margin:0 0 8px 44px">Kế hoạch chuyển: <b>@Fmt.WDS[Fmt.Wday(nx.Date)] @Fmt.Dmy(nx.Date)</b> <span class="mono">@nx.Start–@nx.End</span> · @nx.Title</div>
+                }
+            }
+            @if (!string.IsNullOrEmpty(lr.Note)) { <div class="cmt" style="margin-top:8px"><b>Ghi chú của Leader:</b> @lr.Note</div> }
+            @if (!string.IsNullOrEmpty(lr.LeaderNote)) { <div class="cmt"><b>Góp ý của Trưởng phòng:</b> @lr.LeaderNote</div> }
+            @if (lr.LeaderDecision is null)
+            {
+                <div class="btn-row" style="margin-top:8px">
+                    <form method="post" action="/Manager/DecideLeaderReport" asp-antiforgery="true"
+                          data-prompt="Yêu cầu @lname bổ sung báo cáo" data-prompt-label="Nội dung cần bổ sung" data-prompt-required data-prompt-name="note">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@lr.Id"><input type="hidden" name="v" value="no">
+                        <button class="btn btn-no">Yêu cầu bổ sung</button>
+                    </form>
+                    <form method="post" action="/Manager/DecideLeaderReport" asp-antiforgery="true">
+                        @Ui.ReturnField(req)
+                        <input type="hidden" name="id" value="@lr.Id"><input type="hidden" name="v" value="ok">
+                        <button class="btn btn-ok">✓ Duyệt</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="note" style="margin:1em 0 0">@(string.IsNullOrEmpty(lr.LeaderBy) ? "Trưởng phòng" : lr.LeaderBy) @(lst == EodState.Approved ? "đã duyệt" : "yêu cầu bổ sung") lúc @VnTime.Stamp(lr.LeaderAt)
+                    @if (lr.LeaderBy != "Tự xác nhận")
+                    {
+                        <form method="post" action="/Manager/UndoLeaderReport" class="inline" asp-antiforgery="true">
+                            @Ui.ReturnField(req)
+                            <input type="hidden" name="id" value="@lr.Id">
+                            <button class="link">Hoàn tác</button>
+                        </form>
+                    }
                 </div>
             }
         </section>
@@ -128,9 +175,9 @@ else if (Model.Mode == "leader")
     {
         <p class="note">Chưa khai báo trạng thái làm việc: @string.Join(", ", Model.LeaderNotSentPlan.Select(p => p.Name))</p>
     }
-    if (Model.LeaderPlans.Count == 0 && Model.LeaderLeaves.Count == 0)
+    if (Model.LeaderPlans.Count == 0 && Model.LeaderLeaves.Count == 0 && leaderReports.Count == 0)
     {
-        <div class="empty">Không có trạng thái làm việc của Leader phù hợp bộ lọc.</div>
+        <div class="empty">Không có trạng thái làm việc / báo cáo của Leader phù hợp bộ lọc.</div>
     }
     if (Model.LeaderLeaves.Count > 0)
     {

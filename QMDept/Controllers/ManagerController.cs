@@ -55,7 +55,7 @@ public class ManagerController : AppController
         // Kế hoạch / báo cáo của chính Leader (Leader tự gửi → Trưởng phòng duyệt, yêu cầu 2026-10-16): mục riêng "Của Leader".
         var leaderPlans = D.Plans.Where(p => p.Date == Date && IsLeaderPerson(p.EmployeeId)).ToList();
         var pendLeaves = D.LeaderLeaves();
-        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending) + pendLeaves.Count;
+        var pendingLeader = leaderPlans.Count(p => Dept.PlanSt(p) == PlanState.Pending) + pendLeaves.Count + D.Reports.Count(r => r.Date == Date && IsLeaderPerson(r.EmployeeId) && Dept.EodSt(r) == EodState.Pending);
         var pendingManager = D.Plans.Count(p => p.Date == Date && !IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.PendingManager);
 
         var plans = new List<DayPlan>();
@@ -124,6 +124,41 @@ public class ManagerController : AppController
         await Db.SaveChangesAsync();
         await Notify.PlanDecidedAsync(p.EmployeeId, p.Date, v == "ok" ? "Trưởng phòng đã duyệt" : "Trưởng phòng từ chối", n);
     }, "Đã quyết định kế hoạch của Leader");
+
+    async Task<DayReport> LoadLeaderReportAsync(int id)
+    {
+        RequireManager();
+        var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Id == id) ?? throw new BizException("Không tìm thấy báo cáo");
+        if (!await Db.People.AnyAsync(x => x.Id == r.EmployeeId && x.Role == Role.Leader)) throw new BizException("Chỉ dùng cho báo cáo của Leader");
+        return r;
+    }
+
+    /// <summary>POST /Manager/DecideLeaderReport — Trưởng phòng duyệt (v=ok) / yêu cầu bổ sung (v=no, bắt buộc nội dung) báo cáo cuối ngày của Leader (yêu cầu 2026-10-29).</summary>
+    [HttpPost]
+    public Task<IActionResult> DecideLeaderReport(int id, string? v, string? note) => Do(async () =>
+    {
+        if (v is not ("ok" or "no")) throw new BizException("Thao tác không hợp lệ");
+        var r = await LoadLeaderReportAsync(id);
+        if (r.LeaderDecision is not null) throw new BizException("Báo cáo đã được quyết định");
+        var n = PlanningApproval.CleanNote(note);
+        if (v == "no" && n is null) throw new BizException("Nhập nội dung cần bổ sung");
+        r.LeaderDecision = v == "ok" ? Decision.Ok : Decision.No;
+        r.LeaderBy = Scope.ActorName; r.LeaderAt = VnTime.UtcNow; r.LeaderNote = v == "no" ? n : null;
+        await Db.SaveChangesAsync();
+        await Notify.ReportDecidedAsync(r.EmployeeId, r.Date, v == "ok", n);
+        Toast(v == "ok" ? "Đã duyệt báo cáo cuối ngày của Leader" : "Đã gửi yêu cầu bổ sung cho Leader");
+    });
+
+    /// <summary>POST /Manager/UndoLeaderReport — hoàn tác quyết định báo cáo cuối ngày của Leader (về Chờ duyệt).</summary>
+    [HttpPost]
+    public Task<IActionResult> UndoLeaderReport(int id) => Do(async () =>
+    {
+        var r = await LoadLeaderReportAsync(id);
+        if (r.LeaderDecision is null) return;
+        r.LeaderDecision = null; r.LeaderAt = null; r.LeaderNote = null;
+        await Db.SaveChangesAsync();
+        await Notify.ReportUndoneAsync(r.EmployeeId, r.Date, Scope.ActorName);
+    }, "Đã hoàn tác");
 
     /// <summary>POST /Manager/DecideLeave — Trưởng phòng duyệt (ghi Nghỉ vào lịch) / từ chối (bắt buộc lý do) đề xuất xin nghỉ của Leader (yêu cầu 2026-10-20).</summary>
     [HttpPost]

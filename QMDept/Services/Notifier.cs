@@ -163,13 +163,17 @@ public sealed class Notifier(IHubContext<NotifyHub> hub, ViewScope scope, DataCa
         await SendAsync([await LeaderOf(emp)], NotifyType.ReportSubmitted, $"{await Name(emp)} gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo đang chờ bạn duyệt.", Q("/Planning/Reports", d));
     }
 
+    /// <summary>Leader gửi báo cáo cuối ngày → Trưởng phòng duyệt (yêu cầu 2026-10-29).</summary>
+    public async Task LeaderEodSubmittedAsync(int leader, DateOnly d) =>
+        await SendAsync(await Managers(), NotifyType.LeaderReportSent, $"{await Name(leader)} gửi báo cáo cuối ngày {Fmt.Dm(d)}", "Báo cáo đang chờ bạn duyệt.", Q("/Manager/Approvals?mode=leader", d));
+
     /// <summary>Kết quả báo cáo cuối ngày → NV.</summary>
     public async Task ReportDecidedAsync(int emp, DateOnly d, bool ok, string? note = null) =>
         await SendAsync([emp], NotifyType.ReportDecided, $"Báo cáo cuối ngày {Fmt.Dm(d)}: {(ok ? "đã duyệt" : "yêu cầu bổ sung")}", Body(note), Q("/Staff/Evening", d));
 
     /// <summary>Leader hoàn tác quyết định báo cáo cuối ngày → NV.</summary>
-    public async Task ReportUndoneAsync(int emp, DateOnly d) =>
-        await SendAsync([emp], NotifyType.ReportDecided, $"Báo cáo cuối ngày {Fmt.Dm(d)}: Leader hoàn tác quyết định, chờ duyệt lại", null, Q("/Staff/Evening", d));
+    public async Task ReportUndoneAsync(int emp, DateOnly d, string by = "Leader") =>
+        await SendAsync([emp], NotifyType.ReportDecided, $"Báo cáo cuối ngày {Fmt.Dm(d)}: {by} hoàn tác quyết định, chờ duyệt lại", null, Q("/Staff/Evening", d));
 
     /// <summary>NV đề xuất phát sinh → Leader nhóm.</summary>
     public async Task ExtraProposedAsync(int emp, DateOnly d, string title) =>

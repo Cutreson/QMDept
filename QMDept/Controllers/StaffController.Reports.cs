@@ -409,9 +409,10 @@ public partial class StaffController
         r.Note = note;
         r.SentAt = VnTime.UtcNow;
         r.LeaderDecision = null; r.LeaderBy = null; r.LeaderAt = null; r.LeaderNote = null;
-        if (Scope.Account.Role == Role.Leader) { r.LeaderDecision = Decision.Ok; r.LeaderBy = "Tự xác nhận"; r.LeaderAt = VnTime.UtcNow; }   // Leader tự xác nhận, không qua duyệt (yêu cầu 2026-10-22)
         await Db.SaveChangesAsync();
-        if (Scope.Account.Role != Role.Leader) await Notify.ReportSubmittedAsync(me, Date);
+        // Báo cáo của Leader do Trưởng phòng duyệt cuối cùng (yêu cầu 2026-10-29, thay "tự xác nhận" của 2026-10-22)
+        if (Scope.Account.Role == Role.Leader) await Notify.LeaderEodSubmittedAsync(me, Date);
+        else await Notify.ReportSubmittedAsync(me, Date);
         // Việc được giao đã báo hoàn thành → báo người giao để duyệt (yêu cầu 2026-10-24)
         var doneByGiver = await Db.WorkTasks.AsNoTracking().Where(x => x.Date == Date && x.EmployeeId == me && x.DonePending && x.GivenById != null).ToListAsync();
         foreach (var g in doneByGiver.GroupBy(x => x.GivenById!.Value)) await Notify.TaskDoneReportedAsync(g.Key, me, Date, g.Select(x => x.Title));

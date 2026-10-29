@@ -334,7 +334,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
                 };
             return id switch
             {
-                "status" => OwnPlans() + OwnOt(),
+                "status" => OwnPlans() + OwnOt() + (acc.Role == Role.Leader ? d.Reports.Count(r => r.EmployeeId == me && Dept.EodSt(r) == EodState.Pending) : 0),
                 "overview" => acc.Role == Role.Leader ? OwnLeave() : 0,
                 _ => 0,
             };
@@ -345,7 +345,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             if (acc.Role == Role.Leader && id == "planning") return d.LeaderPendingAll(acc.Id) + d.OtPendingAll(Role.Leader, acc.Id).Count(x => x.NeedsDecision) + d.ProposalsFor(acc.Id).Count + d.LeavesFor(acc.Id).Count + supportPending;
             if (acc.Role is Role.Manager or Role.Admin && id == "approvals")
                 return d.Plans.Count(p => d.P(p.EmployeeId) is not { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.PendingManager)
-                    + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);
+                    + d.Plans.Count(p => d.P(p.EmployeeId) is { Role: Role.Leader } && Dept.PlanSt(p) == PlanState.Pending) + d.Reports.Count(r => d.P(r.EmployeeId) is { Role: Role.Leader } && Dept.EodSt(r) == EodState.Pending) + d.LeaderLeaves().Count + d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);
             if (id == "overtime" && acc.Role is Role.Manager or Role.Admin) return d.OtPendingAll(Role.Manager, acc.Id).Count(x => x.NeedsTpDecision);   // Leader duyệt làm thêm ở Kế hoạch đề xuất
             // Việc mình phải làm mà chưa làm (yêu cầu 2026-10-23)
             if (acc.Role == Role.Staff) { if (id == "morning") return TodoMorning(); if (id == "evening") return TodoEvening(); if (id == "overtime") return TodoOt(); if (id == "month") return TodoAck(); }

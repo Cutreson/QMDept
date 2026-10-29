@@ -6,7 +6,7 @@
     var date = Scope.Date;
     bool IsLeaderPerson(int emp) => D.P(emp) is { Role: Role.Leader };
     var pendManager = D.Plans.Count(p => p.Date == date && !IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.PendingManager);
-    var pendLeader = D.Plans.Count(p => p.Date == date && IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.Pending) + D.LeaderLeaves().Count;
+    var pendLeader = D.Plans.Count(p => p.Date == date && IsLeaderPerson(p.EmployeeId) && Dept.PlanSt(p) == PlanState.Pending) + D.LeaderLeaves().Count + D.Reports.Count(r => r.Date == date && IsLeaderPerson(r.EmployeeId) && Dept.EodSt(r) == EodState.Pending);
     var pendOt = D.OtPending(date).Count(x => x.NeedsTpDecision);
 }
 @{
