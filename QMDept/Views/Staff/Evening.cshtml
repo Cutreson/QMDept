@@ -72,6 +72,13 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
             {
                 <div class="note">Góp ý: @rep.LeaderNote</div>
             }</div></div>
+        @if (rep.LeaderBy == "Tự xác nhận" && !Scope.IsReadOnly)
+        {
+            <form method="post" action="@Ui.To(req, "/Staff/WithdrawReport", ("d", dkey))" asp-antiforgery="true" class="inline" data-confirm="Rút lại báo cáo để sửa? Báo cáo sẽ chưa được gửi cho đến khi bạn gửi lại." data-confirm-label="Rút lại">
+                @Ui.ReturnField(req)
+                <button class="btn btn-sm" style="margin-bottom:10px">Rút lại để sửa</button>
+            </form>
+        }
     }
     else
     {

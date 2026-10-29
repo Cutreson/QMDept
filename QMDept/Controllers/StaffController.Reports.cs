@@ -157,6 +157,8 @@ public partial class StaffController
     public async Task<IActionResult> AddUnplannedTask(TaskFieldsInput input) => await Do(async () =>
     {
         RequireSelfStaff(leaderOk: true, managerOk: true);
+        // Báo cáo cuối ngày của ngày này đã gửi / duyệt thì không thêm việc nữa (việc mới sẽ nằm ngoài báo cáo đã khóa — yêu cầu 2026-10-29).
+        await EnsureReportOpenAsync();
         // Nút "Thêm công việc ngoài kế hoạch" chỉ có trên form kế hoạch (chưa gửi / đang sửa, chưa được duyệt).
         var sent = await Db.DayPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Date == Date && p.EmployeeId == Scope.Me!.Id);
         if (!SelfApproves(Scope.Me)) StaffReports.RequireEditable(sent);
@@ -219,7 +221,8 @@ public partial class StaffController
         RequireSelfStaff(leaderOk: true);
         var me = Scope.Me!.Id;
         var r = await Db.DayReports.FirstOrDefaultAsync(x => x.Date == Date && x.EmployeeId == me) ?? throw new BizException("Chưa có báo cáo để rút lại");
-        if (r.LeaderDecision == Decision.Ok) throw new BizException("Báo cáo đã được duyệt, không rút lại được");
+        // Báo cáo Leader / TP tự xác nhận (không có người duyệt) thì chính họ rút lại được; nếu không, thêm việc sau khi gửi sẽ khóa chết báo cáo (yêu cầu 2026-10-29).
+        if (r.LeaderDecision == Decision.Ok && r.LeaderBy != "Tự xác nhận") throw new BizException("Báo cáo đã được duyệt, không rút lại được");
         Db.DayReports.Remove(r);
         await Db.SaveChangesAsync();
     }, "Đã rút lại báo cáo — bạn có thể cập nhật rồi gửi lại");
