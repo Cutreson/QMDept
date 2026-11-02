@@ -194,6 +194,13 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
         if (approve)
         {
+            // Từ lúc đề xuất tới lúc duyệt, người được giao có thể đã có việc khác cùng giờ (vd. tự thêm ở báo cáo đầu ngày) — không duyệt nếu trùng (yêu cầu 2026-11-02).
+            try
+            {
+                foreach (var pid in x.People.Select(p => p.EmployeeId).Distinct())
+                    await ViewModels.TaskLines.EnsureFreeAsync(db, pid, null, x.Date, [new ViewModels.TaskLines.Line(x.Title, x.Start, x.End)]);
+            }
+            catch (BizException ex) { throw new BizException($"{ex.Message}. Không duyệt được — hãy từ chối đề xuất (ghi lý do) để nhân sự đề xuất lại với giờ khác."); }
             // Giành quyền duyệt: hai Leader bấm cùng lúc chỉ tạo việc một lần.
             var claimed = await db.CalendarProposals.Where(p => p.Id == id && p.Status == ExtraStatus.Pending)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, ExtraStatus.Approved));

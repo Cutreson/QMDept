@@ -4,6 +4,10 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 
 ---
 
+## Phiên 6 — 2026-11-02 (Claude Code, Sonnet 5.5) — chặn duyệt đề xuất trùng giờ
+- Chủ dự án hỏi vì sao Phạm Văn Hòa có 2 việc trùng nhau 02/11 (06:00–19:00, cùng nội dung: 1 "Ngoài kế hoạch" gửi 18:31 01/11 + 1 "Đề xuất" Leader duyệt 18:38). Nguyên nhân: duyệt đề xuất không kiểm trùng giờ. Sửa `WorkflowService.DecideProposalAsync` (quy tắc 102). Việc trùng đã tạo trước đó chưa xóa (chờ chủ dự án).
+
+
 ## Phiên 5 — 2026-10-20 (Claude Code, Sonnet 5.5) — xin nghỉ trong đề xuất công việc, chia Báo cáo
 - Xong: xin nghỉ (bảng `leave_requests`, migration `20261020100000_LeaveRequests`, duyệt NV→Leader / Leader→TP, thông báo, hiện trên lịch); gộp nút "Đề xuất công việc / xin nghỉ" (thẻ `_SheetTabs`);
   nghỉ một phần ngày không loại khỏi công việc (`Dept.PartLeave`); Planning/Reports bỏ mục đỏ đề xuất chuyển, chia Chờ duyệt / Đã duyệt. Quy tắc 36 ở AGENTS.md.
