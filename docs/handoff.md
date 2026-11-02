@@ -8,6 +8,7 @@ Ghi mới nhất ở trên. Mỗi phiên: ngày, AI/người làm, đã làm, đ
 - Chủ dự án hỏi vì sao Phạm Văn Hòa có 2 việc trùng nhau 02/11 (06:00–19:00, cùng nội dung: 1 "Ngoài kế hoạch" gửi 18:31 01/11 + 1 "Đề xuất" Leader duyệt 18:38). Nguyên nhân: duyệt đề xuất không kiểm trùng giờ. Sửa `WorkflowService.DecideProposalAsync` (quy tắc 102). Việc trùng đã tạo trước đó chưa xóa (chờ chủ dự án).
 - Cùng ngày: đã xóa việc "Đề xuất" trùng (id 401) của Hòa trên DB thật theo yêu cầu. Leader phụ trách dự án: thêm 3 cột giai đoạn Đang lắp ráp / Đang setup / Đang bảo hành (quy tắc 103; `Dept.PjStage`: bảo hành = hoàn thành, lắp ráp = chưa giao hàng xong, setup = còn lại).
 
+- Sửa dữ liệu theo yêu cầu chủ dự án (nhập nhầm lúc mới chạy web): làm thêm của Lê Thế Hùng (id 26) — 21/10 (overtimes Id 5) 17:00→22:30 = 5,5 giờ, 22/10 (Id 64) 17:00→21:30 = 4,5 giờ; cập nhật cả giờ đăng ký lẫn giờ thực tế (kết quả đã duyệt), bậc "Tăng ca từ 4 giờ trở lên" + cơm + phụ cấp 20.000. Bảng làm thêm tháng 10 đã hiện đúng (21/10: 5 giờ 150% + 0,5 giờ 210%).
 
 ## Phiên 5 — 2026-10-20 (Claude Code, Sonnet 5.5) — xin nghỉ trong đề xuất công việc, chia Báo cáo
 - Xong: xin nghỉ (bảng `leave_requests`, migration `20261020100000_LeaveRequests`, duyệt NV→Leader / Leader→TP, thông báo, hiện trên lịch); gộp nút "Đề xuất công việc / xin nghỉ" (thẻ `_SheetTabs`);
