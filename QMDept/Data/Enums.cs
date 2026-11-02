@@ -49,6 +49,14 @@ public enum TaskPriority
     Urgent, // Khẩn cấp
 }
 
+/// <summary>Giai đoạn của dự án (yêu cầu 2026-11-02): lắp ráp (chưa giao hàng) → setup (đã giao hàng, chưa hoàn thành) → bảo hành (đã hoàn thành). Tính ra, không lưu.</summary>
+public enum ProjectStage
+{
+    Assembly, // Đang lắp ráp
+    Setup,    // Đang setup
+    Warranty, // Đang bảo hành
+}
+
 /// <summary>Trạng thái dự án (PS). Override chỉ dùng OnTrack/InProgress/Behind/AtRisk; Completed là trạng thái tính ra.</summary>
 public enum ProjectStatus
 {

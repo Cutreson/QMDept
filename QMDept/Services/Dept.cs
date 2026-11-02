@@ -332,6 +332,16 @@ public sealed class Dept(ViewScope scope, DataCache cache)
         var gap = PjPlanPct(pid, date) - PjPct(pid);
         return gap <= 0 ? ProjectStatus.OnTrack : gap <= 10 ? ProjectStatus.InProgress : gap <= 25 ? ProjectStatus.Behind : ProjectStatus.AtRisk;
     }
+    /// <summary>
+    /// Giai đoạn dự án: Hoàn thành (<see cref="PjStatus"/>) = bảo hành; chưa hoàn thành mà có đầu mục "Giao hàng" và chưa giao xong hết = đang lắp ráp;
+    /// còn lại (đã giao hàng, hoặc không có đầu mục giao hàng) = đang setup.
+    /// </summary>
+    public ProjectStage PjStage(int pid, DateOnly date)
+    {
+        if (PjStatus(pid, date) == ProjectStatus.Completed) return ProjectStage.Warranty;
+        var delivery = ItemsOf(pid).Where(i => i.Title.Contains("giao hàng", StringComparison.OrdinalIgnoreCase)).ToList();
+        return delivery.Count > 0 && delivery.Any(i => i.Status != TaskState.Done) ? ProjectStage.Assembly : ProjectStage.Setup;
+    }
     /// <summary>need(date, pid): nhu cầu nhân sự trong ngày (ghi đè theo ngày hoặc mặc định của dự án).</summary>
     public int Need(DateOnly date, int pid) { Guard(date); return _needs.Values.FirstOrDefault(n => n.Date == date && n.ProjectId == pid)?.Need ?? PJ(pid)?.Need ?? 0; }
     /// <summary>onSite(date, pid): những người có việc ở dự án trong ngày và không nghỉ.</summary>

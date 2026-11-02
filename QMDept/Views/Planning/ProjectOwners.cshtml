@@ -4,8 +4,9 @@
 @{
     var req = Context.Request;
     var has = Model.Filter == "has";
-    // Đang bảo hành = dự án đã hoàn thành (tích hết đầu mục) hoặc đã bàn giao; còn lại là đang setup (yêu cầu 2026-11-02).
-    Func<Project, bool> isWarranty = p => D.PjStatus(p.Id, Scope.Date) == ProjectStatus.Completed;
+    // Giai đoạn dự án (yêu cầu 2026-11-02): lắp ráp (chưa giao hàng) → setup (đã giao hàng) → bảo hành (đã hoàn thành) — xem Dept.PjStage.
+    Func<Project, ProjectStage> stageOf = p => D.PjStage(p.Id, Scope.Date);
+    var stages = new[] { (ProjectStage.Assembly, "Đang lắp ráp"), (ProjectStage.Setup, "Đang setup"), (ProjectStage.Warranty, "Đang bảo hành") };
 }
 @Ui.Head(0, "Leader phụ trách dự án")
 @* Thống kê tổng quan *@
@@ -16,28 +17,27 @@
 </div>
 <section class="card sec">
     <h2>Leader đang quản lý</h2>
-    <div class="tbl-wrap"><table><thead><tr><th>Leader</th><th class="n">Số dự án</th><th class="n">Đang setup</th><th class="n">Đang bảo hành</th><th style="min-width:160px">Dự án</th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr><th>Leader</th><th class="n">Số dự án</th><th class="n">Đang lắp ráp</th><th class="n">Đang setup</th><th class="n">Đang bảo hành</th><th style="min-width:160px">Dự án</th></tr></thead><tbody>
         @foreach (var (l, ps) in Model.Stats)
         {
-            var setup = ps.Where(p => !isWarranty(p)).ToList();
-            var warr = ps.Where(isWarranty).ToList();
             <tr>
                 <td style="white-space:nowrap"><b>@l.Name</b><div class="note">nhóm @D.Team(l.Id).Count người</div></td>
                 <td class="n"><b class="mono">@ps.Count</b></td>
-                <td class="n"><b class="mono">@setup.Count</b></td>
-                <td class="n"><b class="mono">@warr.Count</b></td>
+                @foreach (var (st, _) in stages) { <td class="n"><b class="mono">@ps.Count(p => stageOf(p) == st)</b></td> }
                 <td style="min-width:160px">@if (ps.Count == 0) { <span class="note">Chưa được giao dự án</span> } else {
                     <details><summary class="link">Xem @ps.Count dự án</summary>
-                        @if (setup.Count > 0) { <div class="note">Đang setup (@setup.Count)</div><ul class="otl">@foreach (var p in setup) { <li>@p.Name</li> }</ul> }
-                        @if (warr.Count > 0) { <div class="note">Đang bảo hành (@warr.Count)</div><ul class="otl">@foreach (var p in warr) { <li>@p.Name</li> }</ul> }
+                        @foreach (var (st, label) in stages)
+                        {
+                            var g = ps.Where(p => stageOf(p) == st).ToList();
+                            if (g.Count > 0) { <div class="note">@label (@g.Count)</div><ul class="otl">@foreach (var p in g) { <li>@p.Name</li> }</ul> }
+                        }
                     </details> }</td>
             </tr>
         }
         <tr>
             <td><b>Chưa có Leader</b></td>
             <td class="n"><b class="mono @(Model.Unassigned > 0 ? "red" : "")">@Model.Unassigned</b></td>
-            <td class="n"><b class="mono">@Model.AllProjects.Count(p => !p.HasOwner && !isWarranty(p))</b></td>
-            <td class="n"><b class="mono">@Model.AllProjects.Count(p => !p.HasOwner && isWarranty(p))</b></td>
+            @foreach (var (st, _) in stages) { <td class="n"><b class="mono">@Model.AllProjects.Count(p => !p.HasOwner && stageOf(p) == st)</b></td> }
             <td>@if (Model.Unassigned == 0) { <span class="note">Mọi dự án đã có Leader phụ trách</span> } else { <span class="note">Xem ở mục "Chưa có Leader" bên dưới</span> }</td>
         </tr>
     </tbody></table></div>
