@@ -376,6 +376,9 @@ public partial class StaffController
         if (Scope.Me is { Role: Role.Staff, LeaderId: null }) throw new BizException("Bạn chưa được xếp nhóm — nhờ Trưởng phòng xếp Leader duyệt rồi mới gửi được");
         await EnsureReportOpenAsync();
         var me = Scope.Me!.Id;
+        // Phát sinh đang chờ duyệt chưa thành việc: gửi báo cáo lúc này thì khi được duyệt việc mới nằm ngoài báo cáo đã khóa (yêu cầu 2026-11-03).
+        var pendingExtra = await Db.Extras.CountAsync(x => x.Date == Date && x.EmployeeId == me && x.Status == ExtraStatus.Pending);
+        if (pendingExtra > 0) throw new BizException($"Còn {pendingExtra} đề xuất phát sinh chờ {await ApproverNameAsync(Scope.Me)} duyệt — chờ duyệt (hoặc bị từ chối) xong mới gửi được báo cáo");
         // Dự án đã có Leader dự án (yêu cầu 2026-10-14): người hỗ trợ chỉ cần tích "đã hỗ trợ" mọi việc của mình; Leader dự án báo cáo kết quả
         // (hoàn thành / chưa + kế hoạch tiếp) cho cả việc của mình lẫn việc của người hỗ trợ trong dự án mình phụ trách.
         var leads = await Db.Assignments.AsNoTracking().Where(a => a.Role == ProjectRole.Lead).Select(a => new { a.ProjectId, a.EmployeeId }).ToListAsync();

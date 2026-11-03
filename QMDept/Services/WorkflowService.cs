@@ -19,6 +19,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         var x = await db.Extras.FirstOrDefaultAsync(e => e.Id == extraId) ?? throw new BizException("Không tìm thấy phát sinh");
         if (x.TaskId is not null || x.Status != ExtraStatus.Pending) return;
         if (!await db.Projects.AnyAsync(p => p.Id == x.ProjectId)) throw new BizException("Không tìm thấy dự án");
+        await EnsureExtraAllowedAsync(x.Date, x.EmployeeId, x.Start, x.End, checkReport: true, approving: true);
         await using var tx = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync() : null;
         // Giành quyền duyệt bằng một câu UPDATE có điều kiện: hai người duyệt cùng lúc chỉ một người tạo việc.
         var claimed = await db.Extras.Where(e => e.Id == extraId && e.Status == ExtraStatus.Pending && e.TaskId == null)
@@ -41,6 +42,26 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         await db.SaveChangesAsync();
         if (tx is not null) await tx.CommitAsync();
         if (sendNotify) await notify.ExtraDecidedAsync(x.EmployeeId, x.Date, x.Title, "đã được duyệt");
+    }
+
+    /// <summary>
+    /// Phát sinh không được tạo việc trùng giờ với việc đã có của người đó (quy tắc 83) và không được thêm việc vào ngày đã có báo cáo cuối ngày
+    /// (báo cáo đã gửi / duyệt thì khóa — việc mới "Chưa làm" sẽ nằm lại không có kết quả / kế hoạch chuyển). Giờ để trống → mặc định như lúc duyệt;
+    /// khi chỉ đề xuất (chưa duyệt) mà chưa nhập giờ thì chưa kiểm trùng giờ, sẽ kiểm lúc duyệt (yêu cầu 2026-11-03).
+    /// </summary>
+    async Task EnsureExtraAllowedAsync(DateOnly date, int employeeId, string? start, string? end, bool checkReport, bool approving)
+    {
+        if (checkReport)
+        {
+            var rep = await db.DayReports.AsNoTracking().FirstOrDefaultAsync(r => r.Date == date && r.EmployeeId == employeeId);
+            if (rep is not null && rep.LeaderDecision != Decision.No)
+                throw new BizException($"Báo cáo cuối ngày {Fmt.Dmy(date)} của người này đã gửi / đã duyệt — không thêm việc phát sinh vào ngày đã báo cáo được. Hãy từ chối đề xuất (ghi lý do) hoặc nhờ họ rút lại báo cáo rồi gửi lại");
+        }
+        if (start is null && !approving) return;
+        var s = start ?? "08:00";
+        var e = !string.IsNullOrEmpty(end) ? end : ("17:00".Le(s) ? Fmt.Hhmm(Math.Min(Fmt.Min(s) + 30, 24 * 60)) : "17:00");
+        try { await ViewModels.TaskLines.EnsureFreeAsync(db, employeeId, null, date, [new ViewModels.TaskLines.Line("phát sinh", s, e)]); }
+        catch (BizException ex) when (approving) { throw new BizException($"{ex.Message}. Không duyệt được — hãy từ chối đề xuất (ghi lý do) để nhân sự đề xuất lại với giờ khác"); }
     }
 
     /// <summary>Từ chối phát sinh (bắt buộc lý do).</summary>
@@ -66,6 +87,7 @@ public sealed class WorkflowService(AppDbContext db, Notifier notify)
         if (start is not null && (!Fmt.IsHhmm(start) || start == "24:00")) throw new BizException("Giờ bắt đầu không hợp lệ");
         if (!string.IsNullOrEmpty(end) && (!Fmt.IsHhmm(end) || (start is not null && end.Le(start)))) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         if (!await db.Projects.AnyAsync(p => p.Id == projectId)) throw new BizException("Chọn dự án");
+        await EnsureExtraAllowedAsync(date, employeeId, start, string.IsNullOrEmpty(end) ? null : end, checkReport: byLeader, approving: byLeader);
         var x = new Extra
         {
             Date = date, EmployeeId = employeeId, ProjectId = projectId, Title = title, Description = desc?.Trim(),
