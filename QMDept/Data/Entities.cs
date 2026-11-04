@@ -118,6 +118,8 @@ public class WorkTask
     public TaskSource Source { get; set; } = TaskSource.Planned;
     public bool Selected { get; set; }                               // NV đã chọn làm trong ngày (báo cáo đầu ngày)
     public bool Supported { get; set; }                              // người hỗ trợ đã tích "đã hỗ trợ" (kết quả do Leader dự án báo cáo)
+    public bool? SupportDone { get; set; }                           // phần hỗ trợ: true = hoàn thành, false = chưa hoàn thành, null = chưa báo (dữ liệu cũ)
+    [MaxLength(500)] public string? SupportNote { get; set; }        // lý do phần hỗ trợ chưa hoàn thành (bắt buộc khi SupportDone = false)
     [MaxLength(2000)] public string? Note { get; set; }              // Kết quả / lý do chưa hoàn thành
 
     // Chuyển tiếp (việc chưa xong → kế hoạch tiếp theo)

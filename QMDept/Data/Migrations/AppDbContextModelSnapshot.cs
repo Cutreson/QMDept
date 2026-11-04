@@ -1291,6 +1291,13 @@ b.HasIndex("OwnerLeaderId");
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<bool?>("SupportDone")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("SupportNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<bool>("Supported")
                         .HasColumnType("tinyint(1)");
 

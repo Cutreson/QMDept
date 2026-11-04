@@ -333,7 +333,7 @@ public partial class StaffController
 
     /// <summary>Người hỗ trợ tích / bỏ tích "Đã hỗ trợ" cho việc của mình ở dự án đã có Leader dự án (Leader dự án báo cáo kết quả).</summary>
     [HttpPost]
-    public async Task<IActionResult> TickSupport(int taskId, bool on, string? start, string? end) => await Do(async () =>
+    public async Task<IActionResult> TickSupport(int taskId, bool on, string? start, string? end, string? result, string? note) => await Do(async () =>
     {
         RequireSelfStaff(leaderOk: true);
         await EnsureReportOpenAsync();
@@ -349,6 +349,16 @@ public partial class StaffController
         if (!Fmt.IsHhmm(s0) || !Fmt.IsHhmm(e0) || e0.Le(s0)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
         t.Start = s0; t.End = e0;
         t.Supported = on;
+        if (on)
+        {
+            // Người hỗ trợ báo phần hỗ trợ của mình hoàn thành hay chưa; chưa hoàn thành thì bắt buộc nêu lý do (Leader dự án đọc để quyết định kế hoạch tiếp).
+            if (result is not ("done" or "notdone")) throw new BizException("Chọn kết quả phần hỗ trợ: Hoàn thành hoặc Chưa hoàn thành");
+            var why = StaffReports.Clip(note, 500);
+            if (result == "notdone" && why is null) throw new BizException("Phần hỗ trợ chưa hoàn thành — hãy nêu lý do");
+            t.SupportDone = result == "done";
+            t.SupportNote = result == "notdone" ? why : null;
+        }
+        else { t.SupportDone = null; t.SupportNote = null; }
         t.UpdatedAt = VnTime.UtcNow;
         await Db.SaveChangesAsync();
     }, null);

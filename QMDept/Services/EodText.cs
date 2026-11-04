@@ -48,7 +48,9 @@ public static class EodText
 
     static void AppendTask(StringBuilder sb, Dept d, int n, WorkTask t, string? who)
     {
-        var status = who == "hỗ trợ" ? (t.Supported ? "Đã hỗ trợ" : "Chưa hỗ trợ") : Labels.Of(t.Status);
+        var status = who == "hỗ trợ"
+            ? (t.Supported ? "Đã hỗ trợ" + (t.SupportDone == true ? " - hoàn thành" : t.SupportDone == false ? " - chưa hoàn thành" + (string.IsNullOrWhiteSpace(t.SupportNote) ? "" : ": " + t.SupportNote.Trim()) : "") : "Chưa hỗ trợ")
+            : Labels.Of(t.Status);
         sb.Append($"\n{n}. {(who is null || who == "hỗ trợ" ? "" : who + ": ")}{(who == "hỗ trợ" ? "Hỗ trợ - " : "")}{t.Title} ({t.Start}–{t.End}) - {status}");
         if (who != "hỗ trợ" && !string.IsNullOrWhiteSpace(t.Note)) sb.Append($"\n   {(t.Status == TaskState.Done ? "Kết quả" : "Lý do chưa xong")}: {t.Note.Trim()}");
         if (t.Status != TaskState.Done && d.Task(t.CarriedToId) is { } nx)

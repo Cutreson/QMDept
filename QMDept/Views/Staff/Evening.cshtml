@@ -128,7 +128,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                         <div class="src">@src</div>
                     }</div>@if (sup)
                     {
-                        <span class="pill @(t.Supported ? "p-ok" : "p-warn")">@(t.Supported ? "Đã hỗ trợ" : "Chưa tích hỗ trợ")</span>
+                        <span class="pill @(t.Supported ? (t.SupportDone == false ? "p-warn" : "p-ok") : "p-warn")">@(t.Supported ? "Đã hỗ trợ" + (t.SupportDone == true ? " · Hoàn thành" : t.SupportDone == false ? " · Chưa hoàn thành" : "") : "Chưa tích hỗ trợ")</span>
                     }
                     else
                     {
@@ -160,13 +160,18 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                 <div class="btn-row">@if (!ro && sup)
                     {
                         @* Người hỗ trợ: chỉ tích "Đã hỗ trợ" — Leader dự án báo cáo kết quả *@
-                        <form method="post" action="@Ui.To(req, "/Staff/TickSupport", ("d", dkey))" asp-antiforgery="true" class="inline">
+                        <form method="post" action="@Ui.To(req, "/Staff/TickSupport", ("d", dkey))" asp-antiforgery="true" class="inline" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%">
                             @Ui.ReturnField(req)
                             <input type="hidden" name="taskId" value="@t.Id">
-                            <input type="hidden" name="on" value="@(t.Supported ? "false" : "true")">
                             @Ui.TimeSelect("start", t.Start, id: "tS" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Bắt đầu\"")
                             @Ui.TimeSelect("end", t.End, end: true, id: "tE" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Kết thúc\"")
-                            <button class="btn btn-sm @(t.Supported ? "" : "btn-primary")">@(t.Supported ? "Bỏ tích hỗ trợ" : "✓ Đã hỗ trợ")</button>
+                            <select name="result" class="in" style="width:auto;padding:5px 22px 5px 8px" aria-label="Kết quả phần hỗ trợ">
+                                <option value="done" selected="@(t.SupportDone != false)">Hoàn thành</option>
+                                <option value="notdone" selected="@(t.SupportDone == false)">Chưa hoàn thành</option>
+                            </select>
+                            <input type="text" name="note" class="in" maxlength="500" value="@t.SupportNote" style="flex:1 1 180px;min-width:140px;padding:5px 8px" aria-label="Lý do nếu chưa hoàn thành">
+                            <button name="on" value="true" class="btn btn-sm btn-primary">@(t.Supported ? "Cập nhật hỗ trợ" : "✓ Đã hỗ trợ")</button>
+                            @if (t.Supported) { <button name="on" value="false" class="btn btn-sm">Bỏ tích hỗ trợ</button> }
                         </form>
                     }
                     else if (!ro)
@@ -192,7 +197,11 @@ else if (plan is not null)
             var n = st != TaskState.Done ? D.Task(t.CarriedToId) : null;
             <li id="t@(t.Id)"><span class="dot" style="--nc:@Labels.Color(st)">@(st == TaskState.Done ? "✓" : "")</span><div class="card task">
                 <div class="h"><div><div class="t">@t.Title</div><div class="src">@D.PName(t.EmployeeId) · @D.PjName(t.ProjectId)</div></div>@Ui.Pill(st)</div>
-                <div class="tm">@t.Start – @t.End · <span class="@(t.Supported ? "" : "muted")">@(t.Supported ? "Đã tích hỗ trợ" : "Chưa tích hỗ trợ")</span></div>
+                <div class="tm">@t.Start – @t.End · <span class="@(t.Supported ? "" : "muted")">@(t.Supported ? "Đã tích hỗ trợ" + (t.SupportDone == true ? " · Hoàn thành phần hỗ trợ" : t.SupportDone == false ? " · Chưa hoàn thành phần hỗ trợ" : "") : "Chưa tích hỗ trợ")</span></div>
+                @if (t.SupportDone == false)
+                {
+                    <div class="note" style="color:var(--bad)">Người hỗ trợ báo chưa hoàn thành: @(string.IsNullOrEmpty(t.SupportNote) ? "—" : t.SupportNote)</div>
+                }
                 <partial name="_DoneReview" model="t" />
                 @if (n is not null)
                 {
