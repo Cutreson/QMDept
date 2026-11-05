@@ -434,14 +434,28 @@
     inp.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 120));
     inp.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (list.hidden) render(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % Math.max(shown.length, 1); mark(); }
-      else if (e.key === 'Enter' && !list.hidden && active >= 0) { e.preventDefault(); inp.value = shown[active]; list.hidden = true; }
+      else if (e.key === 'Enter' && !list.hidden && active >= 0) { e.preventDefault(); inp.value = shown[active]; list.hidden = true; inp.dispatchEvent(new Event('change', { bubbles: true })); }
       else if (e.key === 'Escape') list.hidden = true;
     });
-    list.addEventListener('mousedown', e => { const it = e.target.closest('.combo-item'); if (!it) return; e.preventDefault(); inp.value = shown[+it.dataset.i]; list.hidden = true; });
+    list.addEventListener('mousedown', e => { const it = e.target.closest('.combo-item'); if (!it) return; e.preventDefault(); inp.value = shown[+it.dataset.i]; list.hidden = true; inp.dispatchEvent(new Event('change', { bubbles: true })); });
+  }
+  // Chọn / nhập đúng một khách hàng đã có → tự điền ô địa điểm (data-fill-to + data-fill-map). Chỉ ghi đè khi ô địa điểm đang trống
+  // hoặc đang là giá trị tự điền trước đó — không đè chữ người dùng tự gõ (yêu cầu 2026-11-05).
+  function autoFill(inp) {
+    if (inp.dataset.fillOn) return; inp.dataset.fillOn = '1';
+    let map = {}; try { map = JSON.parse(inp.dataset.fillMap || '{}'); } catch (e) { return; }
+    const tgt = document.getElementById(inp.dataset.fillTo); if (!tgt) return;
+    const keys = Object.keys(map);
+    const run = () => {
+      const k = keys.find(x => fold(x) === fold(inp.value.trim())); if (!k) return;
+      if (tgt.value.trim() === '' || tgt.dataset.autoFilled === tgt.value) { tgt.value = map[k]; tgt.dataset.autoFilled = map[k]; }
+    };
+    inp.addEventListener('change', run); inp.addEventListener('input', run);
   }
   function enhanceSearch(root) {
     $$('select.in', root).forEach(enhanceSelect);
     $$('input[data-combo-free]', root).forEach(enhanceFree);
+    $$('input[data-fill-map]', root).forEach(autoFill);
     $$('.optbox', root).forEach(enhanceList);
   }
   enhanceSearch(document);
