@@ -172,9 +172,10 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
                             <input type="hidden" name="taskId" value="@t.Id">
                             @Ui.TimeSelect("start", t.Start, id: "tS" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Bắt đầu\"")
                             @Ui.TimeSelect("end", t.End, end: true, id: "tE" + t.Id, extraAttrs: "style=\"width:auto;padding:5px 22px 5px 8px\" aria-label=\"Kết thúc\"")
+                            <span style="font-size:12px;font-weight:700">Kết quả hỗ trợ:</span>
                             <label style="display:inline-flex;gap:5px;align-items:center;white-space:nowrap;font-weight:600"><input type="radio" name="result" value="done" checked="@(t.SupportDone == true)" style="width:auto;margin:0"> Hoàn thành</label>
                             <label style="display:inline-flex;gap:5px;align-items:center;white-space:nowrap;font-weight:600"><input type="radio" name="result" value="notdone" checked="@(t.SupportDone == false)" style="width:auto;margin:0"> Chưa hoàn thành</label>
-                            <input type="text" name="note" class="in" maxlength="500" value="@t.SupportNote" style="flex:1 1 180px;min-width:140px;padding:5px 8px" aria-label="Lý do nếu chưa hoàn thành">
+                            <label style="flex:1 1 100%;display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:12px;font-weight:700;color:var(--bad)">Lý do chưa hoàn thành (bắt buộc nếu chọn Chưa hoàn thành)</span><input type="text" name="note" class="in" maxlength="500" value="@t.SupportNote" style="width:100%;padding:5px 8px"></label>
                             <button name="on" value="true" class="btn btn-sm btn-primary">@(t.Supported ? "Cập nhật hỗ trợ" : "✓ Đã hỗ trợ")</button>
                             @if (t.Supported) { <button name="on" value="false" class="btn btn-sm">Bỏ tích hỗ trợ</button> }
                         </form>
