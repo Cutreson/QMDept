@@ -16,6 +16,12 @@ public sealed class AntiforgeryFailureFilter : IAlwaysRunResultFilter
         var req = context.HttpContext.Request;
         var back = "/";
         if (Uri.TryCreate(req.Headers.Referer.ToString(), UriKind.Absolute, out var r)) back = r.PathAndQuery;
+        // Form gửi bằng fetch (bảng đang nhập): trả lỗi để trình duyệt hiện thông báo và giữ nguyên bảng
+        if (req.Headers[AjaxFormFilter.Header] == "1")
+        {
+            context.Result = new JsonResult(new { ok = false, error = "Trang đã hết hạn — thao tác chưa được lưu. Hãy chép lại nội dung đang nhập rồi tải lại trang" });
+            return;
+        }
         // Bộ lọc chạy trước khi controller được tạo → lấy TempData từ factory
         var td = context.HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataDictionaryFactory>().GetTempData(context.HttpContext);
         td["toast"] = "Trang đã hết hạn — thao tác chưa được lưu, vui lòng làm lại";

@@ -79,7 +79,7 @@ builder.Services.AddSingleton<ReminderService>();   // nhắc việc tự độn
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ReminderService>());
 builder.Services.AddSignalR();
 
-builder.Services.AddControllersWithViews(o => { o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()); o.Filters.Add(new AntiforgeryFailureFilter()); });
+builder.Services.AddControllersWithViews(o => { o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()); o.Filters.Add(new AntiforgeryFailureFilter()); o.Filters.Add(new AjaxFormFilter()); });
 
 // Khóa mã hóa (cookie đăng nhập, mã chống giả mạo) lưu ra file để không đổi khi máy chủ khởi động lại / publish — trước đây trang mở sẵn trên điện thoại gửi form bị lỗi.
 try

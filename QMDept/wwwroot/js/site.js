@@ -103,7 +103,7 @@
     const f = e.target;
     if (!(f instanceof HTMLFormElement)) return;
     if (e.defaultPrevented) return; // script của trang đã chặn submit (vd. kiểm tra phía client) → không làm gì
-    if (f.dataset.qmPassed === '1') { f.dataset.qmPassed = ''; lockSubmit(f, e); return; }
+    if (f.dataset.qmPassed === '1') { f.dataset.qmPassed = ''; sendOrLock(f, e); return; }
     if (f.dataset.confirm !== undefined) {
       e.preventDefault();
       const s = openSheet(`<form><h3>Xác nhận</h3><p style="margin:6px 0 0">${esc(f.dataset.confirm)}</p>${sheetButtons(f.dataset.confirmLabel || 'Đồng ý', 'btn-no')}</form>`);
@@ -121,12 +121,51 @@
         const name = f.dataset.promptName || 'text';
         let h = f.querySelector(`input[type=hidden][name="${name}"]`);
         if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = name; f.appendChild(h); }
-        h.value = v; closeSheet(); passSubmit(f, e.submitter);
+        h.value = v;
+        // gửi ngay khi bảng còn mở: báo lỗi thì lý do đã nhập vẫn còn, không phải nhập lại
+        if (ajaxOk(f)) ajaxSend(f, e.submitter, $('[data-ok]', s)); else { closeSheet(); passSubmit(f, e.submitter); }
       });
       return;
     }
-    lockSubmit(f, e);
+    sendOrLock(f, e);
   });
+  // Mọi form POST gửi bằng fetch (yêu cầu 2026-11-05): lỗi / thiếu điều kiện → hiện thông báo và GIỮ NGUYÊN bảng + dữ liệu đang nhập;
+  // thành công → chuyển tới trang quay lại như trước. Máy chủ: Services/AjaxFormFilter. Form không muốn dùng: thêm data-native.
+  function ajaxOk(f) {
+    return (f.method || '').toLowerCase() === 'post' && f.dataset.native === undefined && window.fetch && window.URLSearchParams
+      && !/^\/Account\//i.test(f.getAttribute('action') || '');
+  }
+  function sendOrLock(f, e) {
+    if (!ajaxOk(f)) { lockSubmit(f, e); return; }
+    e.preventDefault();
+    ajaxSend(f, e.submitter);
+  }
+  function ajaxSend(f, submitter, lockBtn) {
+    let data;
+    try { data = new URLSearchParams(new FormData(f, submitter || undefined)); }
+    catch { data = new URLSearchParams(new FormData(f)); if (submitter && submitter.name) data.append(submitter.name, submitter.value); }
+    const btn = lockBtn || submitter || f.querySelector('button:not([type=button])');
+    const html = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Đang lưu…'; }
+    const unlock = () => { if (btn) { btn.disabled = false; btn.innerHTML = html; } };
+    const goTo = url => {
+      if (!url) { location.reload(); return; }
+      const same = url.split('#')[0] === location.pathname + location.search;
+      if (same && url.indexOf('#') < 0) { location.reload(); return; }
+      location.assign(url); if (same) location.reload();
+    };
+    fetch(f.getAttribute('action') || (location.pathname + location.search), {
+      method: 'POST', body: data, credentials: 'same-origin', headers: { 'X-Qm-Ajax': '1' }
+    }).then(r => {
+      if (!r.ok) { toast('Có lỗi (' + r.status + ') — thao tác chưa được lưu, vui lòng thử lại', true); unlock(); return; }
+      if ((r.headers.get('content-type') || '').indexOf('application/json') >= 0) {
+        return r.json().then(j => {
+          if (j.ok === false) { toast(j.error || 'Không thực hiện được', true); unlock(); } else goTo(j.redirect);
+        });
+      }
+      return r.text().then(t => { document.open(); document.write(t); document.close(); });   // kết quả không phải chuyển hướng (hiếm)
+    }).catch(() => { toast('Mất kết nối — thao tác chưa được lưu, vui lòng thử lại', true); unlock(); });
+  }
   function passSubmit(f, submitter) {
     f.dataset.qmPassed = '1';
     if (submitter && submitter.name) { const h = document.createElement('input'); h.type = 'hidden'; h.name = submitter.name; h.value = submitter.value; f.appendChild(h); }
