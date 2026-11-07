@@ -4,17 +4,16 @@
     var req = Context.Request;
     var d = Scope.Date;
     var all = Model.Summary;
-    int rice = all.Count(x => OtRules.IsFullMeal(x.Meal)), snack = all.Count(x => x.Meal == OtMeal.Snack), allowance = all.Count(x => x.Allowance > 0);
+    int rice = all.Count(x => OtRules.IsFullMeal(x.Meal)), snack = all.Count(x => x.Meal == OtMeal.Snack);
     int pendingCount = all.Count(x => x.Status is OtStatus.Pending or OtStatus.PendingManager), lateCount = all.Count(x => x.Reg == OtReg.Late);
     // Giờ làm thêm được tính = kết quả đã được duyệt (bị từ chối / chưa duyệt kết quả thì không tính).
     var counted = all.Where(x => x.Completion == OtCompletion.Approved).Sum(x => x.ActualHours ?? 0);
     int doneRejected = all.Count(x => x.Completion == OtCompletion.Rejected), donePending = all.Count(x => x.Status == OtStatus.Approved && x.Completion == OtCompletion.Pending);
 }
-<div class="kpis k4">
+<div class="kpis k3">
     <div class="kpi k-info"><b>@all.Count</b><span>Người làm thêm</span></div>
     <div class="kpi k-ok"><b>@rice</b><span>Suất cơm</span></div>
     <div class="kpi k-warn"><b>@snack</b><span>Ăn nhẹ</span></div>
-    <div class="kpi k-mgr"><b>@allowance</b><span>Phụ cấp 20k</span></div>
 </div>
 <section class="card sec">
     <h2>Giờ làm thêm</h2>
@@ -46,10 +45,7 @@
                 <tr>
                     <td><b>@D.PName(x.PersonId)</b><div class="note">@Labels.Of(x.Role)@(x.ProjectId is not null ? " · " + D.PjName(x.ProjectId) : "")</div></td>
                     <td class="n" style="white-space:nowrap">@x.Start–@x.End</td>
-                    <td>@(x.Exempt ? "Không áp dụng" : x.Meal == OtMeal.Rice ? "Cơm" : x.Meal == OtMeal.Snack ? "Ăn nhẹ" : "—")@if (x.Allowance > 0)
-                        {
-                            <text> </text><span class="pill p-info">+20k</span>
-                        }</td>
+                    <td>@(x.Exempt ? "Không áp dụng" : x.Meal == OtMeal.Rice ? "Cơm" : x.Meal == OtMeal.Snack ? "Ăn nhẹ" : "—")</td>
                     <td>@Ui.Pill(x.Status)</td>
                     <td>@if (x.Status != OtStatus.Approved) { <text>—</text> } else if (x.Completion == OtCompletion.Approved) { <b class="mono">@Fmt.Num(x.ActualHours ?? 0) giờ</b> } else { @Ui.Pill(OvertimeUi.CompletionLabel(x.Completion), OvertimeUi.CompletionClass(x.Completion)) }</td>
                     <td>@Ui.Pill(x.Reg)</td>

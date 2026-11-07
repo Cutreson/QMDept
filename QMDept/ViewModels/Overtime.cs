@@ -91,9 +91,8 @@ public static class OvertimeUi
     {
         if (!r.Ok) return new HtmlString(E(r.Error));
         var sb = new StringBuilder();
-        sb.Append($"<b>{E(r.Start)}–{E(r.End)}</b> · {Fmt.Num(r.Hours)} giờ{(r.Lunch ? " (đã trừ nghỉ trưa)" : "")} · {E(r.Tier)}<br>Nghỉ giải lao: {E(r.Break)}<br>Suất ăn: ");
+        sb.Append($"<b>{E(r.Start)}–{E(r.End)}</b> · {Fmt.Num(r.Hours)} giờ{(r.Lunch ? " (đã trừ nghỉ trưa)" : "")}<br>Nghỉ giải lao: {E(r.Break)}<br>Suất ăn: ");
         sb.Append(r.MealLevel == OtMeal.Rice ? "<b>cơm</b>" : r.MealLevel == OtMeal.Snack ? "ăn nhẹ, thực đơn cố định theo ngày" : "không có");
-        if (r.Allow > 0) sb.Append("<br>Phụ cấp thêm <b>20.000đ</b>, trả vào lương");
         return new HtmlString(sb.ToString());
     }
 

@@ -36,7 +36,7 @@
     m.innerHTML = opts.map(([k,l])=>`<option value="${k}" ${k===want?'selected':''}>${l}</option>`).join(''); m.disabled = opts.length<2; m.dataset.init = m.value;
     f.querySelector('#otMealNote').textContent = r.err ? '' : r.meal==='rice' ? 'Tăng ca từ 3 giờ (đến 20:00 trở đi): cơm.' : r.meal==='snack' ? 'Tăng ca 2 giờ (17:00–19:00): ăn nhẹ, thực đơn cố định theo ngày.' : 'Làm thêm dưới 2 giờ không có chế độ suất ăn.';
     box.classList.toggle('err', !!r.err);
-    box.innerHTML = r.err ? r.err : `<b>${r.start}–${r.end}</b> · ${num(r.hours)} giờ${r.lunch?' (đã trừ nghỉ trưa)':''} · ${r.tier}<br>Nghỉ giải lao: ${r.breaks}<br>Suất ăn: ${r.meal==='rice'?'<b>cơm</b>':r.meal==='snack'?'ăn nhẹ, thực đơn cố định theo ngày':'không có'}${r.allow?'<br>Phụ cấp thêm <b>20.000đ</b>, trả vào lương':''}`;
+    box.innerHTML = r.err ? r.err : `<b>${r.start}–${r.end}</b> · ${num(r.hours)} giờ${r.lunch?' (đã trừ nghỉ trưa)':''}<br>Nghỉ giải lao: ${r.breaks}<br>Suất ăn: ${r.meal==='rice'?'<b>cơm</b>':r.meal==='snack'?'ăn nhẹ, thực đơn cố định theo ngày':'không có'}`;
   }
 
   // "Công việc khác": chọn dự án + tên công việc → thêm thẻ (có ✕ bỏ — xử lý chung ở site.js .pick-chip); Enter ở ô tên = thêm, không gửi form
