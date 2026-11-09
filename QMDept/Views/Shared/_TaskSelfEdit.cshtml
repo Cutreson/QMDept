@@ -1,0 +1,22 @@
+@model WorkTask
+@* Sheet "Sửa công việc" của NHÂN VIÊN ở Báo cáo đầu ngày đã gửi: sửa nội dung / giờ việc của mình rồi gửi lại Leader duyệt (yêu cầu 2026-11-09).
+   Nút mở: data-sheet="se{id}" (Morning.cshtml). Đặt NGOÀI mọi <form>. Server kiểm quyền lại (StaffController.EditMyTask). *@
+@{
+    var t = Model;
+    var req = Context.Request;
+    if (!StaffCalendar.CanSelfEdit(Scope, D, t)) { return; }
+    var resend = D.PlanOf(t.Date, t.EmployeeId) is not null && t.Selected;
+}
+<template id="se@(t.Id)">
+    <form class="ro-ok" method="post" action="@Ui.To(req, "/Staff/EditMyTask", ("d", Fmt.Key(t.Date)))">
+        @Html.AntiForgeryToken()
+        @Ui.ReturnField(req)
+        <input type="hidden" name="id" value="@t.Id">
+        <h3>Sửa công việc</h3>
+        <div class="note" style="margin-bottom:6px">@D.PjName(t.ProjectId)</div>
+        <label class="f" for="seT@(t.Id)" style="margin-top:0">Nội dung công việc</label>
+        <input class="in" id="seT@(t.Id)" name="title" maxlength="300" value="@t.Title" required>
+        <div class="pick2 eq"><div><label class="f" for="seS@(t.Id)">Bắt đầu</label>@Ui.TimeSelect("start", t.Start, id: "seS" + t.Id)</div><div><label class="f" for="seE@(t.Id)">Kết thúc</label>@Ui.TimeSelect("end", t.End, end: true, id: "seE" + t.Id)</div></div>
+        <div class="btn-row" style="margin-top:14px"><button type="button" class="btn" data-x="close">Hủy</button><button class="btn btn-primary">@(resend ? "Lưu và gửi lại" : "Lưu")</button></div>
+    </form>
+</template>

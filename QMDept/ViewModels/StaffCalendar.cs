@@ -69,6 +69,13 @@ public static class StaffCalendar
     public static bool CanRepropose(ViewScope s, Dept d, WorkTask t) => !s.IsViewingOther && t.EmployeeId == s.Account.Id && t.NeedsGiverReview && !t.RePending
         && t.CarriedToId is null && t.Date >= s.Today && !TaskLocked(d, t);
 
+    /// <summary>
+    /// Nhân viên tự sửa nội dung / giờ việc CỦA MÌNH ở Báo cáo đầu ngày rồi gửi lại cho Leader duyệt (yêu cầu 2026-11-09): chỉ nhân viên, việc không phải do người khác giao
+    /// (việc được giao thì "Đề xuất lại"), từ hôm nay trở đi, chưa có kết quả / báo cáo cuối ngày, chưa chuyển tiếp đi.
+    /// </summary>
+    public static bool CanSelfEdit(ViewScope s, Dept d, WorkTask t) => !s.IsViewingOther && s.Account.Role == Role.Staff && t.EmployeeId == s.Account.Id
+        && !t.NeedsGiverReview && t.CarriedToId is null && t.Date >= s.Today && !TaskLocked(d, t);
+
     /// <summary>Việc đã có kết quả (Hoàn thành / Chậm) hoặc NV đã gửi báo cáo cuối ngày → khóa, không xóa / chuyển được.</summary>
     public static bool TaskLocked(Dept d, WorkTask t) => t.Status is TaskState.Done or TaskState.Late || d.ReportOf(t.Date, t.EmployeeId) is not null;
 

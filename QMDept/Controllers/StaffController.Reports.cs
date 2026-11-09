@@ -125,6 +125,42 @@ public partial class StaffController
         return Redirect(Ui.To(Request, "/Staff/Morning", ("d", Fmt.Key(Date))));
     }
 
+    /// <summary>
+    /// POST /Staff/EditMyTask — nhân viên sửa nội dung / giờ một việc CỦA MÌNH trong kế hoạch đã gửi (Báo cáo đầu ngày); kế hoạch tự về "Chờ duyệt" và gửi lại cho Leader
+    /// (yêu cầu 2026-11-09). Giống gửi lại kế hoạch: quyết định duyệt cũ bị xóa, yêu cầu hỗ trợ nhóm khác làm lại. Việc do người khác giao không sửa được (dùng "Đề xuất lại").
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EditMyTask(int id, string? title, string? start, string? end) => await Do(async () =>
+    {
+        RequireSelfStaff();
+        var me = Scope.Me!;
+        var t = await Db.WorkTasks.FirstOrDefaultAsync(x => x.Id == id && x.EmployeeId == me.Id) ?? throw new BizException("Không tìm thấy công việc — có thể đã bị xóa");
+        if (t.NeedsGiverReview) throw new BizException($"Việc do {t.GivenBy} giao — không tự sửa được. Bấm “Đề xuất lại” để người giao duyệt");
+        if (t.CarriedToId is not null) throw new BizException("Việc này đã được chuyển tiếp sang ngày khác — sửa ở việc mới đó");
+        if (t.Date < Scope.Today) throw new BizException("Chỉ sửa việc từ hôm nay trở đi");
+        if (t.Status is TaskState.Done or TaskState.Late || await Db.DayReports.AnyAsync(r => r.Date == t.Date && r.EmployeeId == me.Id))
+            throw new BizException("Việc đã có kết quả / báo cáo cuối ngày — không sửa được");
+        var nTitle = StaffReports.Clip(title, 300) ?? throw new BizException("Nhập nội dung công việc");
+        var nS = start ?? ""; var nE = end ?? "";
+        if (!Fmt.IsHhmm(nS) || !Fmt.IsHhmm(nE) || nE.Le(nS)) throw new BizException("Giờ kết thúc phải sau giờ bắt đầu");
+        if (nTitle == t.Title && nS == t.Start && nE == t.End) throw new BizException("Chưa thay đổi nội dung hay giờ nào");
+        await TaskLines.EnsureFreeAsync(Db, me.Id, me.Name, t.Date, [new TaskLines.Line(nTitle, nS, nE)], t.Id);
+        var plan = await Db.DayPlans.FirstOrDefaultAsync(p => p.Date == t.Date && p.EmployeeId == me.Id);
+        if (plan is not null && plan.LeaveFrom is not null && plan.LeaveTo is not null && LeaveRules.Overlaps(new WorkTask { Start = nS, End = nE }, plan.LeaveFrom, plan.LeaveTo))
+            throw new BizException("Giờ mới trùng giờ nghỉ đã khai trong kế hoạch");
+        var resend = plan is not null && t.Selected;   // việc nằm trong kế hoạch đã gửi → gửi lại Leader duyệt
+        if (resend)
+        {
+            plan!.SentAt = VnTime.UtcNow;
+            plan.LeaderDecision = null; plan.LeaderBy = null; plan.LeaderAt = null; plan.LeaderNote = null;
+            plan.ManagerDecision = null; plan.ManagerBy = null; plan.ManagerAt = null; plan.ManagerNote = null;
+            Db.SupportRequests.RemoveRange(await Db.SupportRequests.Where(x => x.PlanId == plan.Id).ToListAsync());
+        }
+        await Flow.EditTaskAsync(t, t.ProjectId, nTitle, nS, nE, Scope.ActorName);   // lưu cùng lúc với phần đặt lại kế hoạch ở trên
+        if (resend) await Notify.PlanSubmittedAsync(me.Id, t.Date);
+        Toast(resend ? $"Đã sửa công việc và gửi lại kế hoạch — chờ {await ApproverNameAsync(me)} duyệt" : "Đã sửa công việc");
+    });
+
     /// <summary>Đọc lựa chọn xin hỗ trợ của báo cáo đầu ngày → (phạm vi, nội dung hiển thị, JSON lưu lại).</summary>
     async Task<(SupportScope Scope, string? Text, string? Pick)> ResolveSupportAsync(Person me, StaffPlanInput input)
     {

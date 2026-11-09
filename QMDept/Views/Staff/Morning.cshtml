@@ -56,10 +56,14 @@
         {
             foreach (var t in sel)
             {
-                var act = (lead && StaffCalendar.CanManage(Scope, D, t)) || StaffCalendar.CanRepropose(Scope, D, t) || StaffCalendar.CanSelfUpdate(Scope, t) ? await Html.PartialStr("_TaskBtns", t) : (lead ? "" : null);
+                // Nhân viên: nút "Sửa" nội dung / giờ việc của mình rồi gửi lại Leader duyệt (yêu cầu 2026-11-09)
+                var selfEdit = !lead && StaffCalendar.CanSelfEdit(Scope, D, t);
+                var act = (lead && StaffCalendar.CanManage(Scope, D, t)) || StaffCalendar.CanRepropose(Scope, D, t) || StaffCalendar.CanSelfUpdate(Scope, t) ? await Html.PartialStr("_TaskBtns", t)
+                    : selfEdit ? $"<button type=\"button\" class=\"link ro-ok\" data-sheet=\"se{t.Id}\">Sửa</button>" : (lead ? "" : null);
                 @D.TaskRow(t, actions: act)
                 <partial name="_TaskAck" model="t" />
                 <partial name="_TaskActions" model="t" />
+                <partial name="_TaskSelfEdit" model="t" />
             }
         }
         else
