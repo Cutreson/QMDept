@@ -77,7 +77,7 @@ else
             var todays = D.TasksOn(date, e).Where(t => t.ProjectId == p.Id).ToList();
             var leave = D.OnLeave(date, e);
             <div class="trow">@Ui.Av(D.PName(e))<div><div class="t">@D.PName(e)</div>
-                <div class="s">@(leave is not null ? "Nghỉ: " + leave.Reason : todays.Count > 0 ? string.Join(" · ", todays.Select(t => t.Title)) : "Hôm nay không có việc ở dự án này")</div></div>
+                <div class="s">@(leave is not null ? "Nghỉ" + (string.IsNullOrEmpty(leave.Reason) ? "" : ": " + leave.Reason) : todays.Count > 0 ? string.Join(" · ", todays.Select(t => t.Title)) : "Hôm nay không có việc ở dự án này")</div></div>
                 <span class="tm">@todays.Count việc</span></div>
         }
     </section>

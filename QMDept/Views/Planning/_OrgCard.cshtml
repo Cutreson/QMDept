@@ -19,7 +19,7 @@
     </div>
     @if (leave is not null)
     {
-        <div class="s red"><b>Nghỉ @Fmt.Dm(d): @leave.Reason</b></div>
+        <div class="s red"><b>Nghỉ @Fmt.Dm(d)@(string.IsNullOrEmpty(leave.Reason) ? "" : ": " + leave.Reason)</b></div>
     }
     @if (isManager)
     {
