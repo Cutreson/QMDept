@@ -228,7 +228,22 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     public DayReport? ReportOf(DateOnly date, int emp) { Guard(date); return _reports.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
     /// <summary>Nghỉ cả ngày (ghi tay không chi tiết, nghỉ phép cả ngày, hoặc nghỉ không lương đủ 8 giờ) — người này không làm việc trong ngày.</summary>
     public static bool IsFullDayLeave(Leave l) => l.LeaveType is null || l.LeaveSession == LeaveSession.FullDay || (l.LeaveType == LeaveType.Unpaid && (l.LeaveHours ?? 8) >= 8);
-    Leave? RawLeave(DateOnly date, int emp) { Guard(date); return _leaves.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp); }
+    /// <summary>
+    /// Nghỉ của người trong ngày: bản ghi nghỉ đã duyệt (bảng leaves) — nếu chưa có thì lấy nghỉ khai ở Báo cáo đầu ngày (Trạng thái làm việc = Nghỉ phép / Nghỉ không lương)
+    /// ĐÃ ĐƯỢC DUYỆT, dựng thành một Leave tạm (không ghi DB) để lịch / danh sách đều hiện nghỉ (yêu cầu 2026-11-16: nhân sự xin nghỉ chiều ở báo cáo đầu ngày mà lịch không hiện).
+    /// </summary>
+    Leave? RawLeave(DateOnly date, int emp)
+    {
+        Guard(date);
+        if (_leaves.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp) is { } l) return l;
+        var plan = _plans.Values.FirstOrDefault(p => p.Date == date && p.EmployeeId == emp);
+        if (plan is null || !LeaveRules.IsLeave(plan.Status) || PlanSt(plan) != PlanState.Approved) return null;
+        return new Leave
+        {
+            Date = date, EmployeeId = emp, LeaveType = plan.LeaveType, LeaveSession = plan.LeaveSession,
+            LeaveFrom = plan.LeaveFrom, LeaveTo = plan.LeaveTo, LeaveHours = plan.LeaveHours, LeaveDays = plan.LeaveDays,
+        };
+    }
     public Leave? OnLeave(DateOnly date, int emp) => RawLeave(date, emp) is { } l && IsFullDayLeave(l) ? l : null;
     /// <summary>Nghỉ một phần ngày (nửa ngày / vài giờ) đã được duyệt — người này vẫn làm việc phần còn lại (yêu cầu 2026-10-20).</summary>
     public Leave? PartLeave(DateOnly date, int emp) => RawLeave(date, emp) is { } l && !IsFullDayLeave(l) ? l : null;
