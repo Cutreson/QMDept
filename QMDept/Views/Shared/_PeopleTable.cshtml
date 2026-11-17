@@ -26,7 +26,7 @@
         var g0 = Get(p0); var pl0 = g0.Plan;
         if (g0.Info == 0) nConfirmed++;   // đã duyệt (nhân sự) / đã xác nhận (TP)
         var ok0 = g0.Info == 0 && pl0 is not null;
-        if ((ok0 && LeaveRules.IsLeave(pl0!.Status)) || (g0.Info is 0 or 4 && g0.Lv is not null)) { nLeave++; continue; }
+        if ((ok0 && Dept.PlanFullDayLeave(pl0)) || (g0.Info is 0 or 4 && g0.Lv is not null)) { nLeave++; continue; }   // nghỉ cả ngày; nghỉ nửa ngày / vài giờ vẫn tính là làm việc + báo cơm
         if (!ok0) continue;
         if (LeaveRules.IsTrip(pl0!.Status)) nTrip++; else nOffice++;
         if (pl0.Meal == Meal.Rice) nRice++; else if (pl0.Meal == Meal.Noodle) nNoodle++;
@@ -50,7 +50,8 @@
             no++;
             var plan = g.Plan;
             var ok = g.Info == 0 && plan is not null;
-            var onLeave = (ok && LeaveRules.IsLeave(plan!.Status)) || (g.Info is 0 or 4 && g.Lv is not null);
+            var onLeave = (ok && Dept.PlanFullDayLeave(plan)) || (g.Info is 0 or 4 && g.Lv is not null);   // chỉ nghỉ CẢ NGÀY mới ẩn việc / báo cơm
+            var partPlan = ok && !onLeave && LeaveRules.IsLeave(plan!.Status);                              // nghỉ nửa ngày / vài giờ khai ở kế hoạch: vẫn hiện việc
             var trip = ok && !onLeave && LeaveRules.IsTrip(plan!.Status);
             var ts = ok && !onLeave ? D.Chosen(d, p.Id) : new List<WorkTask>();
             var rep = D.ReportOf(d, p.Id);
@@ -74,10 +75,16 @@
                         <span class="pill p-bad">@(plan is not null && ok && LeaveRules.IsLeave(plan.Status) ? Labels.Of(plan.Status) : "Nghỉ")</span>
                         <div class="note">@if (lt is not null) { @Html.Raw(lt) } else { @(g.Lv is not null ? Blocks.LeaveBrief(g.Lv) : "Cả ngày") }</div>
                     }
+                    else if (partPlan)
+                    {
+                        <span class="pill p-bad">@Labels.Of(plan!.Status)</span>
+                        <div class="note">@Html.Raw(plan.LeaveType is not null ? Blocks.LeaveText(plan) : "")</div>
+                        <span class="pill p-ok" style="margin-top:4px">Làm việc tại công ty</span>
+                    }
                     else if (trip) { <span class="pill @(plan!.Status == WorkStatus.LongTrip ? "p-warn" : "p-info")">Công tác @(plan.Status == WorkStatus.LongTrip ? "dài ngày" : "trong ngày")</span> }
                     else if (ok) { <span class="pill p-ok">Làm việc tại công ty</span> }
                     else { <span class="note">—</span> }
-                    @if (!onLeave && D.PartLeave(d, p.Id) is { } part) { <div class="note"><b class="red">@Blocks.LeaveBrief(part)</b></div> }</td>
+                    @if (!onLeave && !partPlan && D.PartLeave(d, p.Id) is { } part) { <div class="note"><b class="red">@Blocks.LeaveBrief(part)</b></div> }</td>
                 <td rowspan="@nRows">@if (trip) { <b>@(plan!.TripProvince ?? "—")</b><div class="note">@(plan.TripCustomer ?? "")</div> } else { <span class="note">—</span> }</td>
             }
                 <td>@if (ts.Count == 0) { <span class="note">—</span> }

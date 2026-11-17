@@ -81,7 +81,7 @@ public sealed class ReminderService(IServiceScopeFactory scopes, ILogger<Reminde
                 else
                 {
                     open.AddRange(own.Where(t => IsSupport(t) ? !t.Supported : t.Status != TaskState.Done && t.CarriedToId == null));
-                    if (own.Count > 0 && plans.Any(x => x.EmployeeId == p.Id && x.Date == d && !LeaveRules.IsLeave(x.Status)) && !reports.Any(r => r.EmployeeId == p.Id && r.Date == d)) noReport.Add(d);
+                    if (own.Count > 0 && plans.Any(x => x.EmployeeId == p.Id && x.Date == d && !Dept.PlanFullDayLeave(x)) && !reports.Any(r => r.EmployeeId == p.Id && r.Date == d)) noReport.Add(d);
                 }
             }
             if (open.Count > 0)

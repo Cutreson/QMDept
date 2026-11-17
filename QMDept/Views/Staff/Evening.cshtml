@@ -46,7 +46,7 @@ else if (Dept.PlanSt(plan) != PlanState.Approved)
 @{
     // Việc phải làm ở ngày này, ghi rõ để người dùng biết cần xử lý gì (yêu cầu 2026-10-24): hiện khi báo cáo chưa gửi / bị yêu cầu bổ sung, ngày đã qua hoặc từ 17:00.
     var needReport = !Scope.IsViewingOther && (rep is null || es0 == EodState.Rejected) && (list.Count > 0 || teamTasks.Count > 0)
-        && (plan is not null && !LeaveRules.IsLeave(plan.Status)) && (d < Scope.Today || string.CompareOrdinal(VnTime.NowHm, "17:00") >= 0);
+        && (plan is not null && !Dept.PlanFullDayLeave(plan)) && (d < Scope.Today || string.CompareOrdinal(VnTime.NowHm, "17:00") >= 0);
 }
 @if (needReport)
 {

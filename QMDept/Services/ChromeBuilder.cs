@@ -205,7 +205,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             var plan0 = d.PlanOf(tday, acc.Id);
             if (plan0 is null && string.CompareOrdinal(nowHm, "07:00") >= 0)
                 reminders.Add(($"Chưa báo cáo đầu ngày {Fmt.Dmy(tday)} — hãy báo cáo trạng thái làm việc hôm nay", "/Staff/Morning?as=" + own));
-            else if (plan0 is not null && !LeaveRules.IsLeave(plan0.Status) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
+            else if (plan0 is not null && !Dept.PlanFullDayLeave(plan0) && acc.Role is Role.Staff or Role.Leader && string.CompareOrdinal(nowHm, "17:00") >= 0 && d.ReportOf(tday, acc.Id) is null)
                 reminders.Add(($"Chưa báo cáo cuối ngày {Fmt.Dmy(tday)} — hãy báo cáo kết quả công việc hôm nay", "/Staff/Evening?as=" + own));
         }
         // ---- Nhắc người duyệt / người giao việc (yêu cầu 2026-10-24) ----
@@ -286,7 +286,7 @@ public sealed class ChromeBuilder(ViewScope scope, Dept d, IHttpContextAccessor 
             {
                 if (day == tday && string.CompareOrdinal(VnTime.NowHm, "17:00") < 0) continue;
                 var plan = d.PlanOf(day, acc.Id);
-                if (plan is null || LeaveRules.IsLeave(plan.Status)) continue;
+                if (plan is null || Dept.PlanFullDayLeave(plan)) continue;
                 var rep = d.ReportOf(day, acc.Id);
                 var es = Dept.EodSt(rep);
                 if (rep is not null && es != EodState.Rejected) continue;

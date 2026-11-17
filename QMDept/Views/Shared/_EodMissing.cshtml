@@ -12,7 +12,7 @@
             if (day.DayOfWeek == DayOfWeek.Sunday) continue;
             if (day == today && string.CompareOrdinal(VnTime.NowHm, "17:00") < 0) continue;
             var plan = D.PlanOf(day, p.Id);
-            if (plan is null || LeaveRules.IsLeave(plan.Status) || D.OnLeave(day, p.Id) is not null) continue;
+            if (plan is null || Dept.PlanFullDayLeave(plan) || D.OnLeave(day, p.Id) is not null) continue;
             if (D.ReportOf(day, p.Id) is not null) continue;
             if (D.Chosen(day, p.Id).Count == 0 && D.TeamTasksOf(p.Id, day).Count == 0) continue;
             days.Add(day);

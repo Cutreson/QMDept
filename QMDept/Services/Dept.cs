@@ -229,6 +229,13 @@ public sealed class Dept(ViewScope scope, DataCache cache)
     /// <summary>Nghỉ cả ngày (ghi tay không chi tiết, nghỉ phép cả ngày, hoặc nghỉ không lương đủ 8 giờ) — người này không làm việc trong ngày.</summary>
     public static bool IsFullDayLeave(Leave l) => l.LeaveType is null || l.LeaveSession == LeaveSession.FullDay || (l.LeaveType == LeaveType.Unpaid && (l.LeaveHours ?? 8) >= 8);
     /// <summary>
+    /// Kế hoạch đầu ngày khai nghỉ CẢ NGÀY (nghỉ phép cả ngày, hoặc nghỉ không lương đủ 8 giờ). Nghỉ nửa ngày / vài giờ thì người đó vẫn có việc, vẫn báo cơm,
+    /// vẫn phải báo cáo cuối ngày (yêu cầu 2026-11-17: bảng Nhân sự từng ẩn hết việc của người nghỉ chiều). Cùng tiêu chí với <see cref="IsFullDayLeave"/>.
+    /// </summary>
+    public static bool PlanFullDayLeave(DayPlan? p) => p is not null && LeaveRules.IsLeave(p.Status)
+        && (p.LeaveType is null || p.LeaveSession == LeaveSession.FullDay || (p.LeaveType == LeaveType.Unpaid && (p.LeaveHours ?? 8) >= 8));
+
+    /// <summary>
     /// Nghỉ của người trong ngày: bản ghi nghỉ đã duyệt (bảng leaves) — nếu chưa có thì lấy nghỉ khai ở Báo cáo đầu ngày (Trạng thái làm việc = Nghỉ phép / Nghỉ không lương)
     /// ĐÃ ĐƯỢC DUYỆT, dựng thành một Leave tạm (không ghi DB) để lịch / danh sách đều hiện nghỉ (yêu cầu 2026-11-16: nhân sự xin nghỉ chiều ở báo cáo đầu ngày mà lịch không hiện).
     /// </summary>
